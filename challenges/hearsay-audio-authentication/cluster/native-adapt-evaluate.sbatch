@@ -21,13 +21,16 @@ cache="$root/models/garystafford-c663060"
    && -f "$base_selection/run.json" && ! -e "$ECHOTRACE_OUTPUT" ]]
 
 "$python" - "$train" "$selection" "$acceptance" "$independence_audit" <<'PY'
-import csv,json,sys
+import csv,hashlib,json,sys
 from collections import Counter
 def rows(p):
  with open(p,encoding='utf-8',newline='') as f:return list(csv.DictReader(f))
-t,s,a=map(rows,sys.argv[1:])
+t,s,a=map(rows,sys.argv[1:4])
 audit=json.load(open(sys.argv[4],encoding='utf-8'))
 if audit.get('ready') is not True:raise SystemExit('Acceptance content independence audit did not pass')
+if audit.get('previous_content_hashes',0)<=0:raise SystemExit('Prior content-hash ledger is empty')
+if audit.get('manifest_sha256')!=hashlib.sha256(open(sys.argv[3],'rb').read()).hexdigest():
+ raise SystemExit('Independence audit is not bound to frozen acceptance manifest')
 if (len(t),len(s),len(a))!=(10000,2000,2000) or Counter(r['label'] for r in a)!={'0':1000,'1':1000}:
  raise SystemExit('Frozen split counts changed')
 for field in ('file_id','speaker_id','source_id'):
