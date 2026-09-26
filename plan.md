@@ -10,7 +10,7 @@ ECHOTRACE helps an analyst investigate a suspicious recorded voice message: uplo
 
 Required challenge outputs: supported audio-file input, automatic orchestration of multiple forensic methods, a synthesis score on a 0–100 scale, and CSV predictions for the sponsor's held-out data. Manipulation subtype is optional in the detailed brief. See [challenge text](challenges/hearsay-audio-authentication/CHALLENGE.md).
 
-The numerical score comes from the speech detector. Signal measurements describe the recording. Grok explains supplied measurements and cannot change the score. Current scores are uncalibrated; low scores do not prove authenticity. Speaker identity and factual truth are separate questions with separately planned evidence workflows.
+The numerical score comes from the speech detector. Signal measurements describe the recording. Grok explains supplied measurements and cannot change the score. Current scores are uncalibrated; low scores do not prove authenticity. Speaker similarity and source-backed claim reviews are implemented as separate evidence workflows; neither proves identity or truth.
 
 ## Current phase overview
 
