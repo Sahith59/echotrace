@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: challenges/hearsay-audio-authentication/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+      - name: Verify required tracked inputs
+        run: |
+          test -f ../reports/public-pilot/provenance.json
+          test -f echotrace/vendor/AASIST-L.conf
+      - name: Install locked dependencies
+        run: uv sync --frozen --all-groups
+      - name: Set up pinned baseline checkpoint
+        run: uv run echotrace setup-model
+      - name: Test backend
+        run: uv run pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: challenges/hearsay-audio-authentication/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: challenges/hearsay-audio-authentication/frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Test frontend
+        run: npm test
+      - name: Build frontend
+        run: npm run build
