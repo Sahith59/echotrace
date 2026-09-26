@@ -9,6 +9,7 @@
 set -Eeuo pipefail
 : "${ECHOTRACE_ROOT:?}"; : "${ECHOTRACE_BACKEND:?}"; : "${ECHOTRACE_OUTPUT:?}"
 root="$ECHOTRACE_ROOT"; python="$root/envs/detector/bin/python"
+export PATH="$root/envs/runtime/bin:/usr/bin:/bin"
 train="$root/runs/aasist-aa-01/manifests/train.csv"
 selection="$root/runs/aasist-aa-01/manifests/selection.csv"
 acceptance="$root/data/asvspoof5-eval-aa/acceptance3.csv"
@@ -19,6 +20,8 @@ base_selection="$root/runs/aasist-aa-01/evaluation/selection-baseline"
 cache="$root/models/garystafford-c663060"
 [[ -x "$python" && -f "$acceptance" && -f "$root/data/asvspoof5-eval-aa/provenance.json" && -f "$independence_audit" \
    && -f "$base_selection/run.json" && ! -e "$ECHOTRACE_OUTPUT" ]]
+command -v ffprobe >/dev/null
+command -v ffmpeg >/dev/null
 
 "$python" - "$train" "$selection" "$acceptance" "$independence_audit" <<'PY'
 import csv,hashlib,json,sys

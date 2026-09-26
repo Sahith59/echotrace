@@ -8,14 +8,45 @@
 set -Eeuo pipefail
 : "${ECHOTRACE_ROOT:?}"
 : "${ECHOTRACE_EVAL_MANIFEST:?}"
+export PATH="$ECHOTRACE_ROOT/envs/runtime/bin:/usr/bin:/bin"
 target="$ECHOTRACE_ROOT/data/asvspoof5-eval-aa"
 [[ ! -e "$target" && -f "$ECHOTRACE_EVAL_MANIFEST" ]]
 temp="$ECHOTRACE_ROOT/data/.eval-aa-$SLURM_JOB_ID"
 mkdir "$temp"
-trap 'rm -rf -- "$temp"' ERR
+trap 'failed="$ECHOTRACE_ROOT/data/.eval-aa-failed-$SLURM_JOB_ID"; mv -- "$temp" "$failed"; echo "Preserved failed staging at $failed" >&2' ERR
 url='https://zenodo.org/api/records/14498691/files/flac_E_aa.tar/content'
-archive="$temp/flac_E_aa.tar"
-curl --fail --location --retry 3 --connect-timeout 30 --output "$archive" "$url"
+archive_dir="$ECHOTRACE_ROOT/downloads/asvspoof5-eval-aa"
+archive="$archive_dir/flac_E_aa.tar"
+mkdir -p "$archive_dir"
+python="$ECHOTRACE_ROOT/envs/detector/bin/python"
+backend="$ECHOTRACE_ROOT/source/9903fac"
+smoke=$(find "$ECHOTRACE_ROOT/data/asvspoof5-aa/audio" -type f -name '*.flac' -print -quit)
+[[ -n "$smoke" ]]
+PYTHONPATH="$backend" "$python" - "$smoke" <<'PY'
+import sys
+from pathlib import Path
+from echotrace.audio import decode_audio
+samples,info=decode_audio(Path(sys.argv[1]))
+assert len(samples)>0 and info['analysis_sample_rate']==16000
+print(f"decoder smoke passed: {info['codec']} {info['duration_s']}s")
+PY
+if [[ ! -f "$archive" ]]; then
+  chunk=2112445440
+  pids=()
+  for i in 0 1 2 3; do
+    start=$((i*chunk)); end=$((start+chunk-1)); part="$archive_dir/flac_E_aa.tar.part-$i"
+    curl --fail --location --retry 3 --connect-timeout 30 --max-filesize "$chunk" \
+      --range "$start-$end" --output "$part" "$url" &
+    pids+=("$!")
+  done
+  for pid in "${pids[@]}"; do wait "$pid"; done
+  for i in 0 1 2 3; do [[ $(stat -c %s "$archive_dir/flac_E_aa.tar.part-$i") = "$chunk" ]]; done
+  cat "$archive_dir"/flac_E_aa.tar.part-{0,1,2,3} > "$archive.part"
+  [[ $(stat -c %s "$archive.part") = 8449781760 ]]
+  [[ $(md5sum "$archive.part" | cut -d' ' -f1) = a8c800766f3d4ef87971e2b4f29663e2 ]]
+  mv "$archive.part" "$archive"
+  rm "$archive_dir"/flac_E_aa.tar.part-{0,1,2,3}
+fi
 [[ $(stat -c %s "$archive") = 8449781760 ]]
 [[ $(md5sum "$archive" | cut -d' ' -f1) = a8c800766f3d4ef87971e2b4f29663e2 ]]
 sha256sum "$archive" > "$temp/archive.sha256"
@@ -24,17 +55,12 @@ awk 'BEGIN{ok=1} $0!="flac_E_eval/" && $0 !~ /^flac_E_eval\/E_[0-9]+\.flac$/ {ok
 [[ $(sort "$temp/members.txt" | uniq -d | wc -l) = 0 ]]
 mkdir "$temp/audio"
 tar --no-same-owner --no-same-permissions -xf "$archive" -C "$temp/audio"
-rm "$archive"
 
-python="$ECHOTRACE_ROOT/envs/detector/bin/python"
-backend="$ECHOTRACE_ROOT/source/54626d7/backend"
 PYTHONPATH="$backend" "$python" - "$ECHOTRACE_EVAL_MANIFEST" "$temp" <<'PY'
 import csv, hashlib, json, sys
 from collections import Counter
 from pathlib import Path
-import numpy as np
-import soundfile as sf
-from echotrace.audio import measure_audio
+from echotrace.audio import decode_audio, measure_audio
 manifest, temp = map(Path, sys.argv[1:])
 audio = temp/'audio'
 with manifest.open(encoding='utf-8', newline='') as h:
@@ -50,14 +76,7 @@ selected.sort(key=lambda r:r['file_id'])
 fail=[]
 for i,row in enumerate(selected,1):
     try:
-        path=audio/row['path']
-        info=sf.info(path)
-        if info.samplerate!=16000 or info.channels!=1 or info.frames<=0 or info.frames>120*16000:
-            raise ValueError(f'unexpected FLAC stream: {info.samplerate}Hz/{info.channels}ch/{info.frames}frames')
-        samples,rate=sf.read(path,dtype='float32',always_2d=False)
-        if rate!=16000 or samples.ndim!=1 or not np.all(np.isfinite(samples)):
-            raise ValueError('invalid decoded FLAC samples')
-        _,_,quiet=measure_audio(samples)
+        samples,info=decode_audio(audio/row['path']); _,_,quiet=measure_audio(samples)
         if quiet: raise ValueError('quiet')
     except Exception as exc: fail.append({'file_id':row['file_id'],'reason':str(exc)})
     if i%250==0: print(f'audited {i}/2000',flush=True)
