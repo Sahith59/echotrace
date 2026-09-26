@@ -78,6 +78,19 @@ def test_artifact_requires_explicit_promotion_hashes_and_allowlisted_config(tmp_
         NativeServingAdapter(tmp_path, **{**kwargs, "allowed_config_sha256": {"0" * 64}}).verify_artifacts()
 
 
+def test_cached_verification_uses_cheap_fingerprint_to_detect_replacement(tmp_path):
+    _, kwargs = artifact(tmp_path)
+    adapter = NativeServingAdapter(tmp_path, **kwargs)
+    assert adapter.model_status()["available"] is True
+
+    weights = tmp_path / "model.safetensors"
+    weights.write_bytes(b"x" * weights.stat().st_size)
+
+    status = adapter.model_status()
+    assert status["available"] is False
+    assert "changed after verification" in status["reason"]
+
+
 def test_artifact_rejects_unpromoted_wrong_polarity_changed_or_symlinked_files(tmp_path):
     _, kwargs = artifact(tmp_path)
     data = json.loads((tmp_path / "serving-spec.json").read_text())
