@@ -105,6 +105,14 @@ def test_optimizer_checkpoint_and_provenance(tmp_path):
     restored.load_state_dict(checkpoint["model_state_dict"])
     assert checkpoint["pretrained_sha256"] == "test-sha"
     assert checkpoint["data_sha256"] == result["data_sha256"]
+    assert checkpoint["model_config_sha256"] == training._sha256(training.CONFIG_PATH)
+    assert checkpoint["upstream_revision"] == training.UPSTREAM_REVISION
+    assert checkpoint["split_provenance"] == {
+        "train": [{key: item[key] for key in ("file_id", "sha256", "label", "group_id", "speaker_id", "source_id")}
+                  for item in train],
+        "validation": [{key: item[key] for key in ("file_id", "sha256", "label", "group_id", "speaker_id", "source_id")}
+                       for item in valid],
+    }
     assert (output / "config.json").is_file()
     assert (output / "metrics.json").is_file()
     with pytest.raises(ValueError, match="fresh"):
