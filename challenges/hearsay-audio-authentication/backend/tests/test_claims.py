@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from echotrace.claims import ClaimReviewError, GrokClaimReviewer
+from echotrace.claims import ClaimReviewError, GrokClaimReviewer, validate_public_url
 
 
 def response_for(review, citations):
@@ -49,6 +49,9 @@ def test_grok_review_uses_fixed_search_tool_and_validates_observed_sources():
     assert result["method"] == "ai_web_search"
     assert result["provider"] == "xai"
     assert result["evidence"][0]["url"] == source
+    # The URL was observed, but the exact quote was not present in provider
+    # annotation metadata, so it must not be presented as verified verbatim text.
+    assert result["evidence"][0]["quote"] is None
     payload = captured[0]
     assert payload["tools"] == [{"type": "web_search"}]
     assert payload["model"] == "grok-test"
@@ -112,3 +115,14 @@ def test_grok_review_rejects_hallucinated_citation():
 
     with pytest.raises(ClaimReviewError, match="not observed"):
         reviewer.review("A factual claim")
+
+
+@pytest.mark.parametrize("url", [
+    "file:///etc/passwd",
+    "http://localhost/admin",
+    "http://127.0.0.1/private",
+    "https://user:password@example.com/report",
+])
+def test_evidence_urls_reject_nonpublic_or_credential_targets(url):
+    with pytest.raises(ValueError, match="public|HTTP"):
+        validate_public_url(url)

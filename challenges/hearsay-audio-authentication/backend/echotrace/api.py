@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from .pilot import create_pilot_router
 from .interpretation import create_interpretation_router
 from .speaker_router import create_speaker_router
+from .claims_router import create_claims_router
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2] / "artifacts" / "workspace"
 MAX_BYTES = 50 * 1024 * 1024
@@ -126,6 +127,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
     app.include_router(create_pilot_router(root=pilot_root, provenance_path=pilot_provenance))
     app.include_router(create_interpretation_router(store, interpreter))
     app.include_router(create_speaker_router(store))
+    app.include_router(create_claims_router(store))
 
     def get_job(job_id):
         try:

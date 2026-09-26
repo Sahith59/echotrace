@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from echotrace.api import Store
-from echotrace.claims_router import create_claims_router
+from echotrace.claims_router import create_claims_router, load_claim_artifacts
 
 
 class FakeTranscriber:
@@ -50,6 +50,7 @@ def app_for(tmp_path):
     store.update("job", status="completed", stage="completed", result={"synthetic_score": 0.99})
     app = FastAPI()
     app.include_router(create_claims_router(store, transcriber=FakeTranscriber(), reviewer=UnavailableReviewer()))
+    app.state.store = store
     return app
 
 
@@ -86,6 +87,9 @@ def test_transcript_generation_correction_and_stale_claim_association(tmp_path):
         transcript = client.get("/api/analyses/job/transcript").json()
         assert transcript["version"] == 2
         assert [item["version"] for item in transcript["versions"]] == [1, 2]
+        artifacts = load_claim_artifacts(client.app.state.store, "job")
+        assert artifacts["transcript"]["version"] == 2
+        assert artifacts["claims"][0]["stale_transcript"] is True
 
 
 def test_providerless_analyst_review_is_persisted_with_distinct_provenance(tmp_path):
