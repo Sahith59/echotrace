@@ -41,10 +41,10 @@ def test_real_provider_boundary_with_injected_transport_and_provenance():
     before = copy.deepcopy(source)
     result = Interpreter(model="test-model", transport=chat).generate(source)
     assert source == before
-    assert result["status"] == "generated" and result["provider"] == "xai"
+    assert result["status"] == "generated" and result["provider"] == "groq"
     assert len(result["evidence_sha256"]) == 64 and result["prompt_version"]
     assert result["report"] == response()
-    assert calls[0]["stream"] is False and calls[0]["response_format"]["type"] == "json_schema"
+    assert calls[0]["stream"] is False and calls[0]["response_format"]["type"] == "json_object"
     assert "private-identity" not in json.dumps(calls)
 
 
@@ -108,7 +108,7 @@ def test_unfinished_and_provider_failure_are_honest(tmp_path):
 def test_provider_errors_do_not_expose_key_or_remote_error_body(monkeypatch, code, expected):
     class Opener:
         def open(self, request, timeout):
-            assert request.full_url == "https://api.x.ai/v1/chat/completions"
+            assert request.full_url == "https://api.groq.com/openai/v1/chat/completions"
             assert timeout == 45
             raise urllib.error.HTTPError(request.full_url, code, "secret-value", {}, None)
     monkeypatch.setattr("echotrace.interpretation.urllib.request.build_opener", lambda *_: Opener())
@@ -129,7 +129,8 @@ def test_http_boundary_sends_only_evidence_and_validates_response(monkeypatch):
             body = json.loads(request.data)
             assert request.headers["Authorization"] == "Bearer test-key"
             assert "private" not in json.dumps(body)
-            assert body["response_format"]["json_schema"]["strict"] is True
+            assert body["response_format"] == {"type": "json_object"}
+            assert "audio_review" in body["messages"][0]["content"]
             return Response()
     monkeypatch.setattr("echotrace.interpretation.urllib.request.build_opener", lambda *_: Opener())
     assert Interpreter(api_key="test-key").generate(analysis())["report"] == response()
@@ -140,3 +141,18 @@ def test_null_score_is_preserved_as_unavailable():
     result["synthetic_score"] = None
     facts = {x["id"]: x["value"] for x in evidence_for(result)}
     assert facts["score"] is None and facts["calibration"] == "unavailable"
+
+
+def test_groq_config_does_not_use_xai_key_and_refreshes_env(monkeypatch, tmp_path):
+    env = tmp_path / ".env"
+    env.write_text("XAI_API_KEY=other-provider-secret\n")
+    monkeypatch.setattr("echotrace.interpretation.ENV_PATH", env)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("ECHOTRACE_LLM_MODEL", raising=False)
+    service = Interpreter()
+    assert service.status()["available"] is False
+    assert service.status()["provider"] == "groq"
+    env.write_text("GROQ_API_KEY=test-groq-secret\n")
+    assert service.status()["available"] is True
+    assert service.status()["model"] == "llama-3.3-70b-versatile"
+    assert "test-groq-secret" not in json.dumps(service.status())
