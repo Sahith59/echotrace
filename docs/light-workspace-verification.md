@@ -39,3 +39,5 @@ Paired AASIST baseline job 4504670 results still need retrieval; cluster jump-ho
 Speaker similarity does not prove identity; transcript/source review does not prove truth. Hosted claim-source retrieval remains unavailable until source provenance can be validated. AI prose still needs analyst review. Full screen-reader and formal accessibility certification are not claimed.
 
 The final backend was restarted with no queued/running jobs. Existing reports and analyst notes survived. The prior brief was visibly marked outdated in the printable report after the evidence contract changed.
+
+Final v3 Groq regeneration succeeded in the browser after restart. It described the entire-file score as uncalibrated, stated that acoustic reference ranges were absent, and identified MP3 results as same-detector robustness observations. Case JSON reported `interpretation_status=current`, prompt v3, original score unchanged, one matched stress comparison and analyst revision 1. Source release `60a870c` was pushed to the private repository; CI: [run 36251442812](https://github.com/Sahith59/echotrace/actions/runs/36251442812).

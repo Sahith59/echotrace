@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. **The approved light workspace and guided investigation are implemented. New API/CLI analyses use pinned NII whole-file scoring (<=30seconds); legacy AASIST results remain immutable. A real browser NII analysis and real Groq interpretation succeeded. Guided steps, queue/date filters, analyst reviews and provenance-safe comparisons/exports are implemented. Phase5 local verification is being completed; official sponsor data/schema/submission and deployment remain external gates. NII serving is an explicit prototype decision using absolute benchmark gates and parity, not a claim that the old training-candidate comparative contract passed.**
+Updated 2026-09-26. **The approved light workspace and guided investigation are implemented. New API/CLI analyses use pinned NII whole-file scoring (<=30seconds); legacy AASIST results remain immutable. A real browser NII analysis and real Groq interpretation succeeded. Guided steps, queue/date filters, analyst reviews and provenance-safe comparisons/exports are implemented. Phase5 local verification is complete within the documented checks; official sponsor data/schema/submission and deployment remain external gates. NII serving is an explicit prototype decision using absolute benchmark gates and parity, not a claim that the old training-candidate comparative contract passed.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 
@@ -154,7 +154,7 @@ Demo sequence: suspicious recording → actual assessment → listen to a scored
 - [x] Finish restart, responsive, export and live-provider acceptance checks for the local prototype.
 - [x] Document reproducible setup/inference/export commands and known limitations.
 - [x] Verify the release wheel contains `primary_detector`, `analyst_review`, `nii_parity` and `validation_summary`, and excludes environment files, uploaded audio and model weights.
-- [x] Historical release: publish verified runnable source, tests, documentation and evaluation reports to [Sahith59/echotrace](https://github.com/Sahith59/echotrace), private. Application commit `eb14365` passed [GitHub CI](https://github.com/Sahith59/echotrace/actions/runs/36230750860): 249 backend passed / one macOS-only test skipped; 32 frontend passed and production build passed. Local macOS suite passed all 250 backend tests. The current NII/light-workspace source update has not yet been pushed.
+- [x] Historical release: publish verified runnable source, tests, documentation and evaluation reports to [Sahith59/echotrace](https://github.com/Sahith59/echotrace), private. Application commit `eb14365` passed [GitHub CI](https://github.com/Sahith59/echotrace/actions/runs/36230750860): 249 backend passed / one macOS-only test skipped; 32 frontend passed and production build passed. Local macOS suite passed all 250 backend tests. The NII/light-workspace source update was pushed as `60a870c`; its fresh CI run is [36251442812](https://github.com/Sahith59/echotrace/actions/runs/36251442812).
 - [ ] Produce the official CSV and any remaining required event artifacts after the sponsor contract is supplied.
 - [ ] Rehearse and submit through the authorized destination once supplied.
 
@@ -166,7 +166,7 @@ Demo sequence: suspicious recording → actual assessment → listen to a scored
 
 ## Handoff and next work
 
-The earlier source release is published. The user reopened detector improvement and Groq integration; current source changes must pass fresh checks and be pushed after integration. Deployment still awaits user direction.
+The earlier source release is published. The user reopened detector improvement and Groq integration; the current source update passed fresh local checks and is published. Deployment still awaits user direction.
 
 Remaining gates:
 
@@ -184,7 +184,7 @@ Remaining gates:
 - [x] Finish clean cluster parity record for pinned NII adapter (CPU4504660, completed). Corrected five-input CPUcomparison passes declared1e-3logit/1e-4probability limits; earlier setup failures preserved.
 - [x] Run frozen external benchmark at predeclared threshold0.5: CPU4504662 completed, all2,000 model-scored, recall93.7%, FPR2.4%, AUROC0.9925. One quiet genuine row is retained in these model-only results; app-eligible comparison must use the common1,999 rows. No threshold tuning on this benchmark; no ASVspoof5 independence claim for NII.
 - [x] Make the reviewed prototype serving decision after measured absolute gates, reference parity, runtime and provenance checks; do not describe it as scientific superiority or passage of the older training-specific acceptance contract.
-- [ ] Publish the current source update; no deployment. Local verification is complete: 290 backend tests, 51 frontend tests and production build passed.
+- [x] Publish the current source update; no deployment. Local verification is complete: 290 backend tests, 51 frontend tests and production build passed.
 
 - [x] Integrate and browser-test an on-demand, research-only NII second-detector comparison. Keep primary score unchanged, preserve both model identities, and never average uncalibrated scores. Frontend seven journeys pass; real genuine/synthetic comparisons, quiet rejection, saved reports, and 375px layout verified in Chrome.
 
