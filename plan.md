@@ -20,7 +20,7 @@ The numerical score comes from the speech detector. Signal measurements describe
 | 1 — Baseline | Working pipeline and public diagnostic evaluation | Sponsor-specific baseline evaluation and schema validation remain open |
 | 2 — Workbench | Core implemented; acceptance checks in progress | Remaining browser/accessibility checks and live AI interpretation review |
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
-| 3B — Adapt | Run 01 completed; final native adaptation preparing | Finish the final bounded run and preserve checkpoint/metrics |
+| 3B — Adapt | Run 01 completed; final native job 4504574 running | Finish the final bounded run and preserve checkpoint/metrics |
 | 3C — Evaluate | Two completed experiments; neither promoted | Review final independent experiment, then serving/rollback checks if eligible |
 | 4 — Demonstrate | Local rehearsal and saved fallback complete | Venue/display rehearsal and live Grok remain external checks |
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
@@ -113,9 +113,9 @@ Training includes attacks A01–A08; selection/acceptance include A09–A16. Cod
 - [x] Complete run 01 four whole-file evaluations: baseline/candidate on selection/acceptance, zero file failures.
 - [x] Preserve run 01 acceptance report, full score ledgers and attack/codec slices.
 - [x] Evaluate a pinned frozen wav2vec2 candidate in run 02 on 457 new-speaker acceptance clips; no promotion.
-- [ ] Finish final predeclared native adaptation using 10,000 training files, the original 2,000 selection files, and a fresh locked ASVspoof 5 evaluation subset. CPU staging job 4503784 failed on missing ffprobe; recovery first checks the decoder on a CPU node and preserves verified archives. The successful retry and independence audit must precede GPU submission.
+- [ ] Finish final predeclared native adaptation using 10,000 training files, the original 2,000 selection files, and a fresh locked ASVspoof 5 evaluation subset. CPU staging retry 4504563 and independence audit 4504572 passed: 2,000 balanced recordings, zero original-file hash overlap with prior ledgers. GPU job 4504573 exited after four seconds on a missing parent directory; replacement 4504574 is running. Completion and actual optimizer progress remain separately checked.
 
-One A100-SXM4-40GB, one node, 4 CPUs, 32 GB host RAM. Aggregate actual GPU allocation use through run 02 is 1h03m57 (including the smoke and a seven-second failed pre-inference path check). Final allocation is capped at 3h30, making maximum aggregate use 4h33m57, below the original five-hour budget. Fit is capped at 2h30 / 2,000 optimizer steps / three epochs, whichever comes first. No automatic requeue or duplicate allocation. CPU preparation and queue time are separate.
+One A100-SXM4-40GB, one node, 4 CPUs, 32 GB host RAM. Aggregate actual GPU allocation use through run 02 is 1h04m01 (including the smoke and failed pre-inference setup checks). Final allocation is capped at 3h30, making maximum aggregate use 4h34m01, below the original five-hour budget. Fit is capped at 2h30 / 2,000 optimizer steps / three epochs, whichever comes first. No automatic requeue or duplicate allocation. CPU preparation and queue time are separate.
 
 See [run ledger](docs/cluster-run-2026-09-25.md) for exact paths, job IDs and live-status commands. A running job or checkpoint file is not proof of improved accuracy.
 
