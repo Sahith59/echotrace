@@ -44,3 +44,33 @@ def test_model_evaluation_discloses_failed_promotion_and_linked_weights(tmp_path
         assert report['experiments'][0]['candidate']['recall'] < .8
         assert len(report['experiments'][0]['candidate_weights_sha256']) == 64
         assert 'not sponsor' in report['scope'].lower()
+
+
+def test_printable_report_surfaces_ai_notes_and_claim_timestamps():
+    from echotrace.case_report import printable
+    from echotrace.interpretation import evidence_for, evidence_hash
+    synthesis = {'synthetic_score': .15, 'score_kind': 'uncalibrated_model_score'}
+    synthesis['interpretation'] = {
+        'status': 'generated', 'provider': 'xai', 'model': 'grok-test',
+        'evidence_sha256': evidence_hash(evidence_for(synthesis)),
+        'report': {'summary': 'Review <carefully>.',
+                   'findings': [{'text': 'The score is uncalibrated.', 'evidence_ids': ['calibration']}],
+                   'next_steps': ['Listen to the original.']},
+    }
+    report = {'filename': 'test.wav', 'job_id': 'case', 'created_at': '2026-09-26',
+              'synthesis': synthesis, 'speaker_comparison': None,
+              'transcript': {'text': 'A claim.', 'version': 1, 'source': 'automatic'},
+              'claims': [{'text': 'A claim.', 'method': 'analyst', 'verdict': 'uncheckable',
+                          'rationale': 'No source reviewed.', 'span': {'start_s': .02, 'end_s': 4.42},
+                          'transcript_version': 1, 'evidence': []}]}
+    page = printable(report)
+    readable = page.split('<pre>')[0]
+    assert 'AI interpretation (Grok)' in readable
+    assert 'Review &lt;carefully&gt;.' in readable
+    assert 'The score is uncalibrated. [calibration]' in readable
+    assert 'Listen to the original.' in readable
+    assert 'Passage 0.02–4.42 s · transcript version 1' in readable
+    synthesis['synthetic_score'] = .8
+    stale = printable(report).split('<pre>')[0]
+    assert 'Review &lt;carefully&gt;.' not in stale
+    assert 'Saved AI interpretation no longer matches the measurements.' in stale
