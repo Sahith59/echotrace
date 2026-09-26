@@ -45,3 +45,11 @@ Additional printable-report RED `2ff037e` → GREEN `4511ebe` verifies readable 
 ## Combined pre-training release gate
 
 At source checkpoint `b0a4ac6`, the full backend suite passed **249 tests** (one upstream Starlette/httpx deprecation warning). The current frontend passed **30 tests** and the production build, with the later CSS correction browser-verified. Rebuilt wheel `echotrace-0.1.0-py3-none-any.whl` contains all 35 source/assets files byte-identically, including the independence audit and inactive native serving adapter. Wheel SHA-256: `aa4f0f8039bd31e7b1bd9a2b13a5ed0f15b1c128d765044e55027e60f0c30863`; size 95,261 bytes. It excludes models, datasets, recordings and credentials. Final experiment/integration changes require a refreshed release check.
+
+## Final source-release gate
+
+At application source checkpoint `ca40361`, **250 backend tests passed** in 11.18s, with the same upstream deprecation warning. The final frontend checkpoint `a9e180a` passed **32 tests** and TypeScript/Vite production build; no later frontend source changed. Chrome verified the precise overlapping intervals and actual 4.6825-second seek. The final validation panel visibly matches all three saved evaluation reports, including run03's 87.4% recall / 24.4% false positives and no promotion.
+
+The refreshed wheel contains all **35 tracked package source/assets files byte-identically**. Size: **96,131 bytes**. SHA-256: `1c5489b31d3439d9dba12a669593129cb2703999f936ee844fa20fbb71052bda`. Models, recordings, datasets, credentials and databases are excluded. Both CI jobs have 20-minute limits and all external actions are pinned to verified official commit SHAs.
+
+GPU work is closed: final job4504574 completed in40m52; aggregate allocation **1h44m53** including setup failures; the final user queue was empty. No candidate passed every promotion goal. Source-release verification does not close the detector-quality requirement, live Grok check, unfamiliar-file browser chooser check, or official sponsor submission.
