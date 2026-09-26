@@ -24,4 +24,16 @@ The official reference must run in an isolated x86 Linux Python 3.9 CPU environm
 
 ## GREEN checkpoint
 
-Pending implementation, official-reference comparison and verification.
+The candidate adapter strictly mapped all 211 inference tensors into the pinned Transformers wav2vec model, loaded the two classifier tensors separately and scored class 0 as fake. The seven unused tensors are Fairseq pretraining quantizer/projection state. Scoring uses the complete mono 16 kHz waveform, official whole-waveform layer normalization and mean frame pooling. Inputs below the 400-sample convolutional receptive field or above 30 seconds fail explicitly and are never padded or truncated.
+
+The ignored local checkpoint lives at `backend/artifacts/nii-model/model.safetensors`. `setup_candidate_weights()` is the only network-enabled setup path; `candidate_status()` and `score_samples()` use only the checksum-verified local file. CPU inference is fixed to four Torch threads on first candidate load.
+
+Official reference scoring ran on x86 Linux, CPU FP32, Python 3.9, Torch 2.6.0+cpu, NumPy 1.21.2, NII source `0dea622bde8f064c8ee5a557f2598643123fc6b6` and fairseq `862efab86f649c04ea31545ce28d13c59560113d`. The same fixed bundle had SHA-256 `f4e7250aa2053d7639334d47f6be7b9699afb4a1f88c034fd44f8530a043e12a`.
+
+Parity passed without changing the predeclared limits:
+
+- Five of five fixed inputs compared.
+- Maximum absolute logit difference: `3.790855407714844e-05` (limit `1e-3`).
+- Maximum absolute fake-probability difference: `6.183981895446777e-07` (limit `1e-4`).
+
+Local focused verification: `uv run pytest -q tests/test_nii_candidate.py` → 8 passed. The first full backend run reached 253 passing tests and six unrelated claim-provider failures during concurrent provider work; a later root integration run reported the full backend green. This adapter remains candidate-only and is not imported by `pipeline.py`.

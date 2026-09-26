@@ -36,8 +36,8 @@ def test_candidate_contract_normalizes_complete_waveform_and_uses_fake_class_zer
     result = nii_candidate._score_with_models(samples, encoder, head)
 
     assert encoder.received.shape == (1, len(samples))
-    assert float(encoder.received.mean()) == pytest.approx(0, abs=1e-6)
-    assert float(encoder.received.std(unbiased=False)) == pytest.approx(1, abs=1e-5)
+    expected = torch.nn.functional.layer_norm(torch.from_numpy(samples), (len(samples),)).unsqueeze(0)
+    torch.testing.assert_close(encoder.received, expected)
     assert result["raw_logits"] == pytest.approx([2.0, 1.0])
     assert result["score"] == pytest.approx(torch.softmax(torch.tensor([2.0, 1.0]), 0)[0].item())
     assert result["score_kind"] == "uncalibrated"
@@ -45,6 +45,7 @@ def test_candidate_contract_normalizes_complete_waveform_and_uses_fake_class_zer
 
 @pytest.mark.parametrize("samples,match", [
     (np.array([], dtype=np.float32), "nonempty"),
+    (np.zeros(399, dtype=np.float32), "at least 400 samples"),
     (np.zeros((2, 10), dtype=np.float32), "one-dimensional"),
     (np.array([0, np.nan], dtype=np.float32), "finite"),
     (np.zeros(30 * 16_000 + 1, dtype=np.float32), "30 seconds"),
@@ -98,4 +99,3 @@ def test_reference_validation_accepts_all_five_fixed_cases_within_contract(tmp_p
     report = validate_parity(reference, candidate)
     assert report["passed"] is True
     assert report["case_count"] == 5
-
