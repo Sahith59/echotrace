@@ -26,6 +26,17 @@ The numerical score comes from the speech detector. Signal measurements describe
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
 | Extensions — Speaker and claims | Implemented and tested, including live Groq interpretation | Similarity is not identity proof; generated interpretation can be wrong |
 
+## Remaining phase order and handoffs
+
+Report each phase with four facts: **what is delivered, how it was verified, what remains open, and the next phase**. A completed software feature is not a completed accuracy claim or an official submission.
+
+1. **Phase 3C serving — delivered.** Pinned NII is the shared API/CLI primary, with parity and failure checks; saved AASIST results are preserved. Phase 3C **quality validation remains open**: retrieve job 4504670 for a same-file comparison when cluster access returns, and evaluate on a new, representative, codec-diverse corpus before claiming independent detector strength. No further fitting or threshold change on inspected holdouts.
+2. **Phases 4A, 4B, 4C — delivered.** Guided recording/reliability/evidence steps, durable analyst review, filterable queue, real MP3/noise comparisons, evidence-linked Groq briefs and unified reports are in the app. The local test/browser record is in `docs/light-workspace-verification.md`. Next is final demo rehearsal, not rebuilding these features.
+3. **Phase 5A — local handoff.** The reproducible app, release checks, export and draft demo are ready. The normal Chrome file chooser still needs a manual user check: browser automation opened it but the ChatGPT extension returned `Not allowed` on `setFiles`; no browser security setting was changed. Verify a new WAV/MP3/M4A by hand, check score/failure state and report export, then rehearse the venue screen and speaker flow.
+4. **Phase 5B — official competition submission, waiting on sponsor.** Obtain the test audio, exact labels/schema/metric, deadline and destination. Freeze the chosen model, score every held-out ID once, resolve failures, validate score polarity/scale and CSV rows, then submit through the authorized destination. Public benchmark or analyst CSV is not the official deliverable.
+
+If sponsor materials do not arrive in the next few hours, complete the Phase 5A rehearsal and preserve a working local prototype; do not invent an official CSV or claim Phase 5B complete. Independent detector-quality research can continue separately, but is not a reason to replace the current serving model without a new frozen evaluation.
+
 ## Phase 0 — Requirements
 
 - [x] Scope NSA #1 only; preserve the sponsor's supplied brief.
