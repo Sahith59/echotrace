@@ -133,6 +133,14 @@ Current app limit: 50 MiB and 30 seconds. A low synthesis score does not prove i
 
 ## Try the fixed 24-recording demo
 
+The **Listen: human versus generated** panel on the Investigation home screen is the fastest orientation. It plays a human Jane Eyre reading next to a Chatterbox-generated reading of the **same words** and can run both files through the normal NII pipeline. The panel shows two separate saved scores; it does not claim the voices are the same person or measure a voice-clone match. The paired human file is one additional pinned reference, kept outside the fixed 24-file pilot.
+
+To prepare the paired reference on a fresh machine, review the dataset and audio-license links printed by the setup command, then run from `backend/`:
+
+```bash
+uv run python -m echotrace.setup_examples --confirm-source-review --include-paired-reference
+```
+
 On the intake page, expand **Try a known recording**, select a labeled MLAAD-tiny example, optionally preview it, then choose **Analyze this sample**. The app sends its audio through the normal upload and primary NII pipeline. It does not use the label for scoring or train the model. The catalog checks local audio against pinned provenance; unavailable or changed files are not served.
 
 The local sample consists of 12 genuine and 12 synthetic recordings. It is a small selected diagnostic set, not an independent accuracy benchmark. Custom uploads remain supported. These 24 clips are for interface diagnostics; training and independent evaluation use a separate ASVspoof 5 subset.

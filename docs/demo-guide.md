@@ -8,6 +8,8 @@ From the challenges/hearsay-audio-authentication directory, run **./scripts/dev.
 
 The left rail has **Investigation** for individual recordings, **Batch & export** for the queue, and **Recent recordings** for saved cases. A saved case can be reopened without running the detector again. Older AASIST cases are labeled separately from newer NII cases.
 
+Start at the **human versus generated** panel on Investigation. The two Jane Eyre recordings speak the same passage: one is a human reading and one was produced by Chatterbox. Play both, then choose **Analyze both recordings**. The resulting two case scores appear in the same panel, with links to each full analysis. This is a listening and workflow demo. The speakers need not match, and the NII training data includes MLAAD, so this pair is not an independent accuracy test. The human reference is a separately pinned extra file; on a fresh install prepare it with `uv run python -m echotrace.setup_examples --confirm-source-review --include-paired-reference` from `backend/` after reviewing the source notices.
+
 ## 1. Add one recording
 
 Choose **Add recording** or **Choose audio files**. Select a permitted WAV, MP3, M4A or another FFmpeg-decodable file. Multiple selections become separate jobs. Current NII-primary limits are **50 MiB and 30 seconds per file**. Corrupt, too-quiet or overlong input fails explicitly rather than receiving a fabricated score or being silently truncated.
@@ -30,9 +32,9 @@ Open a finished case from Recent recordings or the queue. **Review recording** i
 
 Choose **Check reliability**. Read **Measurement limitations** and expand **Technical provenance** for the source hash and model version.
 
-In **Stress comparison**, choose **MP3 compression** or **Add noise**. The app preserves the original, creates a named derivative, runs the *same* model again, and shows both scores and their difference. You can play the derivative and open its own case. A stable score under one transformation does not establish authenticity.
+In **Compression and noise test**, choose **MP3 compression** or **Add noise**. This is a different question from the home-page human/generated listening comparison: it changes one recording to see whether the same model's assessment is fragile. The app preserves the original, creates a named derivative, runs the *same* model again, and shows both scores and their difference. You can play the derivative and open its own case. A stable score under one transformation does not establish authenticity.
 
-Expand **Detector validation · measured performance**. The first card is the newer ArA-DF-2026 Arabic/channel stress check. At unchanged threshold 0.5, NII caught **60 of 98** eligible synthetic clips and falsely flagged **7 of 100** genuine clips; two selected clips exceeded the 30-second app limit. That **misses** the project's 80% recall / 5% false-positive goal. The favorable In-the-Wild result below it replicates a corpus the model authors had previously evaluated. Neither is the NSA sponsor's withheld evaluation. Historical adaptation experiments and their failed promotion decisions remain visible.
+Expand **How well has the detector worked on other recordings?** This is about the model on labeled public audio, *not a judgment on the current case*. The first card is the newer ArA-DF-2026 Arabic/channel stress check: it missed **38 of 98** eligible synthetic clips and falsely flagged **7 of 100** genuine clips at the unchanged threshold. Two selected clips exceeded the 30-second app limit. That **misses** the project's 80% recall / 5% false-positive goal. Open **See test numbers and method** for percentages and provenance. The favorable In-the-Wild replication below was previously evaluated by the model authors. Neither is the NSA sponsor's withheld evaluation. Historical adaptation experiments and their failed promotion decisions remain under **Earlier model experiments**.
 
 ## 4. Leave an analyst handoff
 

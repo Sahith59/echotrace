@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. **The smoky graphite-glass workspace and guided investigation are implemented; the neutral pearl-grey background remains. New API/CLI analyses use pinned NII whole-file scoring (<=30 seconds); legacy AASIST results remain immutable. Live WAV→NII→MP3 comparison→JSON/CSV and real Groq interpretation have been verified. The frozen ArA-DF-2026 sample exposed a detector-quality shortfall (61.2% synthetic recall, 7.0% genuine false positives), now shown first in the live validation panel. Phase 3C serving is complete but quality remains open. Official sponsor data/schema/submission and deployment remain external gates.**
+Updated 2026-09-26. **The smoky graphite-glass workspace and guided investigation are implemented; the neutral pearl-grey background remains. The home screen now demonstrates a verified same-passage human/Chatterbox pair with side-by-side playback and separate live NII scores. New API/CLI analyses use pinned NII whole-file scoring (<=30 seconds); legacy AASIST results remain immutable. The reliability page now distinguishes a compression/noise test from human/generated comparison and explains benchmark misses in plain language. The frozen ArA-DF-2026 sample exposed a detector-quality shortfall (61.2% synthetic recall, 7.0% genuine false positives). Phase 3C serving is complete but quality remains open. Official sponsor data/schema/submission and deployment remain external gates.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 
@@ -147,6 +147,8 @@ Post-hoc diagnosis finds much higher false positives on several compressed genui
 
 ## Phase 4 — Compelling demonstration
 
+- [x] Provide a checksum-verified human/generated same-passage listening comparison on the Investigation home screen, separate from the fixed 24-file diagnostic set. Live browser run scored the human reading near 0/100 and the Chatterbox reading near 100/100; this is a workflow demonstration, not independent accuracy evidence because MLAAD is in NII's disclosed training sources.
+- [x] Rename the one-recording MP3/noise operation and summarize external detector validation as plain-language missed fakes and false alarms, with technical method still expandable.
 - [x] Provide real noise/compression comparisons and playable derived audio.
 - [x] Preserve example provenance/licenses and distinguish reference labels from predictions.
 - [x] Export investigation evidence and model provenance.

@@ -32,6 +32,14 @@ MAX_TOTAL_BYTES = 6_000_000
 RECORD_COUNT = 24
 DOWNLOAD_TIMEOUT_SECONDS = 30
 CHUNK_BYTES = 64 * 1024
+PAIRED_ORIGINAL = {
+    "file_id": "acbd08fac7031654",
+    "path": "original/en/jane_eyre_21_f000371.wav",
+    "label": 0,
+    "sha256": "acbd08fac7031654ff5a746568a165fed77dc41d5b4c535518f11c90c6a5d3bf",
+    "bytes": 269258,
+    "url": BASE_URL + "original/en/jane_eyre_21_f000371.wav",
+}
 _HEX_16 = re.compile(r"[0-9a-f]{16}\Z")
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
@@ -273,8 +281,25 @@ def setup_examples(
     }
 
 
+def setup_paired_reference(destination: Path | str = DEFAULT_OUTPUT, *, transport: Callable | None = None) -> dict:
+    """Prepare the verified same-passage human reference outside the fixed 24-file pilot."""
+    root = Path(destination)
+    if root.is_symlink() or (root.exists() and not root.is_dir()):
+        raise SetupExamplesError(f"invalid paired-example output directory: {root}")
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    record = PAIRED_ORIGINAL
+    parts = _relative_parts(record["path"])
+    target = _safe_parent(root, parts[:-1]) / parts[-1]
+    if _verified_existing(target, record):
+        return {"paired_original": "ready", "downloaded": 0}
+    _download_one(target, record, transport or _open_fixed_url)
+    return {"paired_original": "ready", "downloaded": 1}
+
+
 def _source_notice() -> str:
     return f"""Optional public examples come from {DATASET} at pinned revision {REVISION}.
+--include-paired-reference adds one human reading of the same Jane Eyre passage as
+the Chatterbox-generated pilot clip. It is separate from the fixed 24-file sample.
 The dataset card labels the collection CC BY-NC 4.0 and separately identifies the
 M-AILABS-derived genuine audio. Review the source and license materials yourself:
   Dataset card: {DATASET_CARD}
@@ -287,10 +312,11 @@ to download. This tool does not accept or determine legal terms for you."""
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Download ECHOTRACE's pinned 24 public examples")
+    parser = argparse.ArgumentParser(description="Download ECHOTRACE's pinned public examples")
     parser.add_argument("--provenance", type=Path, default=DEFAULT_PROVENANCE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--confirm-source-review", action="store_true")
+    parser.add_argument("--include-paired-reference", action="store_true", help="Also prepare the same-passage human comparison clip")
     args = parser.parse_args(argv)
     print(_source_notice(), file=sys.stderr)
     if not args.confirm_source_review:
@@ -298,6 +324,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         result = setup_examples(args.output, args.provenance)
+        if args.include_paired_reference:
+            result["paired_reference"] = setup_paired_reference(args.output)
     except SetupExamplesError as exc:
         print(f"ECHOTRACE: {exc}", file=sys.stderr)
         return 2

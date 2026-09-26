@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
+from .setup_examples import PAIRED_ORIGINAL
 
 
 REVISION = "9143e5ea709575ebab6bec52840a1043aada7bb1"
@@ -17,6 +18,7 @@ DEFAULT_PROVENANCE = Path(__file__).resolve().parents[2] / "reports" / "public-p
 NOTE = "Small selected diagnostic sample; results are not representative or calibrated."
 ID_PATTERN = re.compile(r"[0-9a-f]{16}\Z")
 HASH_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
+PAIRED_SYNTHETIC_ID = "b9bcdda92ac7de4e"
 
 
 def _catalog(provenance_path: Path) -> tuple[list[dict], str | None]:
@@ -88,6 +90,27 @@ def create_pilot_router(*, root: Path | None = None, provenance_path: Path | Non
         if reason:
             result["reason"] = reason
         return result
+
+    @router.get("/api/examples/paired-demo")
+    def paired_demo():
+        """A same-passage human/generated listening demo, separate from the 24-file pilot."""
+        records, reason = _catalog(provenance_path)
+        synthetic = next((record for record in records if record["file_id"] == PAIRED_SYNTHETIC_ID), None)
+        available = bool(synthetic and _verified_audio(root, synthetic) is not None
+                         and _verified_audio(root, PAIRED_ORIGINAL) is not None)
+        return {
+            "available": available,
+            "original_filename": PurePosixPath(PAIRED_ORIGINAL["path"]).name,
+            "synthetic_filename": PurePosixPath(synthetic["path"]).name if synthetic else None,
+            "reason": None if available else reason or "One of the verified pair files is unavailable. Run the paired-example setup command.",
+        }
+
+    @router.get("/api/examples/paired-demo/original-audio")
+    def paired_original_audio():
+        content = _verified_audio(root, PAIRED_ORIGINAL)
+        if content is None:
+            raise HTTPException(404, "Paired original audio is unavailable")
+        return Response(content, media_type="audio/wav")
 
     @router.get("/api/examples/{example_id}/audio")
     def audio(example_id: str):

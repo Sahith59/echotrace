@@ -24,7 +24,9 @@ it('lets an analyst inspect codec failures with class counts and unavailable met
     }],
   }))))
   render(<ModelValidation />)
-  await user.click(screen.getByText('Detector validation · measured performance'))
+  await user.click(screen.getByText('How well has the detector worked on other recordings?'))
+  await user.click(await screen.findByText('Earlier model experiments (1)'))
+  await user.click(screen.getByText('Codec experiment'))
   const select = await screen.findByRole('combobox', {name:'Recording condition — Codec experiment'})
   expect(screen.getByText(/Baseline: Frozen wav2vec2/)).toBeInTheDocument()
   await user.selectOptions(select, 'C07')
@@ -54,6 +56,7 @@ it('shows the serving benchmark separately without inventing a baseline comparis
 })
 
 it('surfaces a failed new-domain quality check and out-of-scope clips', async () => {
+  const user = (await import('@testing-library/user-event')).default.setup()
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
     scope: 'Public benchmarks, not sponsor data.', serving_model: 'NII', experiments: [],
     serving_benchmarks: [{name:'ArA-DF-2026 stress check', model:'NII', status:'failed_quality_goal',
@@ -63,7 +66,10 @@ it('surfaces a failed new-domain quality check and out-of-scope clips', async ()
   }))))
   render(<ModelValidation />)
   expect(await screen.findByText('ArA-DF-2026 stress check')).toBeInTheDocument()
-  expect(screen.getByText('Quality goal not met on this sample.')).toBeInTheDocument()
+  expect(screen.getByText('Goal missed here.')).toBeInTheDocument()
+  expect(screen.getByText('This tests the model, not your current recording.')).toBeInTheDocument()
+  expect(screen.getByText('38')).toBeInTheDocument()
+  await user.click(screen.getByText('See test numbers and method'))
   expect(screen.getByText(/198 scored · 2 outside/)).toBeInTheDocument()
   expect(screen.getByText('61.2%')).toBeInTheDocument()
   expect(screen.getByText('7.0%')).toBeInTheDocument()

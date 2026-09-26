@@ -13,7 +13,9 @@ from echotrace.setup_examples import (
     load_catalog,
     main,
     setup_examples,
+    setup_paired_reference,
 )
+import echotrace.setup_examples as example_setup
 from urllib.request import Request
 
 
@@ -106,6 +108,23 @@ def test_setup_streams_fixed_urls_and_verifies_bytes_and_hashes(tmp_path):
         path = destination.joinpath(*record["path"].split("/"))
         assert path.read_bytes() == content[record["url"]]
         assert not path.with_name(path.name + ".part").exists()
+
+
+def test_paired_original_is_verified_separately_from_fixed_pilot(tmp_path, monkeypatch):
+    payload = b"same-passage human reference"
+    record = {
+        "path": "original/en/jane_eyre_21_f000371.wav",
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "bytes": len(payload),
+        "url": expected_url("original/en/jane_eyre_21_f000371.wav"),
+    }
+    monkeypatch.setattr(example_setup, "PAIRED_ORIGINAL", record)
+    destination = tmp_path / "examples"
+    first = setup_paired_reference(destination, transport=lambda url, timeout: FakeResponse(payload))
+    second = setup_paired_reference(destination, transport=lambda url, timeout: pytest.fail("verified file triggered network"))
+    assert first["downloaded"] == 1
+    assert second["downloaded"] == 0
+    assert (destination / record["path"]).read_bytes() == payload
 
 
 def test_correct_existing_files_skip_network_but_wrong_files_are_never_overwritten(tmp_path):

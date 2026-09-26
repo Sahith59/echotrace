@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from echotrace.api import create_app
 from echotrace.pilot import create_pilot_router
+import echotrace.pilot as pilot
 
 
 REVISION = "9143e5ea709575ebab6bec52840a1043aada7bb1"
@@ -119,3 +120,21 @@ def test_app_mounts_catalog_with_independent_audio_root(sample, tmp_path):
                                pilot_provenance=provenance)) as client:
         assert len(client.get("/api/examples").json()["examples"]) == 2
         assert client.get(f"/api/examples/{GENUINE_ID}/audio").content == genuine.read_bytes()
+
+
+def test_paired_demo_requires_both_verified_sources(sample, monkeypatch):
+    root, provenance, genuine, synthetic = sample
+    paired = root / "original/en/jane_eyre_21_f000371.wav"
+    paired.write_bytes(b"same-passage human audio")
+    monkeypatch.setattr(pilot, "PAIRED_ORIGINAL", {
+        "path": "original/en/jane_eyre_21_f000371.wav",
+        "sha256": hashlib.sha256(paired.read_bytes()).hexdigest(),
+        "bytes": paired.stat().st_size,
+    })
+    client = client_for(root, provenance)
+    assert client.get("/api/examples/paired-demo").json()["available"] is True
+    assert client.get("/api/examples/paired-demo/original-audio").content == paired.read_bytes()
+    synthetic.write_bytes(b"tampered")
+    assert client.get("/api/examples/paired-demo").json()["available"] is False
+    paired.write_bytes(b"tampered")
+    assert client.get("/api/examples/paired-demo/original-audio").status_code == 404

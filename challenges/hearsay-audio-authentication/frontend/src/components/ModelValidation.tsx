@@ -25,8 +25,8 @@ function ExperimentReview({ experiment }: { experiment: Experiment }) {
   const [condition, setCondition] = useState('__all__')
   const slice = experiment.codec_slices?.find(item => item.value === condition)
   const { baseline, candidate } = slice ?? experiment
-  return <section>
-    <h3>{experiment.name}</h3>
+  return <details className="validation-study">
+    <summary>{experiment.name} <span>{experiment.promoted ? 'Adopted' : 'Not used in the app'}</span></summary>
     {experiment.baseline_model && <p className="case-help">Baseline: {experiment.baseline_model} · Candidate: {experiment.candidate_model ?? "Not specified"}</p>}
     <p className="case-help">{experiment.promoted ? 'Promoted after evaluation' : 'Experimental · not serving'} · {experiment.sample_count.toLocaleString()} evaluated recordings</p>
     {!!experiment.codec_slices?.length && <div className="validation-condition">
@@ -45,13 +45,18 @@ function ExperimentReview({ experiment }: { experiment: Experiment }) {
       <tr><td>AUROC</td><td>{auc(baseline.roc_auc)}</td><td>{auc(candidate.roc_auc)}</td></tr>
     </tbody></table></div>
     <p className="case-help">{experiment.reason}</p>
-  </section>
+  </details>
 }
 
 function ServingBenchmarkReview({ benchmark }: { benchmark: ServingBenchmark }) {
-  return <section>
+  const missed = benchmark.recall == null ? null : benchmark.synthetic_count - Math.round(benchmark.recall * benchmark.synthetic_count)
+  const falseAlarms = benchmark.false_positive_rate == null ? null : Math.round(benchmark.false_positive_rate * benchmark.genuine_count)
+  return <section className="validation-study-card">
+    <span className="validation-study-label">{benchmark.status === 'failed_quality_goal' ? 'HARDER STRESS SAMPLE' : 'PUBLIC REPLICATION'}</span>
     <h3>{benchmark.name}</h3>
-    {benchmark.status === 'failed_quality_goal' && <p className="validation-warning"><strong>Quality goal not met on this sample.</strong> Review the missed synthetic recordings and false alarms below.</p>}
+    {benchmark.status === 'failed_quality_goal' && <p className="validation-warning"><strong>Goal missed here.</strong> A detector that misses generated voices or alarms on human voices needs a human reviewer.</p>}
+    {missed != null && falseAlarms != null && <p className="validation-takeaway">Of <strong>{benchmark.synthetic_count} generated clips</strong>, it missed <strong>{missed}</strong>. Of <strong>{benchmark.genuine_count} human clips</strong>, it incorrectly flagged <strong>{falseAlarms}</strong>.</p>}
+    <details className="validation-study"><summary>See test numbers and method</summary>
     <p className="case-help">Serving model: {benchmark.model} · {benchmark.sample_count.toLocaleString()} selected recordings</p>
     {benchmark.model_scored_count != null && benchmark.model_scored_count !== benchmark.sample_count && <p className="case-help">{benchmark.model_scored_count.toLocaleString()} scored · {(benchmark.sample_count - benchmark.model_scored_count).toLocaleString()} outside the product's analysis scope</p>}
     <p className="case-help">{benchmark.genuine_count.toLocaleString()} genuine · {benchmark.synthetic_count.toLocaleString()} synthetic · fixed threshold {benchmark.threshold}</p>
@@ -61,6 +66,7 @@ function ServingBenchmarkReview({ benchmark }: { benchmark: ServingBenchmark }) 
       <tr><td>AUROC</td><td>{auc(benchmark.roc_auc)}</td></tr>
     </tbody></table></div>
     <p className="case-help">{benchmark.reason}</p>
+    </details>
   </section>
 }
 
@@ -75,11 +81,12 @@ export default function ModelValidation() {
     return () => controller.abort()
   }, [])
   return <details className="model-validation detail-section case-panel">
-    <summary>Detector validation · measured performance</summary>
+    <summary>How well has the detector worked on other recordings?</summary>
     {error ? <p className="case-help">Validation summary could not be loaded. Refresh to retry.</p>
       : !data ? <p className="case-help">Loading validation…</p>
-        : <><p className="case-help">Serving: {data.serving_model}. {data.scope}</p>
+        : <><p className="validation-explainer"><strong>This tests the model, not your current recording.</strong> We gave it other audio files whose human or generated origin was already labeled, then counted its misses and false alarms. These are public tests, not the NSA sponsor test.</p>
           {data.serving_benchmarks?.map(benchmark => <ServingBenchmarkReview key={benchmark.name} benchmark={benchmark} />)}
-          {data.experiments.map(experiment => <ExperimentReview key={experiment.name} experiment={experiment} />)}</>}
+          {!!data.experiments.length && <details className="validation-study validation-history"><summary>Earlier model experiments ({data.experiments.length})</summary>{data.experiments.map(experiment => <ExperimentReview key={experiment.name} experiment={experiment} />)}</details>}
+          <details className="validation-study validation-history"><summary>Dataset and model provenance</summary><p className="case-help">Current model: {data.serving_model}. {data.scope}</p></details></>}
   </details>
 }

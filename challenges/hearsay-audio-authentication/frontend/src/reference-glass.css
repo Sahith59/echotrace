@@ -287,6 +287,9 @@ select:focus-visible, summary:focus-visible, [role=slider]:focus-visible {
   padding: 11px 14px;
 }
 .model-validation .validation-warning strong { color: #fff6e6; }
+.model-validation .validation-explainer{font-size:15px;line-height:1.65;color:#f3f7f8;max-width:900px;margin:18px 0 22px}.model-validation .validation-explainer strong{color:#fff}
+.validation-study-card{padding:19px 0;border-top:1px solid #ffffff51}.validation-study-label{font:10px var(--mono);letter-spacing:.13em;color:#d8e4e6}.model-validation .validation-study-card h3{margin:8px 0 9px}.validation-takeaway{font-size:15px;line-height:1.6;color:#f0f7f7;max-width:850px}.validation-takeaway strong{font-weight:800;color:#fff}
+.validation-study{margin:14px 0 0;border:1px solid #ffffff57;border-radius:12px;padding:0 15px;background:#ffffff0e}.validation-study>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;font-size:13px;font-weight:700;color:#fff}.validation-study>summary::-webkit-details-marker{display:none}.validation-study>summary span{font-size:11px;font-weight:600;color:#d4e3e7}.validation-study[open]{padding-bottom:15px}.validation-history{margin-top:17px}.validation-history .validation-study{margin:10px 0}
 .measurement-highlight { background: #9fc5dc48; outline-color: #d9f8ff86; }
 
 /* The queue, exports and date filter retain the reference card's smoky tone. */
