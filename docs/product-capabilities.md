@@ -5,31 +5,32 @@ ECHOTRACE is a local workbench for someone investigating a suspicious recorded m
 ## The actual user journey
 
 1. **Add a recording.** Choose your own permitted file or one of the optional 24 labeled diagnostic examples. WAV, MP3, M4A, FLAC, Ogg/Opus and other FFmpeg-decodable inputs are supported, with 50 MiB/120-second limits. Uploading does not train the model.
-2. **Inspect synthesized-speech evidence.** The learned AASIST-L model evaluates complete overlapping coverage of the audio. The file score averages its window scores. FFmpeg/signal processing separately measure amplitude, clipping, quiet frames and spectral energy. Those measurements are not fake model explanations and do not determine the neural score.
-3. **Get a second detector assessment.** Run the optional local NII research detector on an original recording up to 30 seconds. Both uncalibrated scores retain their model names; they are not averaged and the primary result does not change. See [comparison workflow](detector-comparison.md).
+2. **Inspect synthesized-speech evidence.** The pinned NII wav2vec model scores the complete decoded waveform once, up to 30 seconds. Longer inputs fail explicitly rather than being truncated. FFmpeg/signal processing separately measure amplitude, clipping, quiet frames and spectral energy. Those measurements do not determine or explain the neural score.
+3. **Review detector provenance.** New analyses use NII only. Saved legacy AASIST-L analyses can retain their historical NII research comparison, with both model identities and uncalibrated scores kept separate. The app prevents meaningless NII-on-NII comparison. A new paired AASIST comparison for NII-primary analyses remains pending. See [comparison workflow](detector-comparison.md).
 4. **Listen to passages.** Playback and waveform/interval seeking help you inspect the actual recording. Highlighted windows are review regions, not proven splice boundaries.
 5. **Compare changed conditions.** Produce a separately saved MP3 or noisy copy and rerun inference. See whether the score changes. The original remains intact; score stability does not establish correctness.
 6. **Compare a trusted voice.** With explicit permission, upload a reference sample. A pinned Microsoft WavLM model computes two speaker embeddings and their cosine similarity. It cannot identify an unknown person or distinguish identity from a convincing clone/replay. Reference audio is temporary; comparison metadata is separately removable.
 7. **Read and correct the words.** Faster-whisper runs locally, returns timestamped text, and retains immutable analyst corrections. A failed retry does not erase a successful transcript. Speech recognition may be wrong and should be reviewed.
-8. **Review a claim against sources.** Select one factual statement. Record your own assessment and source URLs, clearly labeled analyst-written. Hosted Groq search is currently unavailable: the new provider’s source-provenance contract has not been validated. The app does not fabricate web citations. Correcting a transcript marks earlier linked claims stale. This is not lie detection.
-9. **Explain the measurements.** Separate optional Groq interpretation summarizes supplied measurement evidence. It receives no recording, filename or transcript and cannot change the synthesis score. No API key means no generated AI explanation.
+8. **Review a claim against sources.** Select one factual statement. Record your own assessment and source URLs, clearly labeled analyst-written. The app does not fabricate web citations. Correcting a transcript marks earlier linked claims stale. This is not lie detection.
+9. **Explain the measurements.** Separate optional Groq interpretation summarizes supplied measurement evidence. It receives no recording, filename or transcript and cannot change the synthesis score. A live browser generation succeeded with authenticated Groq transport; missing credentials still produce an explicit unavailable state.
 10. **Export a case.** The printable report and JSON include synthesis, speaker evidence, transcript versions and claim reviews separately. The app never combines these into an authenticity probability. Batch view exports completed scored analyses as an analyst CSV.
-11. **Check the detector's measured limits.** The validation panel shows actual public-data experiments and explicit promotion decisions, including failed goals. A recording-condition selector exposes measured codec-specific false positives and class counts; it does not guess the codec of an uploaded file.
+11. **Follow the guided review.** A light three-step path moves from recording evidence to transcript/claims to report review. The queue supports filters for date, analyst status and version state; drafts and completed reviews stay distinct. The six-column analyst CSV preserves the selected analysis/model identity and linked stress-test context.
+12. **Check the detector's measured limits.** The validation panel shows the NII serving benchmark separately from historical candidate experiments and failed goals. A recording-condition selector exposes measured codec-specific false positives and class counts; it does not guess the codec of an uploaded file.
 
 ## What is implemented versus validated
 
 | Capability | Implementation | Evidence / practical limit |
 | --- | --- | --- |
 | Upload, queue, retry, history | Implemented | Automated format/error/size tests and real local inference; browser file-chooser automation requires the extension file permission |
-| Detector and signal measurements | Implemented | Real pinned baseline; independent experiments recorded; validated stronger promotion remains a separate gate |
-| Research detector comparison | Implemented and browser-tested | Optional pinned NII checkpoint; reference parity and external benchmark passed; primary score remains unchanged |
+| Detector and signal measurements | Implemented | Pinned NII primary, official-reference parity and frozen public benchmark replication; not sponsor validation |
+| Legacy detector comparison | Preserved for historical analyses | Saved AASIST-L-primary/NII-research comparisons remain attributable; new NII-primary analyses do not run NII against itself, and a new paired AASIST path remains pending |
 | Playback, seeking, derivatives | Implemented | Exercised in the browser and integration tests |
 | Speaker reference | Implemented | Real pinned-model smoke and live API comparison; no calibrated identity decision or population-level verification accuracy |
 | Local transcript/corrections | Implemented | Real CPU model and browser transcript/correction journey; no claimed speech-recognition accuracy benchmark |
 | Analyst claim review | Implemented | Browser save, stale-version warning, persistence and case export verified |
-| Groq interpretation | Implemented and transport-tested | Live generation awaits a Groq key; hosted claim search remains unavailable; analyst source review works |
+| Groq interpretation | Implemented and live browser-verified | Authenticated generation `14e3396e7c554e1bb4c64036ac6310b7` succeeded; the initial unstructured `403` was resolved by setting the required user agent; no further paid calls were made |
 | Case JSON / printable HTML | Implemented | Escaping, boundaries, browser report contents and download event verified |
-| Batch / official CSV adapter | Implemented | Exact-ID/finite-score/schema checks; official held-out data and schema not supplied |
+| Guided queue / analyst CSV | Implemented and browser-verified | Three-step workflow, date/status/version filters, drafts, review state, matched model/stress context and six-column export; official sponsor schema remains unknown |
 | Model training and evaluation | Implemented and executed | GPU run ledgers and independent public-corpus metrics; public metrics are not sponsor accuracy |
 
 ## Training versus using the application
@@ -60,4 +61,6 @@ The detector architecture is not our invention. Commercial tools already provide
 
 Our project-level contribution is a reproducible investigation workflow: original and stressed recordings stay linked, detector versions and measured failures remain visible, transcript corrections preserve history and invalidate dependent claim reviews, and exports keep synthesis, voice similarity and factual evidence separate. The analyst can inspect how and where a model fails instead of trusting one impressive percentage. The new codec-condition view makes that failure analysis directly inspectable.
 
-That is useful engineering and a defensible hackathon demonstration. The NII research detector now has reference parity and measured results on a frozen 2,000-file public benchmark: 93.7% recall, 2.4% false positives, AUROC 0.9925 at threshold 0.5. This replicates a dataset already evaluated by its authors; it is not a new blind test. Primary-pipeline migration remains the next implementation milestone. ASVspoof5 is part of NII training, so it cannot validate that candidate independently. Public benchmark results cannot guarantee sponsor ranking.
+That is useful engineering and a defensible hackathon demonstration. The NII primary detector has reference parity and measured results on a frozen 2,000-file public benchmark: 93.7% recall, 2.4% false positives, AUROC 0.9925 at threshold 0.5. This replicates a dataset already evaluated by its authors; it is not a new blind test. NII was selected for prototype serving on those scoped absolute gates, without claiming that the older training-specific promotion contract passed. ASVspoof5 is part of NII training, so it cannot validate this checkpoint independently. Public benchmark results cannot guarantee sponsor ranking.
+
+The current light-workspace browser evidence is recorded in [light workspace verification](light-workspace-verification.md). Older phase and experiment entries remain historical milestones rather than descriptions of the current serving model.

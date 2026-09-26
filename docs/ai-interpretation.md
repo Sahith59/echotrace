@@ -1,8 +1,8 @@
 # Groq-assisted interpretation
 
-The user selected Groq. The repository root `.env` was created with an empty `GROQ_API_KEY` and configurable `ECHOTRACE_LLM_MODEL=openai/gpt-oss-120b`. It is ignored by Git and has owner-only permissions. Do not put the key in frontend/VITE variables or commit it. The backend reads this file at request time; after saving a key, use **Check configuration** in the UI. Configured does not mean the key/model has been authenticated; authentication is checked by an actual generation request.
+The user selected Groq. The repository root `.env` supplies `GROQ_API_KEY` and configurable `ECHOTRACE_LLM_MODEL=openai/gpt-oss-120b`; it is ignored by Git and must remain backend-only. Do not put the key in frontend/VITE variables or commit it. The backend reads this file at request time; **Check configuration** reports local configuration, while an actual generation verifies authentication.
 
-On a completed recording, **Generate interpretation** sends only allowlisted model scores, calibration status, scored window values and measured audio-quality/spectral numbers to the fixed Groq HTTPS endpoint. It sends no audio, original filename, content hash, transcript, reference label or user-supplied prose. Only the backend handles the key. Calls are on demand, serialized and capped at2400 completion tokens/45seconds; a successful report is cached with evidence hash, prompt version, provider/model and generation time. Repeated clicks reuse it. These are token/request bounds, not a monetary spending limit.
+On a completed recording, **Generate interpretation** sends only allowlisted model scores, calibration status, scored window values and measured audio-quality/spectral numbers to the fixed Groq HTTPS endpoint. It sends no audio, original filename, content hash, transcript, reference label or user-supplied prose. Only the backend handles the key. Calls are on demand, serialized and capped at 2,400 completion tokens and 45 seconds; a successful report is cached with evidence hash, prompt version, provider/model and generation time. Repeated clicks reuse it. These are token/request bounds, not a monetary spending limit.
 
 The model writes a summary, findings citing evidence IDs, and suggested next steps. Pydantic checks the structured schema and references; unknown IDs/extra score fields/malformed outputs are rejected. This verifies structure and reference existence, not the semantic truth of generated prose. The UI keeps it labeled AI interpretation, shows measurement references, and warns that it can err. It never changes detector scores. Deterministic quality caveats remain separately labeled Measurement limitations. JSON exports include a generated interpretation when present.
 
@@ -10,7 +10,9 @@ No fixed prose is substituted and passed off as LLM output if configuration or g
 
 ## Verification
 
-Backend transport tests use injected/fake HTTP responses: no paid requests or real provider text is implied by those tests. They cover sanitization, schema, evidence IDs, absent keys, null score, cache persistence and unchanged detector output, error redaction, and report export. Frontend tests cover generation, caching, failures, busy states, stale-job responses, configuration refresh and structured interval values. Live browser checked missing-key state and configuration refresh. An actual Groq generation remains pending the user's key.
+Backend transport tests use injected/fake HTTP responses and do not imply paid requests or real provider text. They cover sanitization, schema, evidence IDs, absent keys, null score, cache persistence and unchanged detector output, error redaction, and report export. Frontend tests cover generation, caching, failures, busy states, stale-job responses, configuration refresh and structured interval values.
+
+Live browser verification completed an authenticated Groq generation with ID `14e3396e7c554e1bb4c64036ac6310b7`. An initial unstructured `403` was resolved by sending the required user-agent header; the subsequent structured result passed the application schema and appeared in the browser. This verifies the configured transport and product path, not the factual correctness of generated prose. No additional billable calls were made for documentation verification.
 
 Official API references reviewed:
 - https://console.groq.com/docs/quickstart
@@ -18,6 +20,6 @@ Official API references reviewed:
 
 Groq's JSON object mode is used with the schema in the prompt and strict application-side Pydantic validation. JSON mode alone does not guarantee schema compliance. Historical xAI reports retain their original provider label.
 
-Migration verification (2026-09-26): `uv run pytest tests/test_interpretation.py -q` failed 7 tests before the change and passed all 16 afterward. Tests cover fixed Groq endpoint, no xAI key reuse, runtime configuration refresh, provider provenance, error redaction, evidence-only requests and malformed response rejection. Live authenticated generation remains unverified until a Groq key is supplied locally.
+Migration verification (2026-09-26): `uv run pytest tests/test_interpretation.py -q` failed 7 tests before the change and passed all 16 afterward. Tests cover fixed Groq endpoint, no xAI key reuse, runtime configuration refresh, provider provenance, error redaction, evidence-only requests and malformed response rejection. The later authenticated browser generation is the live verification described above.
 
 The default is `openai/gpt-oss-120b` hosted by Groq. Groq retired `llama-3.3-70b-versatile` for free/developer accounts on August 16, 2026; older quickstarts still name it. See https://console.groq.com/docs/deprecations. Low reasoning effort bounds unnecessary reasoning; token caps include model completion usage.

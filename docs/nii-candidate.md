@@ -1,6 +1,6 @@
-# NII wav2vec candidate adapter
+# NII wav2vec primary adapter
 
-Status: candidate-only implementation. It is not imported by the serving pipeline and does not establish better detection performance.
+Status: selected as the prototype's primary detector after reference parity and the predeclared frozen-benchmark absolute gates passed. This scoped serving choice does not establish sponsor accuracy, calibration, or scientific superiority over every alternative.
 
 ## Pinned inputs and evaluation boundary
 
@@ -36,7 +36,7 @@ Parity passed without changing the predeclared limits:
 - Maximum absolute logit difference: `3.790855407714844e-05` (limit `1e-3`).
 - Maximum absolute fake-probability difference: `6.183981895446777e-07` (limit `1e-4`).
 
-Local focused verification: `uv run pytest -q tests/test_nii_candidate.py` → 8 passed. The first full backend run reached 253 passing tests and six unrelated claim-provider failures during concurrent provider work; a later root integration run reported the full backend green. This adapter remains candidate-only and is not imported by `pipeline.py`.
+Local focused verification: `uv run pytest -q tests/test_nii_candidate.py` → 8 passed. The first full backend run reached 253 passing tests and six unrelated claim-provider failures during concurrent provider work; a later root integration run reported the full backend green. This paragraph records the historical candidate milestone. The adapter is now selected by `pipeline.py` through `primary_detector.py`.
 
 ## Frozen external benchmark replication
 
@@ -44,4 +44,4 @@ After parity passed, the adapter scored the locked 2,000-row In-the-Wild manifes
 
 All 2,000 source files were rehashed against the manifest after the run; every hash matched. The runner now performs this check before scoring each file in future runs and retains a mismatch as an explicit failure row. The frozen set contains one quiet file. It remains in these model-only metrics, while a live-app comparison must exclude it from both models' denominators because the shared app quality gate rejects it.
 
-This is benchmark replication, not sponsor validation, and it was not used for fitting. Upstream pretraining overlap is unknown. The checkpoint remains non-serving pending a same-file, common-eligibility comparison and product review. Evidence is recorded in `challenges/hearsay-audio-authentication/reports/nii-inwild-2k/benchmark.json`.
+This is benchmark replication, not sponsor validation, and it was not used for fitting. Upstream pretraining overlap is unknown. The result supported a prototype serving decision; paired common-eligibility AASIST results, unseen-corpus generalization and calibration remain open. Evidence is recorded in `challenges/hearsay-audio-authentication/reports/nii-inwild-2k/benchmark.json`, and the decision boundary is documented in [model serving decision](model-serving-decision.md).
