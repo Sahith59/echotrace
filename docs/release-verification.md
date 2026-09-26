@@ -41,3 +41,7 @@ Two workflow corrections are retained transparently: the first CaseReview test i
 - Passing software tests establishes workflow behavior, not deepfake detection accuracy. See the measured model reports and promotion decisions.
 
 Additional printable-report RED `2ff037e` → GREEN `4511ebe` verifies readable AI notes, escaped text, measurement-hash matching and claim passage/version references. Live AI remains unverified.
+
+## Combined pre-training release gate
+
+At source checkpoint `b0a4ac6`, the full backend suite passed **249 tests** (one upstream Starlette/httpx deprecation warning). The current frontend passed **30 tests** and the production build, with the later CSS correction browser-verified. Rebuilt wheel `echotrace-0.1.0-py3-none-any.whl` contains all 35 source/assets files byte-identically, including the independence audit and inactive native serving adapter. Wheel SHA-256: `aa4f0f8039bd31e7b1bd9a2b13a5ed0f15b1c128d765044e55027e60f0c30863`; size 95,261 bytes. It excludes models, datasets, recordings and credentials. Final experiment/integration changes require a refreshed release check.
