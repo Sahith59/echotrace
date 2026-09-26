@@ -13,7 +13,11 @@ type Experiment = {
   baseline: Metrics; candidate: Metrics; codec_slices?: Slice[]
   baseline_model?: string; candidate_model?: string
 }
-type Evaluation = { scope: string; serving_model: string; experiments: Experiment[] }
+type ServingBenchmark = Metrics & {
+  name: string; model: string; sample_count: number; genuine_count: number; synthetic_count: number
+  threshold: number; reason: string
+}
+type Evaluation = { scope: string; serving_model: string; experiments: Experiment[]; serving_benchmarks?: ServingBenchmark[] }
 const percentage = (value: number | null) => value == null ? 'Not available' : `${(value * 100).toFixed(1)}%`
 const auc = (value: number | null) => value == null ? 'Not available' : value.toFixed(3)
 
@@ -44,6 +48,20 @@ function ExperimentReview({ experiment }: { experiment: Experiment }) {
   </section>
 }
 
+function ServingBenchmarkReview({ benchmark }: { benchmark: ServingBenchmark }) {
+  return <section>
+    <h3>{benchmark.name}</h3>
+    <p className="case-help">Serving model: {benchmark.model} · {benchmark.sample_count.toLocaleString()} evaluated recordings</p>
+    <p className="case-help">{benchmark.genuine_count.toLocaleString()} genuine · {benchmark.synthetic_count.toLocaleString()} synthetic · fixed threshold {benchmark.threshold}</p>
+    <div className="table-scroll"><table><thead><tr><th>Metric</th><th>Observed result</th></tr></thead><tbody>
+      <tr><td>Synthetic recordings caught</td><td>{percentage(benchmark.recall)}</td></tr>
+      <tr><td>Genuine recordings falsely flagged</td><td>{percentage(benchmark.false_positive_rate)}</td></tr>
+      <tr><td>AUROC</td><td>{auc(benchmark.roc_auc)}</td></tr>
+    </tbody></table></div>
+    <p className="case-help">{benchmark.reason}</p>
+  </section>
+}
+
 export default function ModelValidation() {
   const [data, setData] = useState<Evaluation | null>(null)
   const [error, setError] = useState(false)
@@ -59,6 +77,7 @@ export default function ModelValidation() {
     {error ? <p className="case-help">Validation summary could not be loaded. Refresh to retry.</p>
       : !data ? <p className="case-help">Loading validation…</p>
         : <><p className="case-help">Serving: {data.serving_model}. {data.scope}</p>
+          {data.serving_benchmarks?.map(benchmark => <ServingBenchmarkReview key={benchmark.name} benchmark={benchmark} />)}
           {data.experiments.map(experiment => <ExperimentReview key={experiment.name} experiment={experiment} />)}</>}
   </details>
 }

@@ -36,3 +36,19 @@ it('lets an analyst inspect codec failures with class counts and unavailable met
   expect(screen.queryByText('60.0%')).not.toBeInTheDocument()
   expect(screen.getAllByText('24.4%')).toHaveLength(2)
 })
+
+it('shows the serving benchmark separately without inventing a baseline comparison', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    scope: 'Public benchmark replication.', serving_model: 'NII wav2vec anti-deepfake', experiments: [],
+    serving_benchmarks: [{name:'Frozen In-the-Wild replication', model:'NII wav2vec anti-deepfake', sample_count:2000,
+      genuine_count:1000,synthetic_count:1000,threshold:.5,recall:.937,false_positive_rate:.024,roc_auc:.9925,
+      reason:'Prototype serving selection; not sponsor validation.'}],
+  }))))
+  render(<ModelValidation />)
+  expect(await screen.findByText('Frozen In-the-Wild replication')).toBeInTheDocument()
+  expect(screen.getByText('93.7%')).toBeInTheDocument()
+  expect(screen.getByText('2.4%')).toBeInTheDocument()
+  expect(screen.getByText('0.993')).toBeInTheDocument()
+  expect(screen.getByText(/1,000 genuine · 1,000 synthetic/)).toBeInTheDocument()
+  expect(screen.queryByText('Baseline')).not.toBeInTheDocument()
+})
