@@ -53,3 +53,9 @@ At application source checkpoint `ca40361`, **250 backend tests passed** in 11.1
 The refreshed wheel contains all **35 tracked package source/assets files byte-identically**. Size: **96,131 bytes**. SHA-256: `1c5489b31d3439d9dba12a669593129cb2703999f936ee844fa20fbb71052bda`. Models, recordings, datasets, credentials and databases are excluded. Both CI jobs have 20-minute limits and all external actions are pinned to verified official commit SHAs.
 
 GPU work is closed: final job4504574 completed in40m52; aggregate allocation **1h44m53** including setup failures; the final user queue was empty. No candidate passed every promotion goal. Source-release verification does not close the detector-quality requirement, live Grok check, unfamiliar-file browser chooser check, or official sponsor submission.
+
+## Private repository and CI
+
+Published [Sahith59/echotrace](https://github.com/Sahith59/echotrace) as a **private** repository. Remote `master` matched application commit `eb143658b3586a5fedbdb43f15350e1d7bdc66c7`. [GitHub CI run36230750860](https://github.com/Sahith59/echotrace/actions/runs/36230750860) succeeded: Linux backend **249 passed, one macOS-only test skipped**, frontend **32 passed**, production build passed. Local macOS backend passed all250. Runner notices about action runtime/OS migration were non-failing and no security setting was changed.
+
+The final publication record is a documentation-only follow-up; CI is skipped for that record because tested application files and dependencies are unchanged. The final tracked/history audit found zero credential patterns, media files, large blobs or broken Markdown links. Unrelated challenge folders remain untracked and unpushed. No deployment or official event submission occurred.

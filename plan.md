@@ -153,7 +153,7 @@ Demo sequence: suspicious recording → actual assessment → listen to a scored
 - [ ] Validate all IDs exactly once, columns/order/scale/polarity and finite values; resolve failures.
 - [ ] Finish restart, responsive, export and live-provider acceptance checks.
 - [x] Document reproducible setup/inference/export commands and known limitations.
-- [ ] Publish verified runnable source, tests, documentation and evaluation reports to the new private repository.
+- [x] Publish verified runnable source, tests, documentation and evaluation reports to [Sahith59/echotrace](https://github.com/Sahith59/echotrace), private. Application commit `eb14365` passed [GitHub CI](https://github.com/Sahith59/echotrace/actions/runs/36230750860): 249 backend passed / one macOS-only test skipped; 32 frontend passed and production build passed. Local macOS suite passed all250 backend tests.
 - [ ] Produce the official CSV and any remaining required event artifacts after the sponsor contract is supplied.
 - [ ] Rehearse and submit through the authorized destination once supplied.
 
@@ -163,8 +163,13 @@ Demo sequence: suspicious recording → actual assessment → listen to a scored
 - [x] **Transcript and claim workflow:** local timestamped transcription, immutable corrections, passage-to-claim time links, analyst-supplied evidence and optional consented Grok web search. Sources must occur in provider citations; failed/unsupported responses remain unresolved. Live provider validation requires the missing key. This is not lie detection.
 - [x] **Integrated case report:** JSON and printable HTML show synthesis, speaker reference, transcript versions and claim reviews separately; escaped untrusted text and no overall authenticity probability.
 
-## Immediate work order
+## Handoff and next work
 
-1. Finish the source-release checks and publish the authorized new **private** GitHub repository in Sahith59's account. Verify its remote commit and CI; exclude credentials, recordings, datasets, weights and unrelated challenge folders.
-2. Stop this iteration at the verified source handoff. Deployment is the user's next separately directed task.
-3. Keep explicit follow-ups: live Grok key/verification, manual unfamiliar-file browser upload, official sponsor input/output contract, and the unresolved detector false-positive gate. Do not label the competition submission or forensic accuracy complete.
+The authorized private source repository is published and the application CI passed. This iteration stops at source handoff; deployment awaits the user's next direction. A final documentation-only commit records publication without changing the tested application.
+
+Remaining gates:
+
+1. Save the xAI key locally and verify real interpretation/search output; manually exercise the unfamiliar-file browser chooser.
+2. Obtain official NSA held-out files, CSV schema, metric, cutoff and submission instructions; use the strict export pipeline and resolve every failed row.
+3. Address compressed-genuine false positives using representative training/selection data and a fresh benchmark before claiming a strong detector or promoting a candidate. Do not retune the inspected acceptance sets.
+4. Plan deployment authentication, storage/retention and hosting in the next user-directed iteration. No deployment or official competition entry was performed here.
