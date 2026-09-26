@@ -90,7 +90,8 @@ def score_samples(samples: np.ndarray, extractor, model, device: str, deadline: 
 
 
 def run(manifest: Path, dataset_root: Path, output: Path, *, cache: Path,
-        compatibility_run: Path, device: str, role: str, max_seconds: int = 3600) -> dict:
+        compatibility_run: Path, device: str, role: str, max_seconds: int = 3600,
+        adapted_model: Path | None = None) -> dict:
     if role not in ("selection", "acceptance"):
         raise ValueError("Role must be selection or acceptance")
     if device not in ("cpu", "cuda") or device == "cuda" and not torch.cuda.is_available():
@@ -107,7 +108,23 @@ def run(manifest: Path, dataset_root: Path, output: Path, *, cache: Path,
                 "tail_policy": "end_anchored_overlap", "short_input_policy": "repeat_pad"}
     if any(aggregation.get(key) != value for key, value in expected.items()):
         raise ValueError("Compatibility run uses different audio windows")
-    extractor, model = _load(cache, device)
+    training_provenance = None
+    checkpoint_sha = WEIGHTS_SHA256
+    if adapted_model:
+        adapted_model = Path(adapted_model)
+        provenance = json.loads((adapted_model.parent / "provenance.json").read_text())
+        checkpoint_sha = provenance["adapted_weights_sha256"]
+        if _sha(adapted_model / "model.safetensors") != checkpoint_sha:
+            raise RuntimeError("Adapted SafeTensors checkpoint hash mismatch")
+        from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
+        extractor = AutoFeatureExtractor.from_pretrained(adapted_model, local_files_only=True,
+                                                          trust_remote_code=False)
+        model = AutoModelForAudioClassification.from_pretrained(
+            adapted_model, local_files_only=True, trust_remote_code=False,
+            use_safetensors=True).to(device).eval()
+        training_provenance = provenance["split_provenance"]
+    else:
+        extractor, model = _load(cache, device)
     started = time.monotonic()
     deadline = started + max_seconds
     failures, rows = [], []
@@ -132,20 +149,21 @@ def run(manifest: Path, dataset_root: Path, output: Path, *, cache: Path,
         writer.writerow(("file_id", "synthetic_score", "status"))
         writer.writerows((file_id, "" if score is None else format(score, ".17g"), status)
                          for file_id, score, status in rows)
-    training_provenance = {"train": [{
+    training_provenance = training_provenance or {"train": [{
         "file_id": "external-garystafford-training-set",
         "sha256": WEIGHTS_SHA256, "label": 1, "group_id": "external",
         "speaker_id": "external", "source_id": MODEL_ID,
     }], "validation": [], "note": "External model training rows are not published; no local fitting."}
     result = {
-        "role": role, "model_kind": "candidate", "checkpoint_sha256": WEIGHTS_SHA256,
+        "role": role, "model_kind": "candidate", "checkpoint_sha256": checkpoint_sha,
         "config_sha256": compatible["config_sha256"], "upstream_revision": MODEL_REVISION,
         "aggregation": aggregation, "complete": not failures,
         "completed_count": len(rows) - len(failures), "failure_count": len(failures),
         "failures": failures, "records": _public_records(Path(manifest), records),
         "training_provenance": training_provenance,
         "model": {"id": MODEL_ID, "revision": MODEL_REVISION,
-                  "weights_sha256": WEIGHTS_SHA256, "config_sha256": CONFIG_SHA256,
+                  "weights_sha256": checkpoint_sha, "base_weights_sha256": WEIGHTS_SHA256,
+                  "adapted": bool(adapted_model), "config_sha256": CONFIG_SHA256,
                   "processor_sha256": PROCESSOR_SHA256, "fake_label_index": 1,
                   "safe_loading": {"trust_remote_code": False, "use_safetensors": True}},
         "scores_sha256": _sha(scores_path),
@@ -165,6 +183,7 @@ def main(argv=None) -> int:
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda")
     parser.add_argument("--role", choices=("selection", "acceptance"))
     parser.add_argument("--max-seconds", type=int, default=3600)
+    parser.add_argument("--adapted-model", type=Path)
     parser.add_argument("--setup", action="store_true")
     args = parser.parse_args(argv)
     try:
@@ -178,7 +197,8 @@ def main(argv=None) -> int:
             print(json.dumps(run(args.manifest, args.dataset_root, args.output,
                                  cache=args.cache, compatibility_run=args.compatibility_run,
                                  device=args.device, role=args.role,
-                                 max_seconds=args.max_seconds), allow_nan=False))
+                                 max_seconds=args.max_seconds,
+                                 adapted_model=args.adapted_model), allow_nan=False))
         return 0
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"NATIVE DETECTOR: {exc}")
