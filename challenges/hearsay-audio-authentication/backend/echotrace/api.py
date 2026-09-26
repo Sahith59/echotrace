@@ -15,7 +15,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, UploadFile, Request
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
@@ -124,6 +125,22 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
         executor.shutdown(wait=True, cancel_futures=True)
 
     app = FastAPI(title="ECHOTRACE", version="0.1.0", lifespan=lifespan)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"])
+
+    @app.middleware("http")
+    async def local_origin_guard(request: Request, call_next):
+        origin = request.headers.get("origin")
+        if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin not in {
+            "http://localhost:5173", "http://127.0.0.1:5173",
+            "http://localhost:8000", "http://127.0.0.1:8000",
+            "http://localhost:4173", "http://127.0.0.1:4173",
+        }:
+            return JSONResponse({"detail": "Cross-site requests are not permitted by this local workspace."}, status_code=403)
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
     app.state.store = store
     app.include_router(create_pilot_router(root=pilot_root, provenance_path=pilot_provenance))
     app.include_router(create_interpretation_router(store, interpreter))
