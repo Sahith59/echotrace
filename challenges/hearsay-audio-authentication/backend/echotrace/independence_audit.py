@@ -1,9 +1,20 @@
 """Content-level independence audit for a locked acceptance manifest."""
 from __future__ import annotations
-import argparse, hashlib, json
+import argparse, csv, hashlib, json
 from collections import Counter
 from pathlib import Path
-from .evaluation import load_manifest
+
+def _acceptance_records(manifest,dataset_root):
+    with Path(manifest).open(encoding="utf-8",newline="") as handle:
+        rows=list(csv.DictReader(handle))
+    records=[]
+    root=Path(dataset_root).resolve()
+    for row in rows:
+        path=(root/row["path"]).resolve()
+        if root not in path.parents or not path.is_file():raise ValueError(f"Invalid acceptance audio path: {row['path']}")
+        with path.open("rb") as source:digest=hashlib.file_digest(source,"sha256").hexdigest()
+        records.append({**row,"label":int(row["label"]),"sha256":digest})
+    return records
 
 def _prior_ledger(run):
     data=json.loads(Path(run).read_text())
@@ -14,7 +25,7 @@ def _prior_ledger(run):
     return {"records":records,"train":train,"validation":validation}
 
 def run(manifest,dataset_root,prior_runs,output):
-    records=load_manifest(Path(manifest),Path(dataset_root))
+    records=_acceptance_records(Path(manifest),Path(dataset_root))
     if len(records)!=2000 or Counter(r["label"] for r in records)!={0:1000,1:1000}:
         raise ValueError("Acceptance must be frozen at 1000 files per class")
     hashes=[r["sha256"] for r in records]

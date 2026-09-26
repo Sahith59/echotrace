@@ -32,7 +32,9 @@ PYTHONPATH="$backend" "$python" - "$ECHOTRACE_EVAL_MANIFEST" "$temp" <<'PY'
 import csv, hashlib, json, sys
 from collections import Counter
 from pathlib import Path
-from echotrace.audio import decode_audio, measure_audio
+import numpy as np
+import soundfile as sf
+from echotrace.audio import measure_audio
 manifest, temp = map(Path, sys.argv[1:])
 audio = temp/'audio'
 with manifest.open(encoding='utf-8', newline='') as h:
@@ -48,7 +50,14 @@ selected.sort(key=lambda r:r['file_id'])
 fail=[]
 for i,row in enumerate(selected,1):
     try:
-        samples,info=decode_audio(audio/row['path']); _,_,quiet=measure_audio(samples)
+        path=audio/row['path']
+        info=sf.info(path)
+        if info.samplerate!=16000 or info.channels!=1 or info.frames<=0 or info.frames>120*16000:
+            raise ValueError(f'unexpected FLAC stream: {info.samplerate}Hz/{info.channels}ch/{info.frames}frames')
+        samples,rate=sf.read(path,dtype='float32',always_2d=False)
+        if rate!=16000 or samples.ndim!=1 or not np.all(np.isfinite(samples)):
+            raise ValueError('invalid decoded FLAC samples')
+        _,_,quiet=measure_audio(samples)
         if quiet: raise ValueError('quiet')
     except Exception as exc: fail.append({'file_id':row['file_id'],'reason':str(exc)})
     if i%250==0: print(f'audited {i}/2000',flush=True)
