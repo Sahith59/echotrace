@@ -1,6 +1,6 @@
 # ECHOTRACE implementation plan
 
-Status: **Phase 3A — training/evaluation software verified; real-data and cluster preparation still open.** The web prototype is usable, but detector reliability remains inadequate. No cluster training or improved model has been delivered. Updated: 2026-09-25.
+Status: **Phase 3A — cluster environment verified; independent audio staging underway. Phase 3B is queued behind data checks.** The web prototype is usable, but detector reliability remains inadequate. A GPU numerical smoke passed; speech-model adaptation has not started and no improved model has been delivered. Updated: 2026-09-25.
 
 **Latest priority:** [Detector improvement plan](docs/detector-improvement-plan.md) supersedes historical training deferral below. Keep the 24 inspected clips for demos; use separate training, selection and locked acceptance data. Follow [data preparation](docs/data-preparation.md), [checkpoint evaluation](docs/checkpoint-evaluation.md), then the [cluster handoff](docs/cluster-handoff.md).
 
@@ -10,13 +10,17 @@ Status: **Phase 3A — training/evaluation software verified; real-data and clus
 | --- | --- | --- |
 | 1 — Baseline | Decode recordings and run the existing learned detector | Software works; diagnostic errors documented; sponsor evaluation open |
 | 2 — Workbench | Upload, listen, inspect intervals, compare noise/compression, export and request AI interpretation | Implemented; live Grok output review awaits a configured key |
-| 3A — Prepare | Install independent speech data, freeze three splits, verify training and evaluation | Software verified; actual data, permitted storage and cluster connectivity pending |
-| 3B — Train | Fine-tune AASIST-L on one GPU within one five-hour Slurm job | Not started |
+| 3A — Prepare | Install independent speech data, freeze three splits, verify training and evaluation | Environment and GPU compatibility verified; data staging/audit remain open |
+| 3B — Train | Fine-tune AASIST-L on one GPU within the bounded allocation | Job 4503646 queued behind download/audit; adaptation has not started |
 | 3C — Evaluate | Compare baseline/candidate using thresholds chosen only on selection data | Reporting implemented; real acceptance results pending |
 | 4 — Demonstrate | Present measured successes, failures and a clear investigation workflow | Existing 24-file demo available; final rehearsal follows evaluation |
 | 5 — Deliver | Freeze model, verify sponsor CSV and complete submission artifacts | Official data, metric and schema still missing |
 
-Next sequence: restore `ssh trends` access → establish permitted personal data storage and authorized GPU partition → stage/audit data and dependencies → measure throughput and freeze split sizes → submit the bounded job → review acceptance and serving parity before any model replacement. Use Slurm account `trends517s113`; never the old course account. No personal `/data` location exists according to the user; do not substitute the 100 GB home quota for dataset storage.
+Next sequence: finish staging → freeze and audit train/selection/acceptance manifests → allow the dependent training/evaluation job to start → review acceptance and serving parity before any model replacement. GPU compatibility and numerical throughput have been checked. VPN restored `ssh trends`; live checks found owned writable `/data/users3/sthummala2`. Project files are under `/data/users3/sthummala2/echotrace`. Account `trends517s113`, `qTRD` CPU and `qTRDGPUM` A100 access are verified. Never use the old course account or home for large data.
+
+**Current plan refinement:** stage only `flac_T_aa.tar` and `flac_D_aa.tar` (14,169,763,840 archive bytes) for the first bounded experiment. Preserve official train/dev boundaries, audit actual classes/attacks/speakers, then select the training and independent evaluation subsets. This saves staging time and storage; it does not establish full-corpus coverage. The acceptance report now includes attack/codec error breakdowns at the already locked thresholds. See [feature inventory and demo sequence](docs/product-capabilities.md).
+
+Live sequence: data 4503630 → complete CPU audio audit 4503645 → training/evaluation 4503646. Source verification 4503644 completed with 41 passing tests and is another required audit dependency. GPU smoke 4503631 succeeded in 13 seconds; reserve its five-minute cap and limit the main job to 4h55, keeping the combined GPU budget within 5h. Automatic requeue is disabled for the main job. Inspect the existing jobs before considering any resubmission. A queued job is not an improved detector; the web keeps the original model until acceptance and serving review. See the [run ledger](docs/cluster-run-2026-09-25.md).
 
 ## Objective and scope
 

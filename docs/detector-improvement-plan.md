@@ -1,6 +1,6 @@
 # Detector recovery and five-hour adaptation plan
 
-Date: 2026-09-25. This supersedes the prior decision to defer all training. The user is willing to spend five hours of cluster training and prioritizes detector usefulness over further UI polish. No cluster job or large download has been launched.
+Date: 2026-09-25. This supersedes the prior decision to defer all training. The user authorized five hours of GPU work and prioritizes detector usefulness. Cluster staging is underway; training/evaluation is queued behind data checks. See the [active run ledger](cluster-run-2026-09-25.md) before submitting anything else.
 
 ## What is actually implemented
 
@@ -8,7 +8,7 @@ AASIST-L is the only learned detector in the web pipeline. FFmpeg decodes mono 1
 
 AI interpretation now has an on-demand Grok integration; live output review still requires the user's API key. The separate measurement limitations use deterministic rules. RMS, clipping, quiet frames and spectral measurements are computed observations; they do not contribute independent learned votes to the synthesis score. Very quiet input gets no score. Manipulation type is undetermined. Speaker verification, truth determination and calibration remain unimplemented.
 
-Phase 3A software now includes the bounded training runner, three-way data preparation, whole-file checkpoint evaluation and acceptance reporting. A local CPU optimizer/evaluation smoke test on generated signals verifies execution only. No new speech-trained detector has been promoted, and no GPU job has started. See [checkpoint evaluation](checkpoint-evaluation.md) and [cluster handoff](cluster-handoff.md).
+Phase 3A software includes the bounded runner, three-way preparation, full CPU audio audit, whole-file checkpoint evaluation and acceptance reporting with attack/codec slices. Local CPU and actual A100 numerical smoke tests verify execution only. No new speech-trained detector has been promoted. Independent audio staging remains open; adaptation has not started. See [checkpoint evaluation](checkpoint-evaluation.md) and [cluster handoff](cluster-handoff.md).
 
 ## Evidence and hypotheses
 
@@ -28,32 +28,33 @@ These are diagnostic results only. Poor transfer to newer generators/recording c
 ### Phase 3A — data and experiment preparation (before GPU clock)
 
 - Keep current24 as demonstration/regression material, excluded from fitting, calibration and independent acceptance claims.
-- Proposed development source: ASVspoof5 official train/dev, whose protocol importer is already built. Audio is not installed. Train/dev archives total57,561,937,920 bytes before extraction. Confirm cluster storage and download route before acquisition; a smaller verified source/subset is acceptable if corpus logistics do not fit.
+- Development source: official ASVspoof5 train/dev. The first run stages only `flac_T_aa.tar` and `flac_D_aa.tar`, totaling 14,169,763,840 archive bytes, in verified personal cluster storage. This is a subset of the 57,561,937,920-byte train/dev release; do not claim full-corpus coverage. Audio staging is underway.
 - Target a bounded10k–30k training subset, chosen by fixed rules across genuine/spoof, speakers and attack types; actual size is selected from audited availability and measured throughput, not promised in advance.
 - Preserve official train/dev/eval boundaries. Group linked sources/speakers and duplicates. Partition development groups into checkpoint/threshold selection, optional calibration and a locked acceptance subset before fitting; ensure sufficient genuine/synthetic counts. Never tune on the locked subset or official evaluation labels.
-- Implemented: reproducible PyTorch runner with shared decoding, explicit class-map conversion (manifest1=synthetic vs AASIST target0=spoof), seeded sampling, weighted loss, best checkpoint, wall-clock limit, memory controls and config/hash/split provenance. Resume and patience early stopping are not implemented. Checkpoint selection uses first-crop loss; a separate evaluator checks the intended whole-file serving policy. Leakage, class mapping, gradients and checkpoint reload have software tests; real speech data and GPU throughput are still required.
+- Implemented: reproducible PyTorch runner with shared decoding, explicit class-map conversion (manifest1=synthetic vs AASIST target0=spoof), seeded sampling, weighted loss, best checkpoint, wall-clock limit, memory controls and config/hash/split provenance. Resume and patience early stopping are not implemented. Checkpoint selection uses first-crop loss; a separate evaluator checks the intended whole-file serving policy. Leakage, class mapping, gradients and checkpoint reload have software tests. CUDA compatibility and generated-signal throughput passed on an A100; real speech data and measured decoding throughput remain required.
 - Primary bounded experiment: fine-tune existing AASIST-L checkpoint on new training data, with conservative learning rate and validation-selected checkpoint. This minimizes adapter uncertainty; improvement is a hypothesis, not a promised result.
 - A pretrained wav2vec2 anti-spoofing model is the next architecture candidate if adaptation fails. Do not spend the same five-hour budget on an uncontrolled architecture sweep. Check checkpoint license, runtime and reproducibility first.
 - Acceptance: data installed and audited, partitions frozen, baseline on exact evaluation files, training smoke test and throughput estimate. No GPU hours spent on downloading.
 
 ### Phase 3B — bounded five-hour cluster experiment
 
-Requested resource plan: one node, one GPU, five-hour wall-clock maximum (five GPU-hours), subject to university policy. Prefer one A100 if offered; otherwise use an available permitted GPU with at least16GB and tune batch size to measured memory. No multi-node jobs or automatic extra allocation. The supplied TReNDs Summer2026 guide documents Slurm and several GPU types. The user supplied account `trends517s113` and SSH alias `trends`; a connection attempt timed out before authentication. Live allocation, authorized partition, availability/VRAM and a personal data path remain to be checked. Do not use the old course account `fall24csc4760` or stage large data in the 100 GB home directory.
+Active resource plan: one node, one A100, four CPUs, 32 GB host RAM, under account `trends517s113` on `qTRDGPUM`. VPN access, allocation and owned `/data/users3/sthummala2/echotrace` storage are verified. The completed smoke used an A100-SXM4-40GB. No multi-node jobs or automatic extra allocation. Do not use the old course account `fall24csc4760` or stage large data in the 100 GB home directory.
 
 | Maximum budget | Work in the implemented job |
 | --- | --- |
-| Before the five-hour job | Install/audit audio and dependencies, verify GPU compatibility and throughput on permitted resources, freeze subset sizes |
+| CPU preparation, outside GPU budget | Install/audit audio and dependencies, freeze subset sizes |
+| 5 minutes reserved | GPU compatibility/numerical smoke; completed in 13 seconds |
 | 3 hours | One adaptation run with periodic validation and best-checkpoint selection |
 | 4 × 20 minutes | Whole-file baseline/candidate scoring on selection and locked acceptance |
-| Remaining 40 minutes | Preflight hashing, setup, reporting and shutdown overhead |
+| Remaining 35 minutes | Preflight hashing, setup, reporting and shutdown overhead in the 4h55 main job |
 
-Times are caps, not completion guarantees. The timers are cooperative; Slurm's five-hour limit is the outer bound. Slow hashing or decoding can exhaust the allocation. Reduce the frozen subset size or training limit from measured throughput before submission; do not drop difficult acceptance examples after seeing results. Calibration and architecture sweeps are outside this first bounded job. Queue time and preparation time are additional elapsed time.
+Times are caps, not completion guarantees. The main job's Slurm limit is 4h55, automatic requeue is disabled, and the earlier smoke's five-minute reservation keeps combined GPU limits within five hours. Slow hashing or decoding can exhaust the allocation. Do not drop difficult acceptance examples after seeing results. Calibration and architecture sweeps are outside this first bounded job. Queue time and CPU preparation time are additional elapsed time.
 
 ### Phase 3C — promotion gate
 
 Provisional internal gate (not sponsor criteria): choose threshold on selection data to target at most5% genuine false-positive rate; lock it before acceptance scoring. On locked acceptance data, require synthetic recall at least80%, genuine false-positive rate at most5%, and at least10 percentage-point recall improvement over baseline at its independently selected operating point. Report confidence intervals, per-attack/codec counts and failures; insufficient counts or material slice regressions block promotion. These are goals and may fail, not predicted outcomes.
 
-Implemented report: at least100 examples per class in both selection and acceptance, complete scores, no cross-split content/ID/group/speaker/source links, consistent checkpoint/configuration, the above recall/FPR goals and no AUROC regression. Wilson95% intervals accompany recall/FPR, but the gates use point estimates; passing is only `eligible_for_review`, never automatic promotion. Per-attack/codec slice review, EER, serving latency/memory and human review remain additional work. A tiny successful smoke test cannot pass the sample-count gate.
+Implemented report: at least100 examples per class in both selection and acceptance, complete scores, no cross-split content/ID/group/speaker/source links, consistent checkpoint/configuration, the above recall/FPR goals and no AUROC regression. Wilson95% intervals accompany recall/FPR, but the gates use point estimates; passing is only `eligible_for_review`, never automatic promotion. Per-attack/codec descriptive breakdowns are now implemented at those locked thresholds; single-class ranking metrics are null. Reviewing slice regressions, EER, serving latency/memory and human review remain additional work. A tiny successful smoke test cannot pass the sample-count gate.
 
 Also compare AUROC, average precision and EER; do not confuse a threshold adjustment with better ranking. Measure latency/memory on intended serving hardware. Independent public acceptance cannot establish sponsor accuracy. Once sponsor data arrive, repeat sponsor-specific evaluation and apply the official metric/schema. If no candidate passes, report the experiment as unsuccessful and retain explicit experimental status; do not inflate scores.
 

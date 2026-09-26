@@ -2,6 +2,10 @@
 
 The metadata importer has produced official ASVspoof5 Track 1 train and dev manifests, but the audio is not installed in this workspace. Run this command only after obtaining the corresponding audio through an authorized source. It does not download data or train a model.
 
+The current cluster experiment uses the [bounded staging utility](../challenges/hearsay-audio-authentication/cluster/stage_data.py) to download exactly the pinned train/dev `aa` archives, verify size/MD5, extract regular FLAC members safely and filter the official protocols to those members. This is a subset of ASVspoof5, not a full-corpus benchmark. Files absent from Track1 metadata, such as development enrollment recordings, are counted separately. Source, checksums and label counts are retained in `provenance.json`. Staging does not modify the official full manifests or use evaluation audio.
+
+For the active run, `python -m echotrace.experiment_preflight --staged-root /ABS/staged --output-dir /ABS/fresh --train-limit 10000 --dev-limit 4000 --max-wall-seconds 3600` wraps preparation and a full CPU audio audit. It freezes the three manifests, checks class counts/group separation, then decodes and measures every selected recording. It records durations, window counts, failures/quiet audio and speaker/attack/codec coverage. Any failed, quiet or unaudited recording prevents readiness; no file is silently dropped. It writes `training-config.json` only on success and exits nonzero otherwise, so the dependent GPU job cannot start. Audit is sequential and has a one-hour cap; slow input can make an otherwise valid dataset fail readiness. See [live run record](cluster-run-2026-09-25.md).
+
 From `challenges/hearsay-audio-authentication/backend`:
 
 ```sh

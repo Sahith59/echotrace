@@ -25,8 +25,9 @@ Status: 2026-09-25. Current work is Phase 3A: training/evaluation software is ve
 ## Phase 3 — Measured performance
 
 - [x] Phase 3A software: three-way data preparation, whole-file checkpoint scoring, failure/coverage checks, frozen-threshold comparison and bounded Slurm package have passed local verification. These checks do not measure speech-detection quality.
-- [ ] Phase 3A data/cluster: working `ssh trends`, permitted personal data storage, verified allocation/partition, installed independent audio, frozen manifests and measured GPU throughput. User supplied account `trends517s113`; never use the old course account.
-- [ ] Phase 3B: complete one five-hour, one-node, one-GPU adaptation/evaluation job and retain the actual job ID, checkpoint, scores and report.
+- [x] Phase 3A cluster: working `ssh trends`, owned personal data storage, verified allocation/partition and actual A100 numerical smoke. User account is `trends517s113`; never use the old course account. The smoke does not measure speech-detection performance.
+- [ ] Phase 3A data: complete audio staging and CPU audit, freeze independent manifests and review actual class/attack/codec coverage. The dependent jobs are queued; check current state before a new submission.
+- [ ] Phase 3B: complete the queued one-node/one-GPU adaptation/evaluation job and retain its checkpoint, scores and report. The main job is capped at 4h55, plus the completed smoke's five-minute reservation, within the combined five-hour GPU budget.
 - [ ] Phase 3C: review acceptance counts, recall, false positives, confidence intervals, slices and serving performance. An eligible report requires review; no automatic web-model replacement.
 - [ ] On the grouped sponsor validation set, compare the baseline with any second detector or adaptation. Record the official metric and relevant error/runtime breakdowns; keep a change only when its measured benefit warrants it.
 - [ ] If the data support it, fit calibration on separate development data and evaluate it on untouched validation data. Until then, the web label must remain “Uncalibrated model score.” No calibration, ensemble comparison, or sponsor-data performance report is complete.
@@ -34,7 +35,7 @@ Status: 2026-09-25. Current work is Phase 3A: training/evaluation software is ve
 ## Phase 4 — Distinctive demonstration
 
 - [ ] On a completed result, choose **MP3 compression** or **Add noise**. Confirm the derivative gets a separate real analysis, playable audio, and a score change in points. The feature is implemented; a stable score does not prove robustness or authenticity.
-- [ ] Prepare licensed or consented genuine and synthetic demo clips with provenance. These are not yet in the project. Speaker comparison and factual-claim review are future extensions with separate evidence gates; neither is part of the current score.
+- [ ] Rehearse using the existing 24 reference clips and their saved provenance/licenses; include both successful and failed detections. Speaker comparison and factual-claim review are future extensions with separate evidence gates; neither is part of the current score.
 
 ## Phase 5 — Freeze and handoff
 
@@ -80,4 +81,4 @@ The work in this milestone is behind the interface. Existing recording scores an
 
 For current app verification, choose a known recording, analyze it, play a scored interval, and export JSON. Once your xAI key is configured, generate an AI interpretation and confirm its cited findings match the measured evidence while the original score stays unchanged. An upload performs inference only, whether it comes from the dataset or is your own permitted recording.
 
-The current user-dependent action is restoring cluster access and obtaining permitted personal data storage. The last SSH attempt timed out before login. A 100 GB home quota is not permission to stage the large corpus there. After connectivity is available, verify account/partition/storage before following [cluster handoff](cluster-handoff.md). Review [checkpoint evaluation](checkpoint-evaluation.md) for the exact acceptance behavior.
+VPN restored cluster access and an existing personal data path was found; no further cluster configuration is needed from the user for the queued experiment. Data/audit/training jobs now continue through success-only dependencies. Read the [run record](cluster-run-2026-09-25.md) and check their live state before taking action. Review [checkpoint evaluation](checkpoint-evaluation.md) for the exact acceptance behavior. The optional live Grok review still needs the user's key saved locally in `.env`.
