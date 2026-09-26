@@ -12,6 +12,7 @@ The app separates three questions: **Does the recording resemble synthesized spe
 - [Phase checklist and remaining external gates](plan.md)
 - [Feature inventory](docs/product-capabilities.md)
 - [Demo walkthrough](docs/demo-guide.md)
+- [What you can verify, phase by phase](docs/user-verification.md)
 - [Verification evidence](docs/release-verification.md)
 - [Source and model attribution](THIRD_PARTY_NOTICES.md)
 
