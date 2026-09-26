@@ -1,6 +1,10 @@
 # ECHOTRACE persistent memory
 
-Last updated: 2026-09-26, local-server handoff correction. **This opening state supersedes all dated historical notes below.**
+Last updated: 2026-09-26, pearl-white/teal background refinement. **This opening state supersedes all dated historical notes below.**
+
+## Current visual state — 2026-09-26
+
+The user approved the glass components and refraction but rejected the pink fibrous lower background. Edited `frontend/public/textures/soft-atmosphere.png` with the image-generation tool, keeping the powder-blue/teal upper field and replacing pink texture/glow with soft pearl-white and pale-teal flowing waves. `frontend/src/reference-glass.css` still uses the same image for both page backdrop and decorative refraction; only its background URL cache version and lower overlay tint changed. Desktop Chrome intake and lower recent-recordings views and a 375px phone view were visually checked; no pink fur remains, text is readable. Frontend 51 tests and TypeScript/Vite production build passed; local API and Vite services remained healthy. The earlier rose/lilac description below is historical. Next product work follows the agreed phase checklist, with official sponsor materials still outstanding. Do not alter detector claims based on this visual change.
 
 ## Current local availability — 2026-09-26
 

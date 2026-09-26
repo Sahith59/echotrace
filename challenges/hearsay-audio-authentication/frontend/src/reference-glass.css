@@ -1,5 +1,5 @@
-/* ECHOTRACE / atmospheric slate glass. The image is a clean background made
-   from the supplied calendar reference; only decorative pixels are displaced. */
+/* ECHOTRACE / atmospheric slate glass. The background is a cool white/teal
+   edit of the supplied reference; only decorative pixels are displaced. */
 :root {
   --bg: #afcbd8;
   --ivory: #f9fcfe;
@@ -23,10 +23,10 @@ body { background: var(--bg); color: #1b3944; }
   inset: 0;
   opacity: 1;
   filter: none;
-  background: url('/textures/soft-atmosphere.png') center center / cover no-repeat;
+  background: url('/textures/soft-atmosphere.png?v=white-teal-1') center center / cover no-repeat;
 }
 .ambient-scene::after {
-  background: linear-gradient(180deg, #d9eaf00d 0%, #eef3fa08 54%, #e8d0e916 100%);
+  background: linear-gradient(180deg, #d9eaf00d 0%, #eef3fa08 54%, #e5f5f41c 100%);
 }
 
 /* The base material is translucent. A viewport-aligned duplicate of the
@@ -41,7 +41,7 @@ body { background: var(--bg); color: #1b3944; }
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
 }
 .glass-refraction {
-  background: url('/textures/soft-atmosphere.png') center center / cover fixed no-repeat;
+  background: url('/textures/soft-atmosphere.png?v=white-teal-1') center center / cover fixed no-repeat;
   opacity: .24;
   filter: url(#glass-distortion) blur(.8px);
   mix-blend-mode: screen;

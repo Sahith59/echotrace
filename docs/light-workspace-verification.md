@@ -10,6 +10,8 @@ The supplied glass-calendar component was adapted into a recording-date filter w
 
 Later visual revision: the user's teal/lilac calendar screenshot is now the active reference. An inpainted background derived from that exact local screenshot replaces the woven-field asset in the running UI; it is not an unchanged copy of the screenshot. Slate/lilac translucent glass, a decorative refracted-background layer, white-on-glass typography, near-white selected tabs and coherent glass controls now extend across the workspace. The woven-field paragraph above records the superseded earlier iteration. The mobile date calendar was moved to a centered viewport overlay so its clear action remains visible.
 
+Final background refinement: the user requested removing the pink fibrous lower edge. The same project asset was edited into a powder-blue/teal-to-pearl-white image with subtle broad teal waves; the pink-specific overlay tint was removed. The earlier pink description above is historical. The glass, controls and layout were preserved. Chrome screenshots of the top intake and lower recent-recordings section confirmed no pink fur and readable glass-panel text.
+
 Each case now has three steps: **Review recording**, **Check reliability**, and **Case evidence**. Notes persist independently of the model score; draft preservation and version checks prevent silent overwrites. The queue supports search, review/analysis status, date filters and sorting while retaining failed/unscored records.
 
 ## Verified live in Chrome
