@@ -12,6 +12,8 @@ Later visual revision: the user's teal/lilac calendar screenshot is now the acti
 
 Final background refinement: the user requested removing the pink fibrous lower edge. The same project asset was edited into a powder-blue/teal-to-pearl-white image with subtle broad teal waves; the pink-specific overlay tint was removed. The earlier pink description above is historical. The glass, controls and layout were preserved. Chrome screenshots of the top intake and lower recent-recordings section confirmed no pink fur and readable glass-panel text.
 
+Current background refinement: the user then requested a neutral light-grey and white background, with selected white surfaces blended into the glass. The same asset was edited again to preserve the smooth layered waves in pearl-grey. Shared material tokens, sidebar, panels, buttons, selected navigation/step/date controls and the decorative refraction were tuned toward translucent graphite and pearl. Chrome inspection covered intake, a completed NII result, batch/export and the 375×812 queue; the screenshot immediately after a view change was transitional, so the settled view was checked again. No model score or analysis flow changed.
+
 Each case now has three steps: **Review recording**, **Check reliability**, and **Case evidence**. Notes persist independently of the model score; draft preservation and version checks prevent silent overwrites. The queue supports search, review/analysis status, date filters and sorting while retaining failed/unscored records.
 
 ## Verified live in Chrome
@@ -32,6 +34,7 @@ Native unfamiliar-file chooser automation remains limited by browser file permis
 
 - Frontend: 51 tests across eight files passed; production TypeScript/Vite build passed.
 - Backend: 290 tests passed after the final interpretation-scope refinement. The v3 evidence contract explicitly distinguishes the whole-file display span from independent windows and same-detector transformations from independent corroboration.
+- After the pearl-grey visual pass, the same full suites passed again: 51 frontend tests, 290 backend tests and TypeScript/Vite production build. The backend emitted one existing Starlette/httpx deprecation warning.
 - Built wheel inspected: includes `primary_detector.py`, `analyst_review.py`, `nii_parity.json` and `validation_summary.json`; contains no `.env`, audio examples or model-weight files.
 - Meaningful RED/GREEN contracts cover contextual help/calendar, analyst conflict/draft behavior, primary detector failures/parity, evidence links/refresh, mixed-model guards and report freshness. Queue/navigation integration checks were added after those UI features were implemented; they are regression tests, not claimed test-first development.
 
@@ -42,6 +45,8 @@ Phases 3C (scoped primary serving), 4A (guided review), 4B (queue/reliability) a
 The pinned NII model is a pretrained detector, not a newly invented architecture. The 2,000-file In-the-Wild result is public benchmark replication: 937/1,000 synthetic detections and 24/1,000 genuine false alarms at threshold 0.5. One quiet recording is included in model-only metrics but rejected by the application. See [serving decision](model-serving-decision.md) for parity, provenance and open validation requirements. Scores are uncalibrated and current primary inputs are limited to 30 seconds without silent truncation.
 
 Paired AASIST baseline job 4504670 results still need retrieval; cluster jump-host attempts timed out. No duplicate job or extra GPU training was launched. No relative superiority or sponsor-performance claim is made.
+
+The 2026-09-26 Phase 3C audit confirmed the static NII primary path in `primary_detector.py` and its packaged parity gate. The existing 2,000-file benchmark meets the scoped absolute serving gates, but the stricter product-quality requirement for a new representative independent corpus remains open. A fresh read-only `ssh trends` attempt again timed out during jump-host banner exchange, so the paired baseline report could not be retrieved and no comparison claim was added.
 
 Speaker similarity does not prove identity; transcript/source review does not prove truth. Hosted claim-source retrieval remains unavailable until source provenance can be validated. AI prose still needs analyst review. Full screen-reader and formal accessibility certification are not claimed.
 

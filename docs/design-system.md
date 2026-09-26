@@ -52,3 +52,7 @@ This is a material and hierarchy translation of the screenshot, not a literal co
 ## Current background refinement: pearl white and teal — 2026-09-26
 
 The user liked the glass material but rejected the pink fibrous lower background. The image at `frontend/public/textures/soft-atmosphere.png` was edited from the earlier derivative: its upper powder-blue/teal atmosphere remains, while the pink texture and glow are replaced by broad, smooth pearl-white and pale-teal waves. The same image feeds both the page backdrop and decorative refraction layer. Glass fills, borders, controls, type hierarchy, page layout and motion remain unchanged. This section supersedes the rose/lilac background description immediately above.
+
+## Current direction: pearl-grey atmosphere — 2026-09-26
+
+The next user instruction supersedes the teal palette. A new edit of `soft-atmosphere.png` keeps the broad layered wave composition in neutral pearl white and light grey. The page background is cool grey-white. Shared panel, sidebar and control fills are neutral graphite with enough transparency for the waves to remain visible, while selected navigation, recording and step surfaces use an inset, semi-transparent pearl fill instead of solid white. The same artwork powers the softly displaced decorative refraction layer; text and evidence remain undistorted. Short transform/color/shadow responses and the existing reduced-motion override remain. Accent colors on actual findings still communicate status; the atmosphere itself carries no analytic meaning.
