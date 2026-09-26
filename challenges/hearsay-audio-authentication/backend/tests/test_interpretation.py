@@ -35,15 +35,15 @@ def test_real_provider_boundary_with_injected_transport_and_provenance():
     calls = []
     def chat(payload):
         calls.append(payload)
-        return {"message": {"content": json.dumps(response())}}
+        return {"choices": [{"message": {"content": json.dumps(response())}}]}
     source = analysis()
     before = copy.deepcopy(source)
     result = Interpreter(model="test-model", transport=chat).generate(source)
     assert source == before
-    assert result["status"] == "generated" and result["provider"] == "ollama"
+    assert result["status"] == "generated" and result["provider"] == "xai"
     assert len(result["evidence_sha256"]) == 64 and result["prompt_version"]
     assert result["report"] == response()
-    assert calls[0]["stream"] is False and isinstance(calls[0]["format"], dict)
+    assert calls[0]["stream"] is False and calls[0]["response_format"]["type"] == "json_schema"
     assert "private-identity" not in json.dumps(calls)
 
 
@@ -54,14 +54,14 @@ def test_real_provider_boundary_with_injected_transport_and_provenance():
     {**response(), "summary": ""},
 ])
 def test_invalid_llm_outputs_fail_without_deterministic_substitution(bad):
-    service = Interpreter(model="test-model", transport=lambda _: {"message": {"content": json.dumps(bad)}})
+    service = Interpreter(model="test-model", transport=lambda _: {"choices": [{"message": {"content": json.dumps(bad)}}]})
     with pytest.raises(InterpretationError):
         service.generate(analysis())
 
 
 def test_missing_provider_does_not_fabricate_notes(monkeypatch):
     monkeypatch.delenv("ECHOTRACE_LLM_MODEL", raising=False)
-    service = Interpreter()
+    service = Interpreter(api_key="")
     assert service.status()["available"] is False
     with pytest.raises(InterpretationError, match="configured"):
         service.generate(analysis())
@@ -74,7 +74,7 @@ def test_api_generated_notes_persist_without_changing_detector(tmp_path):
     calls = []
     def chat(payload):
         calls.append(payload)
-        return {"message": {"content": json.dumps(response())}}
+        return {"choices": [{"message": {"content": json.dumps(response())}}]}
     service = Interpreter(model="test-model", transport=chat)
     with TestClient(create_app(tmp_path, interpreter=service)) as client:
         assert client.get("/api/analyses/sample/interpretation").json()["status"] == "not_generated"
@@ -94,7 +94,7 @@ def test_api_generated_notes_persist_without_changing_detector(tmp_path):
 def test_unfinished_and_provider_failure_are_honest(tmp_path):
     store = Store(tmp_path)
     store.create("sample", "recording.wav", tmp_path / "source.wav")
-    service = Interpreter(model="test-model", transport=lambda _: {"message": {"content": "not json"}})
+    service = Interpreter(model="test-model", transport=lambda _: {"choices": [{"message": {"content": "not json"}}]})
     with TestClient(create_app(tmp_path, interpreter=service)) as client:
         assert client.post("/api/analyses/sample/interpretation").status_code == 409
         store.update("sample", status="completed", result=analysis())

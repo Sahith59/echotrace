@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from .pilot import create_pilot_router
+from .interpretation import create_interpretation_router
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2] / "artifacts" / "workspace"
 MAX_BYTES = 50 * 1024 * 1024
@@ -107,7 +108,7 @@ class StressRequest(BaseModel):
 
 
 def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | None = None,
-               pilot_provenance: Path | None = None) -> FastAPI:
+               pilot_provenance: Path | None = None, interpreter=None) -> FastAPI:
     root = root or Path(os.environ.get("ECHOTRACE_WORKSPACE", DEFAULT_ROOT))
     store = Store(root)
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="echotrace")
@@ -122,6 +123,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
     app = FastAPI(title="ECHOTRACE", version="0.1.0", lifespan=lifespan)
     app.state.store = store
     app.include_router(create_pilot_router(root=pilot_root, provenance_path=pilot_provenance))
+    app.include_router(create_interpretation_router(store, interpreter))
 
     def get_job(job_id):
         try:
