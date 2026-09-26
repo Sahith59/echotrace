@@ -135,7 +135,10 @@ def main(argv=None):
     p=argparse.ArgumentParser();p.add_argument("--train",type=Path,required=True);p.add_argument("--selection",type=Path,required=True)
     p.add_argument("--dataset-root",type=Path,required=True);p.add_argument("--output",type=Path,required=True);p.add_argument("--cache",type=Path,default=DEFAULT_CACHE)
     a=p.parse_args(argv)
-    try: print(json.dumps(run(a.train,a.selection,a.dataset_root,a.output,a.cache)))
+    try:
+        result=run(a.train,a.selection,a.dataset_root,a.output,a.cache)
+        summary={key:result[key] for key in ("best_epoch","optimizer_steps","adapted_weights_sha256","elapsed_seconds")}
+        print(json.dumps(summary))
     except (OSError,ValueError,RuntimeError) as e: print(f"NATIVE ADAPT: {e}");return 2
     return 0
 if __name__=="__main__":raise SystemExit(main())
