@@ -1,6 +1,25 @@
-# First bounded TReNDs experiment
+# TReNDs experiment ledger
 
-Started 2026-09-25 America/New_York (cluster timestamps are UTC on 2026-09-26). Last status check: 2026-09-26 05:25 UTC. This is a run ledger, not a completed training or accuracy report. Recheck live status before any action.
+Started 2026-09-25 America/New_York (cluster timestamps are UTC on 2026-09-26). **Current status: runs 01 and 02 completed and failed promotion; final adaptation preparation is active.** The first-run setup below is historical. Recheck live status before any action.
+
+## Completed results and current final run
+
+| Run / job | Actual GPU allocation | Result |
+| --- | --- | --- |
+| Smoke 4503631 | 13 seconds | Numerical compatibility only |
+| AASIST adaptation 4503646 | 55m49 | 6,000 training steps; acceptance recall 44.47%, FPR 3.98%, AUROC 0.8448; not promoted |
+| Native frozen 4503743 | 7 seconds | Wrong dataset-root preflight; failed before inference |
+| Native frozen 4503749 | 7m48 | 457 fresh-speaker acceptance files; recall 49.10%, FPR 5.17%, AUROC 0.8470; not promoted |
+
+Aggregate GPU allocation elapsed is **1h03m57**. Full aggregate reports are checked in under `challenges/hearsay-audio-authentication/reports/cluster-run-01/` and `reports/native-frozen-01/`. These contain the independently selected thresholds, confusion counts, confidence intervals and promotion decisions. They are public-data experiments, not sponsor results.
+
+The remaining unused development speakers supplied only 33 genuine and zero synthetic examples, so that proposed next holdout was rejected. CPU job **4503784** now stages the official evaluation `flac_E_aa.tar` (8,449,781,760 bytes; MD5 `a8c800766f3d4ef87971e2b4f29663e2`). It must verify the archive, freeze a balanced 2,000-file holdout and audit decoding and exact content-hash independence against previous train/selection/acceptance files before any new GPU job. The official partition and content checks are separate evidence; different speaker-ID namespaces alone are not proof of independence.
+
+The final native adaptation is predeclared: pinned wav2vec2 checkpoint `c66306024a7ede0be291e9c4558b37634782dc4e`, frozen convolutional encoder, transformer/head training, seed 20260926, effective batch 16, AdamW learning rate 1e-5, at most 2,000 steps / three epochs / 2h30 fit. Checkpoint and threshold selection use only the original selection split. Final acceptance is evaluated after freezing them.
+
+One A100, one node, a hard **3h30 allocation including evaluation**, no requeue or duplicate jobs. Maximum total GPU use remains below the five-hour budget. A new GPU job ID and final result will be recorded when they exist. The web continues serving the original AASIST-L until a candidate passes the unchanged acceptance goals and serving checks.
+
+## Historical first-run setup (05:25 UTC checkpoint)
 
 ## Location and scope
 
