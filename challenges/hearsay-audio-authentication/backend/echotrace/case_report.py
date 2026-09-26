@@ -45,13 +45,15 @@ def printable(report):
     speaker_text = (f"Cosine similarity {speaker['similarity']['cosine']:.4f} · uncalibrated · "
                     f"reference: {speaker['reference']['label']}" if speaker else 'No reference comparison performed.')
     interpretation = synthesis.get('interpretation')
-    ai_html = '<h3>AI interpretation (Grok)</h3><p>No AI interpretation generated.</p>'
+    provider_label = {'groq': 'Groq', 'xai': 'Grok'}.get((interpretation or {}).get('provider'), 'Unknown provider')
+    ai_title = '<h3>AI interpretation (' + provider_label + ')</h3>'
+    ai_html = '<h3>AI interpretation</h3><p>No AI interpretation generated.</p>'
     if interpretation and interpretation.get('status') == 'generated':
         if interpretation.get('evidence_sha256') != evidence_hash(evidence_for(synthesis)):
-            ai_html = '<h3>AI interpretation (Grok)</h3><p>Saved AI interpretation no longer matches the measurements.</p>'
+            ai_html = ai_title + '<p>Saved AI interpretation no longer matches the measurements.</p>'
         else:
             brief = interpretation['report']
-            ai_html = ('<h3>AI interpretation (Grok)</h3><small>AI-written · ' +
+            ai_html = (ai_title + '<small>AI-written · ' +
                 esc(interpretation.get('model', '')) + ' · Review against the measurements.</small><p>' +
                 esc(brief['summary']) + '</p><ul>' + ''.join('<li>' + esc(finding['text']) +
                 ' [' + esc(', '.join(finding['evidence_ids'])) + ']</li>' for finding in brief['findings']) +
