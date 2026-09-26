@@ -1,6 +1,10 @@
 # ECHOTRACE persistent memory
 
-Last updated: 2026-09-26, pearl-grey glass refinement and Phase 3C audit. **This opening state supersedes all dated historical notes below.**
+Last updated: 2026-09-26, lighter mineral glass, independent-corpus stress check and local end-to-end run. **This opening state supersedes all dated historical notes below.**
+
+The current app serves pinned NII for new <=30-second recordings and retains historical AASIST cases. A frozen, paired ArA-DF-2026 Arabic/channel sample scored 198 of 200 selected files under the app limit. NII: 60/98 synthetic caught (61.2%), 7/100 genuine falsely flagged (7.0%), AUROC 0.902; historical AASIST on the identical eligible IDs: 77/98 caught, 93/100 false alarms. This fails the 80% recall / 5% false-positive quality goal. The NII model card lists MLAAD among its training sources, so the 24 demo clips cannot independently validate it. The earlier In-the-Wild result replicates author-evaluated data. `docs/ara-df-2026-stress-check.md` has immutable hashes, limits and reproduction. No threshold or serving weights were changed. The live reliability panel now shows the failed ArA result first. Separate cluster job 4504670 remains inaccessible: `ssh trends` timed out; direct `elpis` reached login but rejected the available key. No new cluster job launched.
+
+The user-requested lighter neutral glass and dark ink are in `frontend/src/reference-glass.css`; Chrome visually checked the recording, queue, reliability, evidence and failed benchmark panel. A 12.3-second WAV upload, same-model MP3 derivative, both JSON reports and a valid two-row analyst CSV passed live locally. Browser file-picker automation still could not complete native selection; a manual chooser check remains. `./scripts/dev.sh status` reported ready at `http://127.0.0.1:5173/`. Latest full checks: backend 292 passed; frontend 52 passed; production build passed. Official sponsor data, metric, schema and destination are not public in the packet; Phase 0/1 sponsor gates, Phase 3C quality goal and Phase 5 official submission remain open. See `plan.md` for phase status. Never print or commit `.env`.
 
 ## Current state — 2026-09-26
 

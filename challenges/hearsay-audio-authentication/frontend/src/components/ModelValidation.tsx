@@ -15,7 +15,7 @@ type Experiment = {
 }
 type ServingBenchmark = Metrics & {
   name: string; model: string; sample_count: number; genuine_count: number; synthetic_count: number
-  threshold: number; reason: string
+  threshold: number; reason: string; status?: string; model_scored_count?: number
 }
 type Evaluation = { scope: string; serving_model: string; experiments: Experiment[]; serving_benchmarks?: ServingBenchmark[] }
 const percentage = (value: number | null) => value == null ? 'Not available' : `${(value * 100).toFixed(1)}%`
@@ -51,7 +51,9 @@ function ExperimentReview({ experiment }: { experiment: Experiment }) {
 function ServingBenchmarkReview({ benchmark }: { benchmark: ServingBenchmark }) {
   return <section>
     <h3>{benchmark.name}</h3>
-    <p className="case-help">Serving model: {benchmark.model} · {benchmark.sample_count.toLocaleString()} evaluated recordings</p>
+    {benchmark.status === 'failed_quality_goal' && <p className="validation-warning"><strong>Quality goal not met on this sample.</strong> Review the missed synthetic recordings and false alarms below.</p>}
+    <p className="case-help">Serving model: {benchmark.model} · {benchmark.sample_count.toLocaleString()} selected recordings</p>
+    {benchmark.model_scored_count != null && benchmark.model_scored_count !== benchmark.sample_count && <p className="case-help">{benchmark.model_scored_count.toLocaleString()} scored · {(benchmark.sample_count - benchmark.model_scored_count).toLocaleString()} outside the product's analysis scope</p>}
     <p className="case-help">{benchmark.genuine_count.toLocaleString()} genuine · {benchmark.synthetic_count.toLocaleString()} synthetic · fixed threshold {benchmark.threshold}</p>
     <div className="table-scroll"><table><thead><tr><th>Metric</th><th>Observed result</th></tr></thead><tbody>
       <tr><td>Synthetic recordings caught</td><td>{percentage(benchmark.recall)}</td></tr>

@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. **The light grey/pearl atmospheric workspace and guided investigation are implemented. New API/CLI analyses use pinned NII whole-file scoring (<=30 seconds); legacy AASIST results remain immutable. A real browser NII analysis and real Groq interpretation succeeded. Guided steps, queue/date filters, analyst reviews and provenance-safe comparisons/exports are implemented. Phase 5 local verification is complete within the documented checks; official sponsor data/schema/submission and deployment remain external gates. NII serving is an explicit prototype decision using absolute benchmark gates and parity, not a claim that the old training-candidate comparative contract passed.**
+Updated 2026-09-26. **The lighter mineral-glass workspace and guided investigation are implemented. New API/CLI analyses use pinned NII whole-file scoring (<=30 seconds); legacy AASIST results remain immutable. Live WAV→NII→MP3 comparison→JSON/CSV and real Groq interpretation have been verified. The frozen ArA-DF-2026 sample exposed a detector-quality shortfall (61.2% synthetic recall, 7.0% genuine false positives), now shown first in the live validation panel. Phase 3C serving is complete but quality remains open. Official sponsor data/schema/submission and deployment remain external gates.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 
@@ -21,7 +21,7 @@ The numerical score comes from the speech detector. Signal measurements describe
 | 2 — Workbench | Implemented; built-in public-sample multipart upload and live Groq generation passed in the browser | Manual native unfamiliar-file chooser check remains |
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
 | 3B — Adapt | Completed: adaptation and frozen-candidate experiments | Final job 4504574 finished; artifacts retained |
-| 3C — Evaluate | Serving migration complete: earlier adaptations failed; NII passed parity and frozen absolute gates and is the scoped prototype primary | Detector-quality research remains open: retrieve paired baseline job 4504670 and evaluate on a genuinely new representative corpus; public replication is not sponsor validation or a superiority claim |
+| 3C — Evaluate | Serving migration complete; NII passed parity and the earlier frozen In-the-Wild absolute gates. A paired 200-file ArA-DF-2026 stress check is complete and exposes a new-domain failure. | Quality goal remains open: 61.2% recall and 7.0% false positives fail the 80%/5% target. Retrieve separate job 4504670 if cluster access returns; evaluate improvements only on a new, representative untouched corpus. |
 | 4 — Demonstrate | Light guided workspace, queue/review flow, real Groq generation and saved fallback complete | Venue/display rehearsal remains external |
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
 | Extensions — Speaker and claims | Implemented and tested, including live Groq interpretation | Similarity is not identity proof; generated interpretation can be wrong |
@@ -30,9 +30,9 @@ The numerical score comes from the speech detector. Signal measurements describe
 
 Report each phase with four facts: **what is delivered, how it was verified, what remains open, and the next phase**. A completed software feature is not a completed accuracy claim or an official submission.
 
-1. **Phase 3C serving — delivered.** Pinned NII is the shared API/CLI primary, with parity and failure checks; saved AASIST results are preserved. Phase 3C **quality validation remains open**: retrieve job 4504670 for a same-file comparison when cluster access returns, and evaluate on a new, representative, codec-diverse corpus before claiming independent detector strength. No further fitting or threshold change on inspected holdouts.
+1. **Phase 3C serving — delivered; quality goal open.** Pinned NII is the shared API/CLI primary, with parity and failure checks; saved AASIST results are preserved. A frozen, paired [ArA-DF-2026 stress check](docs/ara-df-2026-stress-check.md) on the same 198 eligible files shows NII improves sharply over historical AASIST's false-positive behavior, but NII itself fails the target on this new domain. Retrieve separate job 4504670 if cluster access returns. Future threshold/model choices need a new selection set and untouched, representative test; do not tune on the now-inspected ArA or prior acceptance files.
 2. **Phases 4A, 4B, 4C — delivered.** Guided recording/reliability/evidence steps, durable analyst review, filterable queue, real MP3/noise comparisons, evidence-linked Groq briefs and unified reports are in the app. The local test/browser record is in `docs/light-workspace-verification.md`. Next is final demo rehearsal, not rebuilding these features.
-3. **Phase 5A — local handoff.** The reproducible app, release checks, export and draft demo are ready. The normal Chrome file chooser still needs a manual user check: browser automation opened it but the ChatGPT extension returned `Not allowed` on `setFiles`; no browser security setting was changed. Verify a new WAV/MP3/M4A by hand, check score/failure state and report export, then rehearse the venue screen and speaker flow.
+3. **Phase 5A — local handoff.** The reproducible app, release checks, export and draft demo are ready. The normal Chrome file chooser still needs a manual user check: browser automation opened it but the browser extension refused programmatic file selection, and native chooser actions could not complete; no browser security setting was changed. Verify a new WAV/MP3/M4A by hand, check score/failure state and report export, then rehearse the venue screen and speaker flow.
 4. **Phase 5B — official competition submission, waiting on sponsor.** Obtain the test audio, exact labels/schema/metric, deadline and destination. Freeze the chosen model, score every held-out ID once, resolve failures, validate score polarity/scale and CSV rows, then submit through the authorized destination. Public benchmark or analyst CSV is not the official deliverable.
 
 If sponsor materials do not arrive in the next few hours, complete the Phase 5A rehearsal and preserve a working local prototype; do not invent an official CSV or claim Phase 5B complete. Independent detector-quality research can continue separately, but is not a reason to replace the current serving model without a new frozen evaluation.
@@ -63,7 +63,7 @@ Sponsor-specific unknowns do not block independent engineering, but public-data 
 - [x] Establish candidate performance on independent public splits and record failed promotion gates.
 - [ ] Repeat evaluation on sponsor data and validate the official CSV contract when available.
 
-Known diagnostic: the original detector caught 6/12 synthetic recordings and falsely flagged 3/12 genuine recordings at threshold 0.5 on the selected 24 clips. This small inspected set is a diagnostic, not a general accuracy estimate. The app still serves the original model.
+Known historical diagnostic: original AASIST caught 6/12 synthetic recordings and falsely flagged 3/12 genuine recordings at threshold 0.5 on the selected 24 clips. This small inspected MLAAD set is a **demo diagnostic only** and is included in NII's disclosed training sources, so it cannot independently validate NII. The app now serves NII for new analyses; historical AASIST reports remain saved.
 
 ## Phase 2 — Complete investigation workbench
 
@@ -93,7 +93,7 @@ Known diagnostic: the original detector caught 6/12 synthetic recordings and fal
 - [ ] Complete the native unfamiliar-file chooser journey manually. Built-in public-sample normal multipart upload passed in the browser; automated local-file selection remains blocked by the Chrome extension's file-URL permission.
 - [x] Inspect desktop, 375×812 phone and 812×375 landscape layouts; verify no page overflow and visible input focus. Mobile focus containment/reduced-motion implementation are tested. This is not a formal screen-reader/WCAG certification or pixel-regression suite.
 - [x] Verify live Groq interpretation output, evidence references, persistence and unchanged score. The initial edge `403` was fixed with the required user-agent; authenticated browser generation succeeded with the working key.
-- [x] Present measured validation summaries with checkpoint hashes and explicit failed/not-promoted status; never label an experimental model as serving.
+- [x] Present measured validation summaries with checkpoint hashes and explicit failed/not-promoted status; the newer ArA quality failure appears first in the live reliability panel. Never label an experimental model as serving.
 
 Evidence: [restart verification](docs/phase2-restart-verification.md), [phase verification](docs/phase-verification.md), [feature inventory](docs/product-capabilities.md). Analyst CSV is implemented; official sponsor-format export remains a Phase 5 gate.
 
@@ -137,8 +137,9 @@ See [run ledger](docs/cluster-run-2026-09-25.md) for exact paths, job IDs and li
 - [x] Review recall, false-positive rate, AUROC, counts, confidence intervals and available attack/codec slices.
 - [x] Evaluate the predeclared promotion goals: at least 80% recall, at most 5% false positives, at least 10 percentage-point recall gain, no AUROC regression. **The final candidate failed the false-positive goal.**
 - [x] Historical decision: retain the original serving model after the three training candidates failed and preserve those candidates as experimental evidence. No checkpoint was promoted automatically.
-- [ ] Meet the detector quality goals on a new representative independent benchmark. This is an unresolved product-quality requirement, not a completed feature.
 - [x] Separately evaluate pinned NII: official-reference parity and frozen absolute benchmark gates passed; activate it as the explicitly reviewed prototype primary with local CPU/runtime, provenance, failure and rollback checks.
+- [x] Run a fixed 100+100 ArA-DF-2026 Track-2 stress check at the unchanged threshold and score historical AASIST on the identical 198 eligible IDs. Preserve both manifests/scores and report the failure; see [methods and results](docs/ara-df-2026-stress-check.md).
+- [ ] Meet the 80% recall / <=5% false-positive quality goal on a genuinely new, representative and untouched corpus. The targeted ArA check **failed** these goals; do not retune its labels or advertise general reliability.
 
 Final native candidate: **87.4% recall, 24.4% false-positive rate, AUROC 0.90609** on 1,000 genuine and 1,000 synthetic recordings. Baseline on those same files: 53.7% recall, 24.0% false positives, AUROC 0.70538. Thresholds were fixed using the original selection set. These are different records from earlier experiments and must not be pooled as directly comparable tests.
 
@@ -183,7 +184,7 @@ Remaining gates:
 
 1. Manually exercise the native unfamiliar-file browser chooser; built-in public-sample multipart upload and live Groq interpretation already passed.
 2. Obtain official NSA held-out files, CSV schema, metric, cutoff and submission instructions; use the strict export pipeline and resolve every failed row.
-3. Address compressed-genuine false positives using representative training/selection data and a fresh benchmark before claiming a strong detector or promoting a candidate. Do not retune the inspected acceptance sets.
+3. Address the newly measured Arabic/channel recall and false-positive weakness alongside compressed-genuine behavior, using representative training/selection data and a fresh untouched benchmark. Do not retune the inspected ArA or prior acceptance sets.
 4. Plan deployment authentication, storage/retention and hosting in the next user-directed iteration. No deployment or official competition entry was performed here.
 
 ## Reopened detector and provider iteration
@@ -217,12 +218,13 @@ Groq activation is complete. The ignored root `.env` remains backend-only; never
 - [x] Repair the local blank-page handoff: keep API and Vite in detached tmux sessions, add a checked one-command launcher, verify stop/start and a fresh browser reload. Improve recent-recordings contrast against the textured background.
 - [x] Replace the pink fibrous lower background with pearl white and subtle teal waves, keeping the powder-blue/teal upper field and existing glass/refraction controls. Inspect top and lower workspace in the live browser before resuming phase work.
 - [x] Replace the teal atmosphere with light grey and pearl-white waves; neutralize the slate glass and reduce selected-control opacity while retaining decorative refraction and legible data. Visually check a NII result, batch/export, and a 375px queue. Re-run 290 backend tests, 51 frontend tests, and the production build. The visual pass does not change detector accuracy.
+- [x] Lighten the grey glass panels/sidebar further and switch their typography to dark ink for legibility; preserve background refraction. Inspect NII recording, batch queue, reliability and case-evidence views in Chrome. Frontend 51 tests and production build pass after this change.
 - [x] Adapt supplied calendar into real queue date filtering; add keyboard-usable contextual info buttons.
 - [x] Phase3C prototype primary migration: pinned NII shared API/CLI, parity/runtime checks,30second limit, fail-closed input/model handling, preserved historical AASIST reports. See serving-decision document for measured and unmeasured boundaries.
 - [x] Phase4A: Review recording / Check reliability / Case evidence navigation; durable analyst status and notes with optimistic concurrency and local draft retention.
 - [x] Phase4B: queue search/status/review/date filters, score/date sort, actual compression/noise comparison, full-provenance mixed-model guards and original reanalysis.
 - [x] Phase4C: real Groq generation; allowlisted current comparison measurements invalidate stale briefs; clickable evidence references; versioned analyst findings in case report and CSV.
 - [ ] Phase5 official submission: still needs sponsor inputs/schema/metric and authorized destination. No official submission or deployment is claimed.
-- [ ] Retrieve completed same-file baseline CPU4504670 when cluster login returns. A fresh 2026-09-26 SSH attempt again timed out during jump-host banner exchange; no duplicate jobs launched.
+- [ ] Retrieve completed same-file In-the-Wild baseline CPU4504670 when cluster login returns. Latest `trends` timed out at the banner; direct `elpis` reached `trendslogin` but rejected the available public key. No duplicate job was launched. The separate ArA-DF paired same-file check is complete.
 
 User verification: open a known sample, run NII (or use legacy reanalysis), inspect help, switch investigation steps, save notes, filter the queue, run one transformation and export a same-model case/CSV. The key previously appeared rejected; bounded diagnosis showed an unstructured edge403 fixed by an explicit User-Agent. Real Groq generation subsequently succeeded—do not ask the user to replace the working key.

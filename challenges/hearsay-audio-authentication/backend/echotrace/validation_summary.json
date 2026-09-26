@@ -1,7 +1,32 @@
 {
-  "scope": "Public benchmark evidence; not sponsor evaluation. Historical adaptation thresholds used separate selection data. The serving NII threshold was fixed before the reported replication. Complete upstream pretraining overlap is unknown. Scores remain uncalibrated.",
+  "scope": "Public benchmark evidence, not sponsor evaluation. NII scores are uncalibrated. Its disclosed training sources include MLAAD, so the 24 demo clips are not an independent NII test. The fixed 0.5 threshold passed an In-the-Wild replication but failed a newer Arabic/channel stress sample. Complete upstream audio overlap is unknown.",
   "serving_model": "NII wav2vec-small-anti-deepfake",
   "serving_benchmarks": [
+    {
+      "name": "ArA-DF-2026 Arabic/channel stress check / NII primary",
+      "model": "NII wav2vec-small-anti-deepfake",
+      "status": "failed_quality_goal",
+      "selection_scope": "independent_corpus_stress_check",
+      "sample_count": 200,
+      "genuine_count": 100,
+      "synthetic_count": 98,
+      "model_scored_count": 198,
+      "app_eligible_count": 198,
+      "app_quality_exclusion_count": 2,
+      "threshold": 0.5,
+      "threshold_selected_on_this_benchmark": false,
+      "recall": 0.6122448979591837,
+      "false_positive_rate": 0.07,
+      "roc_auc": 0.9018367346938775,
+      "confusion": {
+        "tn": 93,
+        "fp": 7,
+        "fn": 38,
+        "tp": 60
+      },
+      "manifest_sha256": "41b9b04428ab59cdc7a773b0edaf72ec410181ed4f6261c824b9c94f5f663ebc",
+      "reason": "Quality goal failed: 60 of 98 eligible synthetic files caught and 7 of 100 genuine files falsely flagged. Two selected synthetic files exceeded the product's 30-second limit. Fixed balanced 100+100 convenience sample from one Track-2 development-test shard; not representative of the full corpus or sponsor data. Historical AASIST scored the same 198 IDs, with 78.6% recall and 93.0% false positives. No threshold or serving weights changed. See docs/ara-df-2026-stress-check.md."
+    },
     {
       "name": "Frozen In-the-Wild replication / NII primary",
       "model": "NII wav2vec-small-anti-deepfake",
@@ -26,7 +51,7 @@
       "app_quality_exclusion_count": 1,
       "weights_sha256": "828ee456122f86d5d631cb7895a10e5c62c78a4fcb8a8b1c42cb5838a9abcfe0",
       "manifest_sha256": "dbfa528249c855261d64b864956a6b346b0faf40897622bae6e5a28ba1f9309a",
-      "reason": "Selected for prototype serving after official-reference parity and predeclared absolute recall, false-positive-rate and coverage gates passed. This is benchmark replication, not sponsor validation or a claim that the training-specific acceptance contract passed. Pairwise AASIST results, unseen-corpus generalization and score calibration remain pending."
+      "reason": "Selected for prototype serving after official-reference parity and predeclared absolute recall, false-positive-rate and coverage gates passed. This replicates a benchmark previously evaluated by the checkpoint authors. The newer ArA-DF-2026 stress sample failed our quality goals; these favorable results do not establish general reliability. The separate cluster In-the-Wild pairwise AASIST result, sponsor validation and score calibration remain pending."
     }
   ],
   "experiments": [

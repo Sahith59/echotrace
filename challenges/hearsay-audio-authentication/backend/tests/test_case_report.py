@@ -90,6 +90,10 @@ def test_model_evaluation_discloses_failed_promotion_and_linked_weights(tmp_path
         assert report['experiments'][0]['candidate']['recall'] < .8
         assert len(report['experiments'][0]['candidate_weights_sha256']) == 64
         assert 'not sponsor' in report['scope'].lower()
+        stress = report['serving_benchmarks'][0]
+        assert stress['status'] == 'failed_quality_goal'
+        assert stress['model_scored_count'] == 198
+        assert stress['confusion'] == {'tn': 93, 'fp': 7, 'fn': 38, 'tp': 60}
 
 
 @pytest.mark.parametrize("provider,label", [("xai", "Grok"), ("groq", "Groq"), ("unknown", "Unknown provider")])

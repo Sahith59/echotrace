@@ -65,6 +65,7 @@ def analyze_file(path: Path, progress: Callable[[str], None] | None = None) -> d
     stage("aggregation")
     limitations.append("The primary detector scores the complete recording once; it does not localize edits or verified boundaries.")
     limitations.append("Public In-the-Wild results replicate a benchmark previously evaluated by the checkpoint authors and are not sponsor validation.")
+    limitations.append("A fixed ArA-DF-2026 Arabic/channel stress sample missed 38 of 98 eligible synthetic recordings and falsely flagged 7 of 100 genuine recordings at the current threshold; this detector is not validated for that domain.")
     result = {
         "schema_version": "1.1",
         "pipeline_version": "0.2.0",

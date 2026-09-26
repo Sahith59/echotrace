@@ -52,3 +52,19 @@ it('shows the serving benchmark separately without inventing a baseline comparis
   expect(screen.getByText(/1,000 genuine · 1,000 synthetic/)).toBeInTheDocument()
   expect(screen.queryByText('Baseline')).not.toBeInTheDocument()
 })
+
+it('surfaces a failed new-domain quality check and out-of-scope clips', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    scope: 'Public benchmarks, not sponsor data.', serving_model: 'NII', experiments: [],
+    serving_benchmarks: [{name:'ArA-DF-2026 stress check', model:'NII', status:'failed_quality_goal',
+      sample_count:200, model_scored_count:198, genuine_count:100, synthetic_count:98,
+      threshold:.5, recall:60/98, false_positive_rate:.07, roc_auc:.9018,
+      reason:'Fixed single-shard sample; no serving change.'}],
+  }))))
+  render(<ModelValidation />)
+  expect(await screen.findByText('ArA-DF-2026 stress check')).toBeInTheDocument()
+  expect(screen.getByText('Quality goal not met on this sample.')).toBeInTheDocument()
+  expect(screen.getByText(/198 scored · 2 outside/)).toBeInTheDocument()
+  expect(screen.getByText('61.2%')).toBeInTheDocument()
+  expect(screen.getByText('7.0%')).toBeInTheDocument()
+})
