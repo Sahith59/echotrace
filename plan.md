@@ -16,7 +16,7 @@ The numerical score comes from the speech detector. Signal measurements describe
 
 | Phase | Status | What closes it |
 | --- | --- | --- |
-| 0 — Requirements | Internal requirements documented; sponsor details missing | Official data, metric, CSV template, rules and deadline confirmed |
+| 0 — Requirements | Internal requirements documented; sponsor details missing | Official data, metric, CSV template, full rules and NSA cutoff confirmed |
 | 1 — Baseline | Working pipeline and public diagnostic evaluation | Sponsor-specific baseline evaluation and schema validation remain open |
 | 2 — Workbench | Core implemented; acceptance checks in progress | Remaining browser/accessibility checks and live AI interpretation review |
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
@@ -33,7 +33,8 @@ The numerical score comes from the speech detector. Signal measurements describe
 - [x] Confirm five-hour aggregate GPU budget, one GPU/one node, account and personal cluster storage.
 - [ ] Obtain official sponsor training/test data and label definitions.
 - [ ] Confirm scoring metric, CSV columns/scale/order, permitted feedback and evaluation rules.
-- [ ] Confirm event-wide requirements, deadline, submission destination and external-data terms.
+- [x] Read the organizer packet in Chrome: main schedule ends hacking September 27 at 8 AM; one track plus eligible sponsor challenges; teams up to four. See [organizer requirements](docs/organizer-requirements.md).
+- [ ] Confirm full event rules, sponsor-specific cutoff/destination and external-data/prior-work terms. The linked live site requires event login.
 
 Sponsor-specific unknowns do not block independent engineering, but public-data performance does not establish sponsor performance.
 
