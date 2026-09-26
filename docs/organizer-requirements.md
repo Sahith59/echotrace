@@ -16,3 +16,11 @@ Official training/test files, label definitions, score polarity/scale and CSV sc
 The packet links [HexLabs Live](https://live.hexlabs.org/), which redirected to the event login in this browser. No account was created, no new access was granted, and no credentials were entered. The user was asked to share the NSA dataset/instructions link if it is available in their event dashboard.
 
 The authorized endpoint for this iteration is a private source repository, not an official event submission or deployment.
+
+## Public Devpost follow-up
+
+The [HackGT 13 Devpost overview](https://hackgt13.devpost.com/) is accessible. It directs teams to submit there and then register the resulting project link at `expo.hexlabs.org`. The page displays **September 27, 2026 at noon EDT** as its deadline. That differs from the packet's **8 AM hacking stop**; do not treat the later form deadline as extra coding time or assume it is the NSA CSV cutoff.
+
+The [public rules](https://hackgt13.devpost.com/rules) require a code link, credits for frameworks and disclosure of what AI/pretrained tools provide versus the work developed for the event. They permit AI as a tool, prohibit merely reskinning it, limit a team to one project, prohibit crossposting to other hackathons and require expo attendance. The pre-start-coding rule has an inconsistent weekday/date (“Friday, September 26th”); confirm the intended cutoff with organizers instead of inventing an eligibility interpretation. Development history is preserved.
+
+The [resources page](https://hackgt13.devpost.com/resources) sends readers back to the authenticated live site. No public NSA data, schema, scoring metric or CSV delivery instructions were found in these pages. The new private repository will be a source handoff; judge access must be arranged before any actual competition submission.

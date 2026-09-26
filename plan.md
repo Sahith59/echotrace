@@ -34,7 +34,8 @@ The numerical score comes from the speech detector. Signal measurements describe
 - [ ] Obtain official sponsor training/test data and label definitions.
 - [ ] Confirm scoring metric, CSV columns/scale/order, permitted feedback and evaluation rules.
 - [x] Read the organizer packet in Chrome: main schedule ends hacking September 27 at 8 AM; one track plus eligible sponsor challenges; teams up to four. See [organizer requirements](docs/organizer-requirements.md).
-- [ ] Confirm full event rules, sponsor-specific cutoff/destination and external-data/prior-work terms. The linked live site requires event login.
+- [x] Read public Devpost requirements: code/AI attribution, Devpost then Expo registration, one project and expo attendance; record timing inconsistencies. Prepare [submission copy](docs/submission-draft.md).
+- [ ] Confirm remaining full event rules, sponsor-specific cutoff/destination and external-data/prior-work terms. The linked live site requires event login.
 
 Sponsor-specific unknowns do not block independent engineering, but public-data performance does not establish sponsor performance.
 
