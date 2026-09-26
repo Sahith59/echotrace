@@ -56,6 +56,30 @@ def test_batch_rejects_sidecar_alias_of_source(tmp_path, monkeypatch, source_kin
     assert not output.exists()
 
 
+def test_batch_rejects_output_and_sidecar_alias(tmp_path, monkeypatch):
+    manifest, _ = _manifest(tmp_path)
+    output = tmp_path / "scores.csv"
+    output.write_text("previous scores")
+    sidecar = output.with_suffix(".run.json")
+    os.link(output, sidecar)
+    monkeypatch.setattr("echotrace.pipeline.analyze_file", lambda path: pytest.fail("scoring started"))
+
+    assert main(["batch", str(manifest), "--root", str(tmp_path), "--output", str(output)]) == 2
+    assert output.read_text() == "previous scores"
+    assert sidecar.read_text() == "previous scores"
+
+
+def test_batch_accepts_distinct_output_files(tmp_path, monkeypatch):
+    manifest, audio = _manifest(tmp_path)
+    output = tmp_path / "scores.csv"
+    monkeypatch.setattr("echotrace.pipeline.analyze_file", lambda path: {"synthetic_score": 0.2})
+
+    assert main(["batch", str(manifest), "--root", str(tmp_path), "--output", str(output)]) == 0
+    assert "clip,0.2,completed," in output.read_text()
+    assert output.with_suffix(".run.json").exists()
+    assert audio.read_bytes() == b"audio fixture"
+
+
 def test_score_rejects_output_hardlink_to_audio(tmp_path, monkeypatch):
     audio = tmp_path / "source.wav"
     audio.write_bytes(b"audio fixture")
