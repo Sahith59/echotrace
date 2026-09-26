@@ -38,7 +38,7 @@ describe('account integration', () => {
     expect(screen.queryByRole('region', { name: 'Your account' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument()
     expect(fetcher.mock.calls.some(([input]) => String(input).startsWith('/api/account'))).toBe(false)
-    expect(screen.getByRole('heading', { name: /Every recording deserves/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Is this voice recording generated/ })).toBeInTheDocument()
   })
 
   it('shows the signed-in account and opens profile and settings in the main column', async () => {
@@ -55,7 +55,7 @@ describe('account integration', () => {
     await user.click(screen.getByRole('tab', { name: 'Settings' }))
     expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
-    expect(await screen.findByRole('heading', { name: /Every recording deserves/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Is this voice recording generated/ })).toBeInTheDocument()
   })
 
   it('opens Batch & export first and forces reduced motion when preferences ask for it', async () => {
