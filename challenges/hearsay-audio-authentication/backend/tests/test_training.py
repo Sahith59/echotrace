@@ -5,6 +5,7 @@ import json
 import numpy as np
 import pytest
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 
 from echotrace import training
 
@@ -86,7 +87,9 @@ def test_optimizer_checkpoint_and_provenance(tmp_path):
     def decode(path):
         return np.full(32, values[path.name], dtype=np.float32), {}
 
-    config = {"max_wall_seconds": 30, "max_steps": 2, "max_epochs": 2,
+    config = {"dataset_root": str(tmp_path), "train_manifest": "train.csv",
+              "validation_manifest": "val.csv", "output_dir": str(tmp_path / "fresh"),
+              "max_wall_seconds": 30, "max_steps": 2, "max_epochs": 2,
               "batch_size": 2, "num_workers": 0, "learning_rate": 0.1,
               "seed": 3, "device": "cpu"}
     model = Toy()
@@ -107,3 +110,64 @@ def test_optimizer_checkpoint_and_provenance(tmp_path):
     with pytest.raises(ValueError, match="fresh"):
         training.fit(Toy(), train, valid, config, output,
                      decode_fn=decode, pretrained_sha256="test-sha")
+
+
+def test_validation_loss_uses_global_weight_denominator():
+    model = Toy()
+    with torch.no_grad():
+        model.head.weight.zero_()
+        model.head.bias.copy_(torch.tensor([2.0, -1.0]))
+    x = torch.zeros(3, 64_600)
+    target = torch.tensor([0, 0, 1])
+    criterion = torch.nn.CrossEntropyLoss(weight=torch.tensor([1.0, 3.0]))
+    loader = DataLoader(TensorDataset(x, target), batch_size=2)
+    actual = training._validate(model, loader, criterion, torch.device("cpu"), float("inf"))
+    expected = float(criterion(model(x)[1], target))
+    assert actual["loss"] == pytest.approx(expected)
+
+
+def test_nonfinite_validation_loss_rejected():
+    model = Toy()
+    loader = DataLoader(TensorDataset(torch.zeros(1, 64_600), torch.zeros(1, dtype=torch.long)))
+
+    def nan_loss(logits, target):
+        return logits.sum() * float("nan")
+
+    with pytest.raises(RuntimeError, match="Non-finite validation loss"):
+        training._validate(model, loader, nan_loss, torch.device("cpu"), float("inf"))
+
+
+def test_fit_rejects_bad_direct_config_before_output(tmp_path):
+    train, valid = balanced()
+    config = {"dataset_root": str(tmp_path), "train_manifest": "train.csv",
+              "validation_manifest": "val.csv", "output_dir": str(tmp_path / "out"),
+              "max_wall_seconds": 30, "max_steps": 2, "max_epochs": 2,
+              "batch_size": 2, "num_workers": 0, "learning_rate": 0.1,
+              "seed": 3, "device": "cpu"}
+    for key, bad in (("max_steps", 100_001), ("num_workers", 17),
+                     ("learning_rate", float("nan"))):
+        with pytest.raises(ValueError):
+            training.fit(Toy(), train, valid, {**config, key: bad}, tmp_path / "out",
+                         pretrained_sha256="test-sha")
+    assert not (tmp_path / "out").exists()
+
+
+def test_demo_hash_provenance_missing_fails_closed(tmp_path, monkeypatch):
+    monkeypatch.setattr(training, "__file__", str(tmp_path / "backend/echotrace/training.py"))
+    with pytest.raises(RuntimeError, match="provenance"):
+        training._demo_hashes()
+
+
+def test_nonfinite_gradient_rejected(tmp_path):
+    train, valid = balanced()
+    config = {"dataset_root": str(tmp_path), "train_manifest": "train.csv",
+              "validation_manifest": "val.csv", "output_dir": str(tmp_path / "out"),
+              "max_wall_seconds": 30, "max_steps": 1, "max_epochs": 1,
+              "batch_size": 2, "num_workers": 0, "learning_rate": 0.1,
+              "seed": 3, "device": "cpu"}
+    model = Toy()
+    model.head.weight.register_hook(lambda grad: torch.full_like(grad, float("inf")))
+    with pytest.raises(RuntimeError, match="non-finite|Non-finite"):
+        training.fit(model, train, valid, config, tmp_path / "out",
+                     decode_fn=lambda path: (np.ones(32, dtype=np.float32), {}),
+                     pretrained_sha256="test-sha")

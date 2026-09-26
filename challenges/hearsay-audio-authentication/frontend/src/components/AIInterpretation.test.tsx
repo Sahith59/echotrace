@@ -4,16 +4,19 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AIInterpretation from './AIInterpretation'
 
-const status = { available: true, provider: 'ollama', model: 'local-model', reason: null }
+const status = { available: true, provider: 'xai', model: 'grok-4.7', reason: null }
 const generated = {
-  status: 'generated', provider: 'ollama', model: 'local-model', prompt_version: '1',
+  status: 'generated', provider: 'xai', model: 'grok-4.7', prompt_version: '1',
   evidence_sha256: 'abc', generated_at: '2026-09-25T12:00:00Z',
   report: {
     summary: 'Review the uncertain acoustic pattern.',
     findings: [{ text: 'One metric is elevated.', evidence_ids: ['energy'] }],
     next_steps: ['Listen to the flagged interval.'],
   },
-  evidence: [{ id: 'energy', label: 'Spectral energy', value: 0.82, unit: 'ratio' }],
+  evidence: [
+    { id: 'energy', label: 'Spectral energy', value: 0.82, unit: 'ratio' },
+    { id: 'window_001', label: 'Review window', value: { start_s: 1.25, end_s: 2.75, score: 0.81 } },
+  ],
 }
 const response = (body: unknown, code = 200) => new Response(JSON.stringify(body), {
   status: code, headers: { 'Content-Type': 'application/json' },
@@ -58,13 +61,38 @@ describe('AIInterpretation', () => {
     expect(await screen.findByText('Review the uncertain acoustic pattern.')).toBeInTheDocument()
   })
 
-  it('explains when the local provider is unavailable', async () => {
+  it('explains when the provider is unavailable', async () => {
     fetchMock.mockImplementation((url: string) => Promise.resolve(response(
-      url.endsWith('/status') ? { ...status, available: false, reason: 'Ollama is offline' } : { status: 'not_generated' },
+      url.endsWith('/status') ? { ...status, available: false, reason: 'xAI key is missing' } : { status: 'not_generated' },
     )))
     render(<AIInterpretation jobId="job-a" />)
-    expect(await screen.findByText(/Ollama is offline/)).toBeInTheDocument()
+    expect(await screen.findByText(/xAI key is missing/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /generate interpretation/i })).not.toBeInTheDocument()
+  })
+
+  it('rechecks configuration after the provider becomes available', async () => {
+    let checks = 0
+    fetchMock.mockImplementation((url: string) => Promise.resolve(response(
+      url.endsWith('/status')
+        ? (++checks === 1 ? { ...status, available: false, reason: 'xAI key is missing' } : status)
+        : { status: 'not_generated' },
+    )))
+    render(<AIInterpretation jobId="job-a" />)
+    expect(await screen.findByText(/xAI key is missing/)).toBeInTheDocument()
+    await userEvent.setup().click(screen.getByRole('button', { name: /check configuration/i }))
+    expect(await screen.findByRole('button', { name: /generate interpretation/i })).toBeInTheDocument()
+  })
+
+  it('renders a structured review window as time and score', async () => {
+    const windowReport = {
+      ...generated,
+      report: { ...generated.report, findings: [{ text: 'Review this window.', evidence_ids: ['window_001'] }] },
+    }
+    fetchMock.mockImplementation((url: string) => Promise.resolve(response(url.endsWith('/status') ? status : windowReport)))
+    render(<AIInterpretation jobId="job-a" />)
+    await userEvent.setup().click(await screen.findByText('Measurement references'))
+    expect(screen.getByText(/1\.25.*2\.75.*0\.81/)).toBeInTheDocument()
+    expect(screen.queryByText('[object Object]')).not.toBeInTheDocument()
   })
 
   it('shows a generation error and permits retry', async () => {
@@ -81,6 +109,18 @@ describe('AIInterpretation', () => {
     await user.click(screen.getByRole('button', { name: /retry interpretation/i }))
     expect(await screen.findByText('Review the uncertain acoustic pattern.')).toBeInTheDocument()
     expect(posts).toBe(2)
+  })
+
+  it('can retry loading after a temporary API error', async () => {
+    let statusCalls = 0
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith('/status')) return Promise.resolve(++statusCalls === 1 ? response({ detail: 'Status unavailable' }, 503) : response(status))
+      return Promise.resolve(response({ status: 'not_generated' }))
+    })
+    render(<AIInterpretation jobId="job-a" />)
+    expect(await screen.findByText('Status unavailable')).toBeInTheDocument()
+    await userEvent.setup().click(screen.getByRole('button', { name: /retry loading interpretation/i }))
+    expect(await screen.findByRole('button', { name: /generate interpretation/i })).toBeInTheDocument()
   })
 
   it('does not show a previous job response after switching jobs', async () => {
