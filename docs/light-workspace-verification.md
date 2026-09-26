@@ -50,3 +50,5 @@ Final v3 Groq regeneration succeeded in the browser after restart. It described 
 Clean-run CI initially found five historical AASIST tests missing their checkpoint because `setup-model` now installs NII. CI and fresh-checkout testing instructions now explicitly install the checksum-pinned legacy checkpoint as well. A fresh temporary-directory download (426,428 bytes) passed SHA-256 validation. No test was skipped or weakened to resolve this setup failure.
 
 Final source commit `a4db6e4` passed both backend and frontend [GitHub CI jobs](https://github.com/Sahith59/echotrace/actions/runs/36251617928), including fresh checkpoint setup. Local application is available at http://127.0.0.1:4173/.
+
+Atmospheric-glass source commit `3a41cf8` was pushed after this earlier release record. Its [CI run](https://github.com/Sahith59/echotrace/actions/runs/36254480245) passed frontend and backend. During the visual review the live development app was available at http://127.0.0.1:5173/ with the local API at port 8000.
