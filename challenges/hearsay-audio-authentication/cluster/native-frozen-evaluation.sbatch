@@ -13,7 +13,7 @@ set -Eeuo pipefail
 : "${ECHOTRACE_ACCEPTANCE2:?}"
 : "${ECHOTRACE_OUTPUT:?}"
 python="$ECHOTRACE_ROOT/envs/detector/bin/python"
-dataset="$ECHOTRACE_ROOT/data/asvspoof5-aa"
+dataset="$ECHOTRACE_ROOT/data/asvspoof5-aa/audio"
 selection="$ECHOTRACE_ROOT/runs/aasist-aa-01/manifests/selection.csv"
 old_acceptance="$ECHOTRACE_ROOT/runs/aasist-aa-01/manifests/acceptance.csv"
 baseline_selection="$ECHOTRACE_ROOT/runs/aasist-aa-01/evaluation/selection-baseline"
