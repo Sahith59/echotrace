@@ -4,7 +4,7 @@ export default defineConfig({
   resolve: { alias: { '@': new URL('./src', import.meta.url).pathname } },
   test: {
     environment: 'jsdom',
-    include: ['src/**/*.test.tsx'],
+    include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       include: ['src/components/PilotExamples.tsx', 'src/components/AIInterpretation.tsx', 'src/components/CaseReview.tsx', 'src/components/DetectorComparison.tsx'],

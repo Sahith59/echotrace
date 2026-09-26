@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo \"Dependencies are installed by deploy/vercel-build.sh\"",
+  "buildCommand": "bash deploy/vercel-build.sh"
+}

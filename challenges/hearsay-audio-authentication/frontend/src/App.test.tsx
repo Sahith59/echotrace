@@ -149,7 +149,7 @@ describe('initial connection state', () => {
       return Promise.resolve(jsonResponse([]))
     }))
     render(<App />)
-    expect(screen.getByText('Connecting to local server')).toBeInTheDocument()
+    expect(screen.getByText('Connecting to the server')).toBeInTheDocument()
     expect(screen.queryByText('Server unavailable')).not.toBeInTheDocument()
     resolveHealth(jsonResponse({ status: 'ok' }))
     expect(await screen.findByText('Local processing available')).toBeInTheDocument()

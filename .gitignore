@@ -33,3 +33,6 @@ htmlcov/
 *.db
 *.db-shm
 *.db-wal
+
+# Vercel build output
+.vercel/

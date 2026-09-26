@@ -7,6 +7,7 @@ import io
 import json
 import math
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -30,9 +31,20 @@ from .claims_router import create_claims_router
 from .detector_comparison import create_detector_comparison_router
 from .analyst_review import create_analyst_review_router, load_analyst_review, load_analyst_reviews
 from .model_provenance import model_identity, same_model
+from .accounts import Accounts, AuthSettings, settings_from_env
+from .account_router import COOKIE, create_account_router
+from .guide import create_guide_router
+from .web import mount_frontends
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2] / "artifacts" / "workspace"
 MAX_BYTES = 50 * 1024 * 1024
+MAX_RECORDINGS_PER_USER = int(os.environ.get("ECHOTRACE_MAX_RECORDINGS_PER_USER") or "500")
+LOCAL_ORIGINS = {
+    "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5190", "http://127.0.0.1:5190",
+    "http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:4173", "http://127.0.0.1:4173",
+}
+PUBLIC_API = ("/api/health", "/api/auth/", "/api/assistant", "/api/model/evaluation")
+ANALYSIS_PATH = re.compile(r"^/api/analyses/([^/]+)(/.*)?$")
 
 
 def now() -> str:
@@ -53,19 +65,22 @@ class Store:
             columns = {row["name"] for row in db.execute("PRAGMA table_info(jobs)").fetchall()}
             if "reanalysis_of" not in columns:
                 db.execute("ALTER TABLE jobs ADD COLUMN reanalysis_of TEXT")
+            if "user_id" not in columns:
+                db.execute("ALTER TABLE jobs ADD COLUMN user_id TEXT")
+            db.execute("CREATE INDEX IF NOT EXISTS jobs_by_user ON jobs(user_id)")
 
     def connect(self):
         db = sqlite3.connect(self.db, timeout=10)
         db.row_factory = sqlite3.Row
         return db
 
-    def create(self, job_id, filename, path, parent_id=None, transform=None, reanalysis_of=None):
+    def create(self, job_id, filename, path, parent_id=None, transform=None, reanalysis_of=None, user_id=None):
         with self.connect() as db:
             db.execute("""INSERT INTO jobs
-                (id,filename,path,status,stage,created_at,result,error,parent_id,transform,reanalysis_of)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)""", (
+                (id,filename,path,status,stage,created_at,result,error,parent_id,transform,reanalysis_of,user_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""", (
                 job_id, filename, str(path), "queued", "queued", now(), None,
-                None, parent_id, json.dumps(transform) if transform else None, reanalysis_of))
+                None, parent_id, json.dumps(transform) if transform else None, reanalysis_of, user_id))
         return self.get(job_id)
 
     def get(self, job_id):
@@ -78,9 +93,12 @@ class Store:
             result[field] = json.loads(result[field]) if result[field] else None
         return result
 
-    def list(self):
+    def list(self, user_id=None):
         with self.connect() as db:
-            rows = db.execute("SELECT * FROM jobs ORDER BY created_at DESC").fetchall()
+            if user_id is None:
+                rows = db.execute("SELECT * FROM jobs ORDER BY created_at DESC").fetchall()
+            else:
+                rows = db.execute("SELECT * FROM jobs WHERE user_id=? ORDER BY created_at DESC", (user_id,)).fetchall()
         jobs = []
         for row in rows:
             job = dict(row)
@@ -111,7 +129,7 @@ class Store:
 
 
 def public(job):
-    return {key: value for key, value in job.items() if key != "path"}
+    return {key: value for key, value in job.items() if key not in ("path", "user_id")}
 
 
 class ExportRequest(BaseModel):
@@ -124,9 +142,13 @@ class StressRequest(BaseModel):
 
 def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | None = None,
                pilot_provenance: Path | None = None, interpreter=None,
-               detector_comparison_scorer=None, detector_comparison_status=None) -> FastAPI:
+               detector_comparison_scorer=None, detector_comparison_status=None,
+               auth: AuthSettings | None = None, static_root: Path | None = None) -> FastAPI:
     root = root or Path(os.environ.get("ECHOTRACE_WORKSPACE", DEFAULT_ROOT))
     store = Store(root)
+    accounts = Accounts(store.connect, google=auth.google, http=auth.http) if auth else None
+    allowed_origins = LOCAL_ORIGINS | set(auth.public_origins if auth else ())
+    public_hosts = [origin.split("://", 1)[-1].split("/")[0].split(":")[0] for origin in (auth.public_origins if auth else ())]
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="echotrace")
     scheduling_lock = threading.Lock()
 
@@ -137,23 +159,60 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
         executor.shutdown(wait=True, cancel_futures=True)
 
     app = FastAPI(title="ECHOTRACE", version="0.1.0", lifespan=lifespan)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"])
+    extra_hosts = [h.strip() for h in os.environ.get("ECHOTRACE_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    app.add_middleware(TrustedHostMiddleware,
+                       allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver", *public_hosts, *extra_hosts])
+
+    def same_site(request: Request) -> bool:
+        origin = request.headers.get("origin")
+        if origin:
+            return origin in allowed_origins
+        referer = request.headers.get("referer", "")
+        parts = referer.split("/")
+        return bool(auth) is False or (len(parts) > 2 and "/".join(parts[:3]) in allowed_origins)
+
+    def guard_account(request: Request):
+        """Resolve the signed-in user and enforce recording ownership; returns an error response or None."""
+        path = request.url.path
+        if not path.startswith("/api/") or path.startswith(PUBLIC_API):
+            return None
+        user = accounts.user_for_token(request.cookies.get(COOKIE))
+        if user is None:
+            return JSONResponse({"detail": "Sign in to continue."}, status_code=401)
+        request.state.user = user
+        match = ANALYSIS_PATH.match(path)
+        if match:
+            try:
+                owner = store.get(match.group(1)).get("user_id")
+            except KeyError:
+                owner = None
+            if owner != user["id"]:
+                return JSONResponse({"detail": "Recording not found"}, status_code=404)
+            if (request.method == "POST" and match.group(2) == "/interpretation"
+                    and not accounts.preferences(user["id"])["ai_interpretation"]):
+                return JSONResponse({"detail": "AI interpretation is turned off in your settings."}, status_code=403)
+        return None
 
     @app.middleware("http")
     async def local_origin_guard(request: Request, call_next):
-        origin = request.headers.get("origin")
-        if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin not in {
-            "http://localhost:5173", "http://127.0.0.1:5173",
-            "http://localhost:8000", "http://127.0.0.1:8000",
-            "http://localhost:4173", "http://127.0.0.1:4173",
-        }:
-            return JSONResponse({"detail": "Cross-site requests are not permitted by this local workspace."}, status_code=403)
+        if request.method not in {"GET", "HEAD", "OPTIONS"} and not same_site(request):
+            return JSONResponse({"detail": "Cross-site requests are not permitted by this workspace."}, status_code=403)
+        if accounts is not None:
+            blocked = guard_account(request)
+            if blocked is not None:
+                blocked.headers["Cache-Control"] = "no-store"
+                return blocked
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Cache-Control"] = "no-store"
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
         return response
 
     app.state.store = store
+    app.state.accounts = accounts
+    app.include_router(create_guide_router())
+    if accounts is not None:
+        app.include_router(create_account_router(store, accounts, auth))
     app.include_router(create_pilot_router(root=pilot_root, provenance_path=pilot_provenance))
     app.include_router(create_interpretation_router(store, interpreter))
     app.include_router(create_speaker_router(store))
@@ -162,6 +221,10 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
     app.include_router(create_case_router(store))
     app.include_router(create_detector_comparison_router(
         store, detector_comparison_scorer, detector_comparison_status))
+
+    def owner(request: Request):
+        user = getattr(request.state, "user", None)
+        return user["id"] if user else None
 
     def get_job(job_id):
         try:
@@ -235,7 +298,10 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
         return {"status": "ok", "model": model_status(), "limits": {"max_bytes": MAX_BYTES, "max_duration_s": 30}}
 
     @app.post("/api/analyses", status_code=202)
-    async def upload(file: UploadFile):
+    async def upload(file: UploadFile, request: Request):
+        user_id = owner(request)
+        if user_id is not None and len(store.list(user_id)) >= MAX_RECORDINGS_PER_USER:
+            raise HTTPException(429, f"You have reached the {MAX_RECORDINGS_PER_USER}-recording limit. Delete older recordings in Settings.")
         job_id = uuid.uuid4().hex
         folder = root / job_id
         folder.mkdir()
@@ -259,13 +325,13 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
             raise
         finally:
             await file.close()
-        job = store.create(job_id, filename, path)
+        job = store.create(job_id, filename, path, user_id=user_id)
         schedule(job_id)
         return public(job)
 
     @app.get("/api/analyses")
-    def history():
-        jobs = store.list()
+    def history(request: Request):
+        jobs = store.list(owner(request))
         reviews = load_analyst_reviews(store, [job["id"] for job in jobs])
         return [{**public(job), "analyst_review": reviews.get(job["id"], {
             "status": "needs_review", "notes": "", "version": 0, "updated_at": None,
@@ -325,7 +391,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
                 if (hashlib.file_digest(copied, "sha256").hexdigest() != actual_sha or
                         hashlib.file_digest(original, "sha256").hexdigest() != actual_sha):
                     raise HTTPException(409, "The original recording changed during reanalysis setup.")
-            job = store.create(new_id, source["filename"], destination, reanalysis_of=job_id)
+            job = store.create(new_id, source["filename"], destination, reanalysis_of=job_id, user_id=source.get("user_id"))
         except Exception:
             destination.unlink(missing_ok=True)
             folder.rmdir()
@@ -354,15 +420,18 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
         ext = ".mp3" if request.kind == "mp3" else ".wav"
         transform = {"kind": "mp3", "bitrate": "64k"} if request.kind == "mp3" else {"kind": "noise", "snr_db": 20, "seed": 42}
         job = store.create(new_id, f"{Path(parent['filename']).stem} · {request.kind}{ext}",
-                           folder / ("derived" + ext), job_id, transform)
+                           folder / ("derived" + ext), job_id, transform, user_id=parent.get("user_id"))
         schedule(new_id)
         return public(job)
 
     @app.post("/api/exports")
-    def export(request: ExportRequest):
+    def export(request: ExportRequest, http_request: Request):
         if len(set(request.ids)) != len(request.ids):
             raise HTTPException(422, "Duplicate recording IDs")
         jobs = [get_job(key) for key in request.ids]
+        user_id = owner(http_request)
+        if accounts is not None and any(job.get("user_id") != user_id for job in jobs):
+            raise HTTPException(404, "Recording not found")
         for job in jobs:
             score = (job["result"] or {}).get("synthetic_score")
             if job["status"] != "completed" or not isinstance(score, (float, int)) or not math.isfinite(score) or not 0 <= score <= 1:
@@ -393,7 +462,8 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
             "Content-Disposition": 'attachment; filename="echotrace-analyst-export.csv"',
             "X-Export-Kind": "analyst-not-sponsor-schema"})
 
+    mount_frontends(app, static_root)
     return app
 
 
-app = create_app()
+app = create_app(auth=settings_from_env())

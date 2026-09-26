@@ -1,0 +1,290 @@
+[
+ {
+  "id": "overview",
+  "section": "top",
+  "keywords": [
+   "what",
+   "echotrace",
+   "product",
+   "about",
+   "purpose",
+   "who",
+   "analyst",
+   "hearsay",
+   "nsa"
+  ],
+  "answer": "ECHOTRACE is an audio investigation workspace built for the NSA HEARSAY challenge at HackGT 13. An analyst adds a suspicious recording, reviews a learned synthetic-speech score with measured audio evidence, tests how the score holds up under compression or noise, and exports a reproducible case report."
+ },
+ {
+  "id": "three-questions",
+  "section": "questions",
+  "keywords": [
+   "identity",
+   "speaker",
+   "truth",
+   "true",
+   "lie",
+   "voice",
+   "separate",
+   "questions",
+   "claims"
+  ],
+  "answer": "ECHOTRACE keeps three questions apart: does the recording resemble synthesized speech, does the voice resemble a trusted reference, and what independent evidence supports the words spoken. No single number answers all three, and none of them proves identity or truth."
+ },
+ {
+  "id": "detector",
+  "section": "how-it-works",
+  "keywords": [
+   "model",
+   "detector",
+   "nii",
+   "wav2vec",
+   "how",
+   "score",
+   "scoring",
+   "works",
+   "aasist",
+   "pipeline"
+  ],
+  "answer": "New analyses use the pinned NII wav2vec-small anti-deepfake model. FFmpeg decodes the file to 16 kHz mono, the model scores the whole recording once (up to 30 seconds, never truncated), and separate signal measurements describe level, clipping, quiet frames and spectral balance. Those measurements describe the audio; they do not produce the score."
+ },
+ {
+  "id": "score-meaning",
+  "section": "how-it-works",
+  "keywords": [
+   "percent",
+   "probability",
+   "calibrated",
+   "uncalibrated",
+   "mean",
+   "confidence",
+   "low",
+   "high",
+   "100"
+  ],
+  "answer": "The 0–100 number is an uncalibrated model score, not a verified probability. A high score means strong synthetic-speech indicators; a low score does not prove a recording is genuine. Treat it as a reason to look closer, not a verdict."
+ },
+ {
+  "id": "benchmark",
+  "section": "benchmark",
+  "keywords": [
+   "accurate",
+   "accuracy",
+   "benchmark",
+   "recall",
+   "false",
+   "positive",
+   "performance",
+   "results",
+   "tested",
+   "good",
+   "reliable",
+   "detector"
+  ],
+  "answer": "On a frozen public benchmark of 2,000 In-the-Wild recordings (1,000 genuine, 1,000 synthetic) at a fixed 0.5 threshold, the detector caught 937 of 1,000 synthetic clips (93.7%) and wrongly flagged 24 of 1,000 genuine clips (2.4%), AUROC 0.9925. The model authors had evaluated this dataset before, so this is a replication, not sponsor validation."
+ },
+ {
+  "id": "experiments",
+  "section": "benchmark",
+  "keywords": [
+   "training",
+   "trained",
+   "gpu",
+   "experiment",
+   "failed",
+   "fine",
+   "tune",
+   "adaptation",
+   "cluster"
+  ],
+  "answer": "The team ran three bounded GPU experiments on public ASVspoof 5 data. All three missed at least one predeclared goal, so none was promoted. The best adapted model caught 87.4% of synthetic clips but falsely flagged 24.4% of genuine ones, mostly compressed genuine audio. The app shows these failures instead of hiding them."
+ },
+ {
+  "id": "upload",
+  "section": "walkthrough",
+  "keywords": [
+   "upload",
+   "format",
+   "formats",
+   "wav",
+   "mp3",
+   "m4a",
+   "file",
+   "size",
+   "limit",
+   "long",
+   "seconds"
+  ],
+  "answer": "You can add WAV, MP3, M4A, FLAC, OGG, Opus or AAC files up to 50 MiB. The detector scores recordings up to 30 seconds; longer files fail with a clear message instead of being silently cut. Very quiet audio gets no score."
+ },
+ {
+  "id": "training-uploads",
+  "section": "faq",
+  "keywords": [
+   "train",
+   "learn",
+   "uploads",
+   "uploading",
+   "data",
+   "teach",
+   "improve",
+   "model"
+  ],
+  "answer": "No. Uploading a recording runs inference with fixed, checksum-verified model weights. It does not train or change the model. Training is a separate offline process with frozen, labeled datasets."
+ },
+ {
+  "id": "privacy",
+  "section": "faq",
+  "keywords": [
+   "account",
+   "cloud",
+   "data",
+   "delete",
+   "device",
+   "local",
+   "privacy",
+   "private",
+   "secure",
+   "send",
+   "stored",
+   "where"
+  ],
+  "answer": "Recordings you add are analysed on the ECHOTRACE server and stored in your account, where only you can open them. You can delete any recording, or your whole account and all its data, from Settings. The optional Groq interpretation receives only measured numbers, never audio, filenames or transcripts, and you can turn it off in Settings."
+ },
+ {
+  "id": "walkthrough",
+  "section": "walkthrough",
+  "keywords": [
+   "steps",
+   "workflow",
+   "use",
+   "start",
+   "guide",
+   "review",
+   "reliability",
+   "evidence",
+   "case"
+  ],
+  "answer": "Each recording follows three steps. Review recording: listen, read the score and the measured observations. Check reliability: read the limitations, run an MP3 or noise comparison, and see measured detector performance. Case evidence: save your review, add a voice reference or transcript, check claims, and export the case."
+ },
+ {
+  "id": "stress",
+  "section": "walkthrough",
+  "keywords": [
+   "stress",
+   "compression",
+   "noise",
+   "robust",
+   "robustness",
+   "mp3",
+   "derived",
+   "compare"
+  ],
+  "answer": "A stress comparison creates a new copy of the original, either MP3 at 64 kbps or added noise at 20 dB SNR, and scores it with the same model. The original stays unchanged. A stable score does not prove the recording is genuine."
+ },
+ {
+  "id": "speaker",
+  "section": "questions",
+  "keywords": [
+   "reference",
+   "wavlm",
+   "similarity",
+   "cosine",
+   "consent",
+   "match"
+  ],
+  "answer": "With explicit consent you can compare the recording to a trusted voice sample. A local Microsoft WavLM model returns an uncalibrated cosine similarity. A clone or replay can also match, so similarity is never an identity verdict. The reference audio is deleted after processing."
+ },
+ {
+  "id": "transcript",
+  "section": "questions",
+  "keywords": [
+   "transcript",
+   "transcribe",
+   "whisper",
+   "words",
+   "correct",
+   "text"
+  ],
+  "answer": "Speech is transcribed locally with faster-whisper. Corrections create new versions, and any claim reviewed against older wording is marked stale so nothing silently drifts."
+ },
+ {
+  "id": "ai",
+  "section": "how-it-works",
+  "keywords": [
+   "ai",
+   "groq",
+   "llm",
+   "interpretation",
+   "explain",
+   "brief",
+   "summary",
+   "chat",
+   "gpt"
+  ],
+  "answer": "An optional Groq-written brief explains the measured evidence. Each finding cites the measurement it relies on, it cannot change the detector score, and it can be wrong, so it stays labeled as AI-written."
+ },
+ {
+  "id": "export",
+  "section": "walkthrough",
+  "keywords": [
+   "export",
+   "report",
+   "csv",
+   "json",
+   "download",
+   "share",
+   "handoff",
+   "pdf",
+   "print"
+  ],
+  "answer": "You can download a case report as JSON or a printable page. It keeps synthesis, voice similarity, transcript and claim reviews separate, with file hashes and model versions. Batch view exports an analyst CSV with score, review status and notes."
+ },
+ {
+  "id": "limits",
+  "section": "limits",
+  "keywords": [
+   "limitation",
+   "limitations",
+   "cannot",
+   "can't",
+   "prove",
+   "weakness",
+   "fail",
+   "miss",
+   "wrong"
+  ],
+  "answer": "ECHOTRACE cannot prove who spoke, whether someone meant to deceive, where a recording came from, or whether a statement is true. Window scores do not locate edits. Compressed genuine speech remains a known weakness of the trained experiments, and public benchmark results are not a guarantee on new data."
+ },
+ {
+  "id": "demo",
+  "section": "demo",
+  "keywords": [
+   "demo",
+   "video",
+   "watch",
+   "see"
+  ],
+  "answer": "A recorded walkthrough of the workspace will be added to the Demo section of this page shortly. You can also create an account and open the workspace yourself."
+ },
+ {
+  "id": "account",
+  "section": "signup",
+  "keywords": [
+   "account",
+   "sign",
+   "signup",
+   "login",
+   "log",
+   "register",
+   "password",
+   "join",
+   "access",
+   "google",
+   "profile",
+   "settings",
+   "delete"
+  ],
+  "answer": "Create an account with Google or with your name, email and a password of at least 10 characters. You then land in the workspace. Passwords are stored as salted scrypt hashes, and sessions use secure, httpOnly cookies. You can change your name, password, privacy settings and delete your data from Settings."
+ }
+]

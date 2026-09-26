@@ -1,12 +1,17 @@
 import AnalystReview from './components/AnalystReview'
 import { InfoButton } from './components/ui/info-button'
+import { LogoMark } from './components/ui/logo-mark'
 import { GlassCalendar, localDate } from './components/ui/glass-calendar'
 import PilotExamples from './components/PilotExamples'
 import DetectorComparison from './components/DetectorComparison'
 import AIInterpretation from './components/AIInterpretation'
 import CaseReview from './components/CaseReview'
 import ModelValidation from './components/ModelValidation'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react'
+import AccountCenter, { type AccountTab } from './components/AccountCenter'
+import SidebarAccount from './components/SidebarAccount'
+import { useAccountSession } from './lib/use-account'
+import type { Preferences } from './lib/account'
 import { GlassEffect, GlassFilter, GlassButton } from '@/components/ui/liquid-glass'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -73,9 +78,10 @@ export function intervalTime(seconds: number | undefined) {
   const remainder = hundredths % 6000
   return `${String(minutes).padStart(2, '0')}:${String(Math.floor(remainder / 100)).padStart(2, '0')}.${String(remainder % 100).padStart(2, '0')}`
 }
-function displayDate(value: string) {
+function displayDate(value: string, timeFormat?: Preferences['time_format']) {
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  const hourCycle = timeFormat === '24h' ? 'h23' : timeFormat === '12h' ? 'h12' : undefined
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle })
 }
 function scoreLabel(score: number | null | undefined) {
   return score == null || !Number.isFinite(score) ? '—' : `${Math.round(score * 100)}%`
@@ -160,12 +166,22 @@ export default function App() {
   const mobileDrawer = useRef<HTMLElement>(null)
   const mainColumn = useRef<HTMLDivElement>(null)
   const skipLink = useRef<HTMLAnchorElement>(null)
-  const reducedMotion = useReducedMotion()
+  const [accountTab, setAccountTab] = useState<AccountTab | null>(null)
+  const { user, preferences, setPreferences, setUser, motionReduced } = useAccountSession(setError)
+  const reducedMotion = useReducedMotion() || motionReduced
+  const initialViewApplied = useRef(false)
+  useEffect(() => {
+    if (!preferences || initialViewApplied.current) return
+    initialViewApplied.current = true
+    if (preferences.default_view === 'batch') setBatchOpen(current => current || selectedId === null)
+  }, [preferences, selectedId])
+  const formatDate = (value: string) => displayDate(value, preferences?.time_format)
+  function openAccount(tab: AccountTab) { setAccountTab(tab); setMobileNav(false) }
   function openCaseTab(tab:'review'|'reliability'|'evidence') {
     setCaseTab(tab)
     requestAnimationFrame(()=>document.querySelector('.case-tabs')?.scrollIntoView?.({block:'start',behavior:reducedMotion?'instant':'smooth'}))
   }
-  useEffect(()=>{if(window.scrollY>0)window.scrollTo({top:0,behavior:'instant'})},[selectedId,batchOpen])
+  useEffect(()=>{if(window.scrollY>0)window.scrollTo({top:0,behavior:'instant'})},[selectedId,batchOpen,accountTab])
 
   useEffect(() => {
     if (!mobileNav) return
@@ -335,39 +351,42 @@ export default function App() {
     catch { setError('Audio playback is unavailable for this file in your browser.') }
   }
 
-  return <div className="app-shell">
+  return <MotionConfig reducedMotion={motionReduced ? 'always' : 'user'}><div className="app-shell">
     <a ref={skipLink} className="skip-link" href="#main-content">Skip to workspace</a>
     <GlassFilter />
     <div className="ambient-scene" aria-hidden="true"><div className="ambient-orb orb-one" /><div className="ambient-orb orb-two" /><div className="ambient-grid" /></div>
     <aside ref={mobileDrawer} className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`} aria-label="Analysis history" id="workspace-navigation" role={mobileNav ? 'dialog' : undefined} aria-modal={mobileNav || undefined}>
-      <div className="brand"><div className="brand-mark"><AudioLines size={20} strokeWidth={2.2} /></div><div><strong>ECHOTRACE</strong><small>Audio review workspace</small></div><button ref={mobileClose} className="icon-button mobile-close" onClick={() => setMobileNav(false)} aria-label="Close navigation"><X size={18} /></button></div>
+      <div className="brand"><LogoMark size={38} /><div><strong>ECHOTRACE</strong><small>Audio review workspace</small></div><button ref={mobileClose} className="icon-button mobile-close" onClick={() => setMobileNav(false)} aria-label="Close navigation"><X size={18} /></button></div>
       <div className="sidebar-main">
         <div className="sidebar-section-label">WORKSPACE</div>
-        <button className={`nav-item ${!batchOpen ? 'nav-active' : ''}`} onClick={() => { setSelectedId(null); setBatchOpen(false); setMobileNav(false) }}><ScanLine size={17} /> Investigation <span>{jobs.length}</span></button>
-        <button className={`nav-item ${batchOpen ? 'nav-active' : ''}`} onClick={() => { setBatchOpen(true); setMobileNav(false) }}><Layers3 size={17} /> Batch & export <span>{completedCount}</span></button>
+        <button className={`nav-item ${!batchOpen && !accountTab ? 'nav-active' : ''}`} onClick={() => { setSelectedId(null); setBatchOpen(false); setAccountTab(null); setMobileNav(false) }}><ScanLine size={17} /> Investigation <span>{jobs.length}</span></button>
+        <button className={`nav-item ${batchOpen && !accountTab ? 'nav-active' : ''}`} onClick={() => { setBatchOpen(true); setAccountTab(null); setMobileNav(false) }}><Layers3 size={17} /> Batch & export <span>{completedCount}</span></button>
         <div className="sidebar-divider" />
         <div className="sidebar-list-heading"><span>RECENT RECORDINGS</span><button className="icon-button" onClick={() => fileInput.current?.click()} aria-label="Add recording"><Plus size={16} /></button></div>
         <div className="job-list">
-          {jobs.length ? jobs.filter(job => !job.parent_id).map(job => <button key={job.id} className={`job-row ${selectedId === job.id && !batchOpen ? 'selected' : ''}`} onClick={() => { setSelectedId(job.id); setBatchOpen(false); setMobileNav(false) }}>
-            <span className={`job-icon ${job.status}`}><FileAudio2 size={17} /></span><span className="job-row-text"><strong title={job.filename}>{job.filename}</strong><small>{job.result?.model?.name?.startsWith('NII')?'NII · ':job.result?.model?.name==='AASIST-L'?'AASIST · ':''}{displayDate(job.created_at)}</small></span><span className={`job-indicator ${job.status}`} title={job.status} />
+          {jobs.length ? jobs.filter(job => !job.parent_id).map(job => <button key={job.id} className={`job-row ${selectedId === job.id && !batchOpen && !accountTab ? 'selected' : ''}`} onClick={() => { setSelectedId(job.id); setBatchOpen(false); setAccountTab(null); setMobileNav(false) }}>
+            <span className={`job-icon ${job.status}`}><FileAudio2 size={17} /></span><span className="job-row-text"><strong title={job.filename}>{job.filename}</strong><small>{job.result?.model?.name?.startsWith('NII')?'NII · ':job.result?.model?.name==='AASIST-L'?'AASIST · ':''}{formatDate(job.created_at)}</small></span><span className={`job-indicator ${job.status}`} title={job.status} />
           </button>) : <p className="sidebar-empty">Your recordings will appear here.</p>}
         </div>
       </div>
-      <div className="sidebar-footer"><span className={`connection-dot ${health?.status === 'ok' ? 'online' : ''}`} /><div><strong>{!healthChecked ? 'Connecting to local server' : health?.status === 'ok' ? 'Local processing available' : 'Server unavailable'}</strong><small>Files stay on this device</small></div></div>
+      {user && <SidebarAccount user={user} activeTab={accountTab} onOpen={openAccount} />}
+      <div className="sidebar-footer"><span className={`connection-dot ${health?.status === 'ok' ? 'online' : ''}`} /><div><strong>{!healthChecked ? 'Connecting to the server' : health?.status === 'ok' ? (user ? 'Analysis available' : 'Local processing available') : 'Server unavailable'}</strong><small>{user ? 'Recordings are private to your account' : 'Files stay on this device'}</small></div></div>
     </aside>
 
     {mobileNav && <button className="mobile-scrim" aria-hidden="true" tabIndex={-1} onClick={() => setMobileNav(false)} />}
     <div ref={mainColumn} className="main-column">
-      <header className="topbar"><div className="topbar-left"><button ref={mobileMenu} className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={mobileNav} aria-controls="workspace-navigation" onClick={() => setMobileNav(true)}><Menu size={20} /></button><span className="topbar-eyebrow">Audio review / {batchOpen ? 'Batch export' : selected ? 'Recording' : 'Workspace'}</span></div><div className="topbar-right"><button className="topbar-add" onClick={() => fileInput.current?.click()} disabled={uploading}><Plus size={16} /> Add recording</button></div></header>
+      <header className="topbar"><div className="topbar-left"><button ref={mobileMenu} className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={mobileNav} aria-controls="workspace-navigation" onClick={() => setMobileNav(true)}><Menu size={20} /></button><span className="topbar-eyebrow">Audio review / {accountTab && user ? 'Account' : batchOpen ? 'Batch export' : selected ? 'Recording' : 'Workspace'}</span></div><div className="topbar-right"><button className="topbar-add" onClick={() => fileInput.current?.click()} disabled={uploading}><Plus size={16} /> Add recording</button></div></header>
       <input aria-label="Choose audio recordings" ref={fileInput} className="sr-only" type="file" multiple accept=".wav,.mp3,.m4a,.flac,.ogg,.opus,.aac,audio/*" onChange={event => event.target.files && uploadFiles(event.target.files)} />
       {error && <div className="error-banner" role="alert"><CircleAlert size={18} /><span>{error}</span><button className="icon-button" onClick={() => setError(null)} aria-label="Dismiss error"><X size={17} /></button></div>}
 
       <main className="content" id="main-content" tabIndex={-1}>
         <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={batchOpen ? 'batch' : selectedId || 'intake'} className="view-transition"
+        <motion.div key={accountTab && user ? `account-${accountTab}` : batchOpen ? 'batch' : selectedId || 'intake'} className="view-transition"
           initial={{ opacity: 0, y: reducedMotion ? 0 : 10 }} animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: reducedMotion ? 0 : -6 }} transition={{ duration: reducedMotion ? 0 : 0.18 }}>
-        {batchOpen ? <>
+        {accountTab && user ? <AccountCenter user={user} tab={accountTab} preferences={preferences} onTabChange={setAccountTab} onBack={() => setAccountTab(null)}
+          onUserChange={setUser} onPreferencesChange={setPreferences} onRecordingsDeleted={() => { setSelectedId(null); setCheckedIds([]); loadJobs().catch(event => setError(event.message)) }} />
+        : batchOpen ? <>
           <div className="page-intro"><div><span className="eyebrow">01 / COLLECTION</span><h1>Batch & export</h1><p>Find the recordings that need your attention. Keep a clear record of each review.</p></div><button className="outline-button" onClick={() => fileInput.current?.click()}><FileUp size={16} /> Add files</button></div>
           <div className="queue-toolbar" aria-label="Filter recording queue">
             <label>Find a recording<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search file names" type="search" /></label>
@@ -379,12 +398,12 @@ export default function App() {
           </div><p className="case-help" role="status">Showing {visibleJobs.length} of {jobs.length} recordings{dateFilter?` · ${dateFilter}`:''}.</p>
           <div className="batch-stats"><div><span>ALL FILES</span><strong>{jobs.length}</strong></div><div><span>COMPLETED</span><strong>{completedCount}</strong></div><div><span>IN PROGRESS</span><strong>{activeCount}</strong></div><div><span>FAILED</span><strong>{failedCount}</strong></div></div>
           <GlassEffect as="section" className="batch-panel"><div className="section-heading"><div><span className="eyebrow">ANALYSIS REGISTER</span><h2>Recorded files</h2></div><button className="text-button" onClick={() => loadJobs().catch(event => setError(event.message))}><RefreshCw size={15} /> Refresh</button></div>
-            {visibleJobs.length ? <div className="table-scroll"><table><thead><tr><th><input type="checkbox" aria-label="Select all completed results" checked={visibleJobs.filter(job => job.status === 'completed' && job.result?.synthetic_score != null).length > 0 && visibleJobs.filter(job => job.status === 'completed' && job.result?.synthetic_score != null).every(job => checkedIds.includes(job.id))} onChange={event => setCheckedIds(event.target.checked ? visibleJobs.filter(job => job.status === 'completed' && job.result?.synthetic_score != null).map(job => job.id) : [])} /></th><th>RECORDING</th><th>STATUS</th><th>SCORE / MODEL</th><th>REVIEW</th><th>ADDED</th><th aria-label="Open result" /></tr></thead><tbody>{visibleJobs.map(job => <tr key={job.id}><td><input type="checkbox" aria-label={`Select ${job.filename}`} checked={checkedIds.includes(job.id)} disabled={job.status !== 'completed' || job.result?.synthetic_score == null} onChange={event => setCheckedIds(current => event.target.checked ? [...current, job.id] : current.filter(id => id !== job.id))} /></td><td><div className="table-name"><FileAudio2 size={16} /><span>{job.filename}{job.parent_id && <small>{transformLabel(job) || 'Derived analysis'}</small>}</span></div></td><td><span className={`status-pill ${job.status}`}>{job.status === 'running' && <LoaderCircle size={12} className="spin" />}{stageLabel(job.status)}</span>{job.error && <small className="table-error" title={job.error}>{job.error}</small>}</td><td><span className={`table-score ${scoreTone(job.result?.synthetic_score)}`}>{scoreLabel(job.result?.synthetic_score)}</span><small className="queue-model">{job.result?.model?.name||'No model result'}</small></td><td><span className="review-status">{stageLabel(job.analyst_review?.status||'needs_review')}</span></td><td className="muted">{displayDate(job.created_at)}</td><td><button className="icon-button" aria-label={`Open ${job.filename}`} onClick={() => { setSelectedId(job.id); setBatchOpen(false) }}><ArrowRight size={17} /></button></td></tr>)}</tbody></table></div> : <div className="batch-empty"><FileAudio2 size={28} /><p>No recordings match this view. Adjust the filters or add audio to begin.</p></div>}
+            {visibleJobs.length ? <div className="table-scroll"><table><thead><tr><th><input type="checkbox" aria-label="Select all completed results" checked={visibleJobs.filter(job => job.status === 'completed' && job.result?.synthetic_score != null).length > 0 && visibleJobs.filter(job => job.status === 'completed' && job.result?.synthetic_score != null).every(job => checkedIds.includes(job.id))} onChange={event => setCheckedIds(event.target.checked ? visibleJobs.filter(job => job.status === 'completed' && job.result?.synthetic_score != null).map(job => job.id) : [])} /></th><th>RECORDING</th><th>STATUS</th><th>SCORE / MODEL</th><th>REVIEW</th><th>ADDED</th><th aria-label="Open result" /></tr></thead><tbody>{visibleJobs.map(job => <tr key={job.id}><td><input type="checkbox" aria-label={`Select ${job.filename}`} checked={checkedIds.includes(job.id)} disabled={job.status !== 'completed' || job.result?.synthetic_score == null} onChange={event => setCheckedIds(current => event.target.checked ? [...current, job.id] : current.filter(id => id !== job.id))} /></td><td><div className="table-name"><FileAudio2 size={16} /><span>{job.filename}{job.parent_id && <small>{transformLabel(job) || 'Derived analysis'}</small>}</span></div></td><td><span className={`status-pill ${job.status}`}>{job.status === 'running' && <LoaderCircle size={12} className="spin" />}{stageLabel(job.status)}</span>{job.error && <small className="table-error" title={job.error}>{job.error}</small>}</td><td><span className={`table-score ${scoreTone(job.result?.synthetic_score)}`}>{scoreLabel(job.result?.synthetic_score)}</span><small className="queue-model">{job.result?.model?.name||'No model result'}</small></td><td><span className="review-status">{stageLabel(job.analyst_review?.status||'needs_review')}</span></td><td className="muted">{formatDate(job.created_at)}</td><td><button className="icon-button" aria-label={`Open ${job.filename}`} onClick={() => { setSelectedId(job.id); setBatchOpen(false) }}><ArrowRight size={17} /></button></td></tr>)}</tbody></table></div> : <div className="batch-empty"><FileAudio2 size={28} /><p>No recordings match this view. Adjust the filters or add audio to begin.</p></div>}
           </GlassEffect>
           <div className="export-bar"><div><strong>{checkedIds.length} selected for export</strong><span>Analyst CSV includes score (0–1), review status, notes and version. Select one model version per export. Sponsor schema may differ.</span></div><GlassButton className="primary-button" disabled={!checkedIds.length || exporting} onClick={exportCsv}>{exporting ? <LoaderCircle size={16} className="spin" /> : <ArrowDownToLine size={16} />} Export selected CSV</GlassButton></div>
         </> : selected ? <>
           <div className="breadcrumb"><button onClick={() => setSelectedId(null)}>Investigations</button><span>/</span><span>{selected.filename}</span></div>
-          <div className="page-intro result-intro"><div><span className="eyebrow">RECORDING / {selected.id.slice(0, 8).toUpperCase()}</span><h1>Recording assessment</h1><p className="case-file-name" title={selected.filename}>{selected.filename}</p><p className="case-record-meta">{displayDate(selected.created_at)} <span className="dot-separator">·</span> {result?.input.duration_s != null ? shortTime(result.input.duration_s) : 'Duration pending'} <span className="dot-separator">·</span> {result?.input.codec || 'Audio file'}</p></div><button className="outline-button" onClick={downloadReport} disabled={!result}><FileJson2 size={16} /> JSON report</button></div>
+          <div className="page-intro result-intro"><div><span className="eyebrow">RECORDING / {selected.id.slice(0, 8).toUpperCase()}</span><h1>Recording assessment</h1><p className="case-file-name" title={selected.filename}>{selected.filename}</p><p className="case-record-meta">{formatDate(selected.created_at)} <span className="dot-separator">·</span> {result?.input.duration_s != null ? shortTime(result.input.duration_s) : 'Duration pending'} <span className="dot-separator">·</span> {result?.input.codec || 'Audio file'}</p></div><button className="outline-button" onClick={downloadReport} disabled={!result}><FileJson2 size={16} /> JSON report</button></div>
           {selected.status === 'failed' ? <GlassEffect as="section" className="state-panel failed-state"><CircleAlert size={24} /><span className="eyebrow">ANALYSIS FAILED</span><h2>This recording could not be analyzed.</h2><p>{selected.error || 'The server did not return a reason.'}</p><div className="failure-actions"><GlassButton className="primary-button" onClick={retryAnalysis}><RefreshCw size={15} /> Retry analysis</GlassButton><button className="outline-button" onClick={() => fileInput.current?.click()}><Plus size={15} /> Add another file</button></div></GlassEffect>
           : selected.status !== 'completed' ? <GlassEffect as="section" className="state-panel processing-state"><div className="processing-orbit"><AudioLines size={32} /></div><span className="eyebrow">{selected.status === 'queued' ? 'WAITING FOR WORKER' : 'ANALYSIS IN PROGRESS'}</span><h2>{selected.status === 'queued' ? 'Queued for analysis' : stageLabel(selected.stage)}</h2><p>Processing stages update as the local pipeline runs. One file is analyzed at a time.</p><div className="processing-stage" role="status" aria-live="polite">CURRENT STAGE / {stageLabel(selected.stage)}</div></GlassEffect>
           : result && <>
@@ -434,13 +453,13 @@ export default function App() {
           </GlassEffect>
           <PilotExamples busy={uploading} onAnalyze={file => uploadFiles([file])} />
           <div className="recent-heading"><h2>Recent recordings</h2><button className="text-button" onClick={() => setBatchOpen(true)}>View all <ArrowRight size={16} /></button></div>
-          <GlassEffect className="recent-recordings">{jobs.filter(job => !job.parent_id).slice(0,4).map(job => <button key={job.id} className="recent-recording" onClick={() => setSelectedId(job.id)}><FileAudio2 size={22} strokeWidth={1.5}/><span><strong>{job.filename}</strong><small>{displayDate(job.created_at)}</small></span><span className="recent-status">{stageLabel(job.status)}</span><ArrowRight size={17}/></button>)}{!jobs.some(job => !job.parent_id) && <p>Your recordings will appear here after you add audio.</p>}</GlassEffect>
-          <p className="workspace-footnote">Original files are preserved. Analysis runs on this device.</p>
+          <GlassEffect className="recent-recordings">{jobs.filter(job => !job.parent_id).slice(0,4).map(job => <button key={job.id} className="recent-recording" onClick={() => setSelectedId(job.id)}><FileAudio2 size={22} strokeWidth={1.5}/><span><strong>{job.filename}</strong><small>{formatDate(job.created_at)}</small></span><span className="recent-status">{stageLabel(job.status)}</span><ArrowRight size={17}/></button>)}{!jobs.some(job => !job.parent_id) && <p>Your recordings will appear here after you add audio.</p>}</GlassEffect>
+          <p className="workspace-footnote">{user ? 'Original files are preserved on the ECHOTRACE server and visible only to you. You can delete them in Settings.' : 'Original files are preserved. Analysis runs on this device.'}</p>
         </div>}
 
         </motion.div>
         </AnimatePresence>
       </main>
     </div>
-  </div>
+  </div></MotionConfig>
 }

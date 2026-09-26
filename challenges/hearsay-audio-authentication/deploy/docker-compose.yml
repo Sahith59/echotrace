@@ -1,0 +1,39 @@
+name: echotrace
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: echotrace:local
+    env_file: .env
+    environment:
+      ECHOTRACE_WORKSPACE: /data/workspace
+      ECHOTRACE_STATIC_ROOT: /srv/static
+    volumes:
+      - echotrace-data:/data
+    expose:
+      - "8000"
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ECHOTRACE_DOMAIN: ${ECHOTRACE_DOMAIN:?Set ECHOTRACE_DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  echotrace-data:
+  caddy-data:
+  caddy-config:

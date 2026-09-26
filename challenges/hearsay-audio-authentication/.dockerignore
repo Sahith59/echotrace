@@ -1,0 +1,53 @@
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.cache
+**/coverage
+**/htmlcov
+**/.coverage
+**/.DS_Store
+
+# Weights, workspaces and local data
+backend/artifacts
+artifacts
+**/workspace
+**/data
+**/.echotrace-models
+
+# Secrets
+**/.env
+**/.env.*
+!deploy/.env.example
+
+# Audio and databases
+**/*.wav
+**/*.mp3
+**/*.m4a
+**/*.flac
+**/*.ogg
+**/*.opus
+**/*.aac
+**/*.aiff
+**/*.webm
+**/*.sqlite
+**/*.sqlite3
+**/*.sqlite-*
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.safetensors
+**/*.pt
+**/*.pth
+**/*.ckpt
+
+# Not needed in the image
+cluster
+scripts
+docs
+**/*.md
+!deploy/README.md
