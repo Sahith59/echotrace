@@ -124,3 +124,60 @@ def test_malformed_record_is_rejected_cleanly(tmp_path):
 @pytest.mark.parametrize("labels,scores", [([0], [.2]), ([0, 1], [.2, float('nan')]), ([0, 1], [.2, 1.1])])
 def test_invalid_scores_and_classes_refused(labels, scores):
     with pytest.raises(ValueError): select_threshold(labels, scores)
+
+
+def test_acceptance_attack_and_codec_slices_use_locked_thresholds(tmp_path):
+    paths = four_runs(tmp_path, 8)
+    for folder in paths[2:]:
+        data = json.loads((folder / "run.json").read_text())
+        for i, record in enumerate(data["records"]):
+            record["attack_id"] = "none" if i % 2 == 0 else "attack-A"
+            record["codec"] = "codec-x" if i < 4 else "codec-y"
+        (folder / "run.json").write_text(json.dumps(data))
+    candidate = paths[3]
+    rows = list(csv.DictReader((candidate / "scores.csv").open()))
+    rows[4]["synthetic_score"] = ".95"  # False positive in codec-y.
+    rows[5]["synthetic_score"] = ".05"  # False negative in codec-y.
+    with (candidate / "scores.csv").open("w") as handle:
+        writer = csv.DictWriter(handle, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+    data = json.loads((candidate / "run.json").read_text())
+    data["scores_sha256"] = hashlib.sha256((candidate / "scores.csv").read_bytes()).hexdigest()
+    (candidate / "run.json").write_text(json.dumps(data))
+
+    report = compare_runs(*paths)
+    assert report["thresholds"]["candidate"] == .9
+    attacks = {item["value"]: item for item in report["slice_breakdowns"]["attack_id"]}
+    codecs = {item["value"]: item for item in report["slice_breakdowns"]["codec"]}
+    assert attacks["attack-A"]["sample_count"] == 4
+    assert attacks["attack-A"]["candidate"]["confusion"] == {"tn": 0, "fp": 0, "fn": 1, "tp": 3}
+    assert attacks["attack-A"]["candidate"]["roc_auc"] is None
+    assert attacks["attack-A"]["candidate"]["average_precision"] is None
+    assert attacks["none"]["candidate"]["false_positive_rate"] == .25
+    assert attacks["none"]["candidate"]["recall"] is None
+    assert codecs["codec-y"]["sample_count"] == 4
+    assert codecs["codec-y"]["candidate"]["confusion"] == {"tn": 1, "fp": 1, "fn": 1, "tp": 1}
+    assert codecs["codec-y"]["baseline"]["confusion"] == {"tn": 2, "fp": 0, "fn": 2, "tp": 0}
+    assert report["promoted"] is False
+    assert report["gates"] == {"max_false_positive_rate": .05, "min_recall": .8,
+                               "min_recall_gain": .1, "min_each_class": 100}
+
+
+def test_acceptance_slice_metadata_must_match_baseline_candidate(tmp_path):
+    paths = four_runs(tmp_path, 8)
+    for folder, codec in ((paths[2], "pcm"), (paths[3], "mp3")):
+        data = json.loads((folder / "run.json").read_text())
+        data["records"][0]["codec"] = codec
+        (folder / "run.json").write_text(json.dumps(data))
+    with pytest.raises(ValueError, match="metadata|record"):
+        compare_runs(*paths)
+
+
+def test_missing_slice_metadata_has_explicit_bucket(tmp_path):
+    report = compare_runs(*four_runs(tmp_path, 8))
+    for field in ("attack_id", "codec"):
+        bucket = report["slice_breakdowns"][field]
+        assert len(bucket) == 1
+        assert bucket[0]["value"] == "(missing)"
+        assert bucket[0]["sample_count"] == 8
