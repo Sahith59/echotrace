@@ -1,7 +1,10 @@
 import csv
+import hashlib
 import io
 import time
 
+import numpy as np
+import soundfile as sf
 from fastapi.testclient import TestClient
 
 from echotrace.api import Store, create_app
@@ -79,3 +82,85 @@ def test_upload_limit_cleans_partial_file(tmp_path, monkeypatch):
         assert client.post("/api/analyses", files={"file": ("large.wav", b"123456")}).status_code == 413
         assert client.get("/api/analyses").json() == []
         assert not [p for p in tmp_path.iterdir() if p.is_dir()]
+
+
+def test_stress_rejects_legacy_model_before_creating_a_job(tmp_path, monkeypatch):
+    app = create_app(tmp_path / "workspace", fake_analyzer)
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"source")
+    app.state.store.create("legacy", "source.wav", source)
+    app.state.store.update("legacy", status="completed", stage="completed", result={
+        "synthetic_score": .2,
+        "input": {"sha256": hashlib.sha256(b"source").hexdigest()},
+        "model": {"name": "AASIST-L", "weights_sha256": "a" * 64},
+    })
+    monkeypatch.setattr("echotrace.pipeline.model_status", lambda: {
+        "name": "NII wav2vec-small-anti-deepfake", "weights_sha256": "b" * 64,
+    })
+    with TestClient(app) as client:
+        response = client.post("/api/analyses/legacy/stress-tests", json={"kind": "mp3"})
+        assert response.status_code == 409
+        assert "Reanalyze" in response.json()["detail"]
+        assert [job["id"] for job in client.get("/api/analyses").json()] == ["legacy"]
+
+
+def test_reanalysis_creates_new_job_and_preserves_original(tmp_path):
+    def analyzer(path, progress=None):
+        content = path.read_bytes()
+        return {
+            "input": {"filename": path.name, "sha256": hashlib.sha256(content).hexdigest()},
+            "synthetic_score": .7,
+            "model": {"name": "NII wav2vec-small-anti-deepfake", "weights_sha256": "b" * 64},
+        }
+
+    app = create_app(tmp_path / "workspace", analyzer)
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"unchanged source")
+    app.state.store.create("original", "source.wav", source)
+    original_result = {
+        "input": {"sha256": hashlib.sha256(source.read_bytes()).hexdigest()},
+        "synthetic_score": .2,
+        "model": {"name": "AASIST-L", "weights_sha256": "a" * 64},
+    }
+    app.state.store.update("original", status="completed", stage="completed", result=original_result)
+    with TestClient(app) as client:
+        response = client.post("/api/analyses/original/reanalyze")
+        assert response.status_code == 202
+        new_id = response.json()["id"]
+        updated = wait(client, new_id)
+        assert updated["status"] == "completed"
+        assert updated["reanalysis_of"] == "original"
+        assert updated["result"]["reanalysis_of"] == "original"
+        assert updated["result"]["synthetic_score"] == .7
+        assert client.get("/api/analyses/original").json()["result"] == original_result
+        assert client.post(f"/api/analyses/{new_id}/reanalyze").status_code == 422
+
+
+def test_stress_result_fails_if_model_changes_after_queueing(tmp_path, monkeypatch):
+    legacy = {"name": "AASIST-L", "weights_sha256": "a" * 64}
+    current = {"name": "NII wav2vec-small-anti-deepfake", "weights_sha256": "b" * 64}
+
+    def changed_analyzer(path, progress=None):
+        return {
+            "input": {"filename": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()},
+            "synthetic_score": .6,
+            "model": current,
+        }
+
+    app = create_app(tmp_path / "workspace", changed_analyzer)
+    source = tmp_path / "source.wav"
+    sf.write(source, np.full(16_000, .1, dtype=np.float32), 16_000)
+    app.state.store.create("legacy", "source.wav", source)
+    app.state.store.update("legacy", status="completed", stage="completed", result={
+        "synthetic_score": .2,
+        "input": {"sha256": hashlib.sha256(source.read_bytes()).hexdigest()},
+        "model": legacy,
+    })
+    monkeypatch.setattr("echotrace.pipeline.model_status", lambda: legacy)
+    with TestClient(app) as client:
+        response = client.post("/api/analyses/legacy/stress-tests", json={"kind": "noise"})
+        assert response.status_code == 202
+        derived = wait(client, response.json()["id"])
+        assert derived["status"] == "failed"
+        assert "primary model changed" in derived["error"]
+        assert derived["result"] is None

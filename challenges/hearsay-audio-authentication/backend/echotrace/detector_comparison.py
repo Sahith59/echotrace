@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException
 
 from .audio import AudioError, decode_audio, measure_audio
 from .nii_candidate import MIN_SAMPLES, MAX_DURATION_S, candidate_status, score_samples
+from .model_provenance import is_legacy_aasist
 
 
 PARITY_PATH = Path(__file__).with_name("nii_parity.json")
@@ -91,6 +92,12 @@ def create_detector_comparison_router(store, scorer=None, status_provider=None):
             raise HTTPException(409, "Complete the primary analysis before comparing detectors.")
         if job.get("parent_id"):
             raise HTTPException(422, "Detector comparison is available only for the original recording.")
+        if not is_legacy_aasist(job["result"].get("model")):
+            raise HTTPException(
+                422,
+                "Research comparison is only available for legacy AASIST-L primary results; "
+                "NII-on-NII comparison is not meaningful.",
+            )
         primary = job["result"].get("synthetic_score")
         if not isinstance(primary, (int, float)) or not math.isfinite(primary) or not 0 <= primary <= 1:
             raise HTTPException(422, "The primary detector has no finite synthesis score to compare.")

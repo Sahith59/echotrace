@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import math
 import os
+import shutil
 import sqlite3
 import subprocess
 import threading
@@ -26,6 +28,8 @@ from .interpretation import create_interpretation_router
 from .speaker_router import create_speaker_router
 from .claims_router import create_claims_router
 from .detector_comparison import create_detector_comparison_router
+from .analyst_review import create_analyst_review_router, load_analyst_review, load_analyst_reviews
+from .model_provenance import model_identity, same_model
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2] / "artifacts" / "workspace"
 MAX_BYTES = 50 * 1024 * 1024
@@ -44,18 +48,24 @@ class Store:
             db.execute("""CREATE TABLE IF NOT EXISTS jobs (
                 id TEXT PRIMARY KEY, filename TEXT NOT NULL, path TEXT NOT NULL,
                 status TEXT NOT NULL, stage TEXT NOT NULL, created_at TEXT NOT NULL,
-                result TEXT, error TEXT, parent_id TEXT, transform TEXT)""")
+                result TEXT, error TEXT, parent_id TEXT, transform TEXT,
+                reanalysis_of TEXT)""")
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(jobs)").fetchall()}
+            if "reanalysis_of" not in columns:
+                db.execute("ALTER TABLE jobs ADD COLUMN reanalysis_of TEXT")
 
     def connect(self):
         db = sqlite3.connect(self.db, timeout=10)
         db.row_factory = sqlite3.Row
         return db
 
-    def create(self, job_id, filename, path, parent_id=None, transform=None):
+    def create(self, job_id, filename, path, parent_id=None, transform=None, reanalysis_of=None):
         with self.connect() as db:
-            db.execute("INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,?)", (
+            db.execute("""INSERT INTO jobs
+                (id,filename,path,status,stage,created_at,result,error,parent_id,transform,reanalysis_of)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)""", (
                 job_id, filename, str(path), "queued", "queued", now(), None,
-                None, parent_id, json.dumps(transform) if transform else None))
+                None, parent_id, json.dumps(transform) if transform else None, reanalysis_of))
         return self.get(job_id)
 
     def get(self, job_id):
@@ -148,6 +158,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
     app.include_router(create_interpretation_router(store, interpreter))
     app.include_router(create_speaker_router(store))
     app.include_router(create_claims_router(store))
+    app.include_router(create_analyst_review_router(store))
     app.include_router(create_case_router(store))
     app.include_router(create_detector_comparison_router(
         store, detector_comparison_scorer, detector_comparison_status))
@@ -193,8 +204,16 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
             result = fn(Path(job["path"]), progress=lambda stage: store.update(job_id, stage=stage))
             result["input"]["filename"] = job["filename"]
             if job["parent_id"]:
+                parent = store.get(job["parent_id"])
+                if not same_model((parent.get("result") or {}).get("model"), result.get("model")):
+                    raise ValueError(
+                        "Stress comparison was not saved because the primary model changed. "
+                        "Reanalyze the original recording with the current model first."
+                    )
                 result["parent_id"] = job["parent_id"]
                 result["transform"] = job["transform"]
+            if job.get("reanalysis_of"):
+                result["reanalysis_of"] = job["reanalysis_of"]
             store.update(job_id, status="completed", stage="completed", result=result)
         except Exception as exc:
             message = str(exc)[:500] or type(exc).__name__
@@ -246,11 +265,16 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
 
     @app.get("/api/analyses")
     def history():
-        return [public(j) for j in store.list()]
+        jobs = store.list()
+        reviews = load_analyst_reviews(store, [job["id"] for job in jobs])
+        return [{**public(job), "analyst_review": reviews.get(job["id"], {
+            "status": "needs_review", "notes": "", "version": 0, "updated_at": None,
+        })} for job in jobs]
 
     @app.get("/api/analyses/{job_id}")
     def detail(job_id: str):
-        return public(get_job(job_id))
+        job = get_job(job_id)
+        return {**public(job), "analyst_review": load_analyst_review(store, job_id)}
 
     @app.get("/api/analyses/{job_id}/audio")
     def audio(job_id: str):
@@ -276,6 +300,39 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
         schedule(job_id)
         return public(store.get(job_id))
 
+    @app.post("/api/analyses/{job_id}/reanalyze", status_code=202)
+    def reanalyze(job_id: str):
+        source = get_job(job_id)
+        if source["status"] != "completed":
+            raise HTTPException(409, "Complete the original analysis before reanalysis.")
+        if source.get("parent_id") or source.get("reanalysis_of"):
+            raise HTTPException(422, "Reanalysis must start from the original recording.")
+        path = Path(source["path"])
+        if not path.is_file():
+            raise HTTPException(409, "The original recording is missing.")
+        with path.open("rb") as source_file:
+            actual_sha = hashlib.file_digest(source_file, "sha256").hexdigest()
+        expected_sha = ((source.get("result") or {}).get("input") or {}).get("sha256")
+        if not expected_sha or actual_sha != expected_sha:
+            raise HTTPException(409, "The original recording changed after analysis.")
+        new_id = uuid.uuid4().hex
+        folder = root / new_id
+        folder.mkdir()
+        destination = folder / ("original" + path.suffix)
+        try:
+            shutil.copyfile(path, destination)
+            with destination.open("rb") as copied, path.open("rb") as original:
+                if (hashlib.file_digest(copied, "sha256").hexdigest() != actual_sha or
+                        hashlib.file_digest(original, "sha256").hexdigest() != actual_sha):
+                    raise HTTPException(409, "The original recording changed during reanalysis setup.")
+            job = store.create(new_id, source["filename"], destination, reanalysis_of=job_id)
+        except Exception:
+            destination.unlink(missing_ok=True)
+            folder.rmdir()
+            raise
+        schedule(new_id)
+        return public(job)
+
     @app.post("/api/analyses/{job_id}/stress-tests", status_code=202)
     def stress(job_id: str, request: StressRequest):
         parent = get_job(job_id)
@@ -285,6 +342,12 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
             raise HTTPException(422, "Run comparisons from the original recording")
         if request.kind not in {"mp3", "noise"}:
             raise HTTPException(422, "Choose mp3 or noise")
+        from .pipeline import model_status as current_model_status
+        if not same_model((parent.get("result") or {}).get("model"), current_model_status()):
+            raise HTTPException(
+                409,
+                "The original used a different primary model. Reanalyze it before running stress comparisons.",
+            )
         new_id = uuid.uuid4().hex
         folder = root / new_id
         folder.mkdir()
@@ -304,15 +367,28 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
             score = (job["result"] or {}).get("synthetic_score")
             if job["status"] != "completed" or not isinstance(score, (float, int)) or not math.isfinite(score) or not 0 <= score <= 1:
                 raise HTTPException(409, f"{job['filename']}: a completed, finite model score is required")
+        if len(jobs) > 1:
+            identities = [model_identity((job.get("result") or {}).get("model")) for job in jobs]
+            if any(identity is None for identity in identities) or len(set(identities)) != 1:
+                raise HTTPException(409, "CSV export requires every recording to use the same identified model.")
+        reviews = load_analyst_reviews(store, [job["id"] for job in jobs])
         output = io.StringIO(newline="")
         writer = csv.writer(output)
-        writer.writerow(["file_id", "filename", "synthetic_score"])
+        writer.writerow(["file_id", "filename", "synthetic_score", "analyst_review_status",
+                         "analyst_review_notes", "analyst_review_version"])
         for job in jobs:
             # Protect spreadsheet users; original filename remains intact in JSON report.
             name = job["filename"]
             if name.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")):
                 name = "'" + name
-            writer.writerow([job["id"], name, format(job["result"]["synthetic_score"], ".10g")])
+            review = reviews.get(job["id"], {
+                "status": "needs_review", "notes": "", "version": 0,
+            })
+            notes = review["notes"]
+            if notes.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")):
+                notes = "'" + notes
+            writer.writerow([job["id"], name, format(job["result"]["synthetic_score"], ".10g"),
+                             review["status"], notes, review["version"]])
         return Response(output.getvalue(), media_type="text/csv", headers={
             "Content-Disposition": 'attachment; filename="echotrace-analyst-export.csv"',
             "X-Export-Kind": "analyst-not-sponsor-schema"})

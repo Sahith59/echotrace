@@ -113,6 +113,20 @@ def test_rejects_unavailable_model_and_changed_original(tmp_path):
         assert "changed" in result.json()["detail"].lower()
 
 
+def test_rejects_nii_primary_to_avoid_nii_on_nii_comparison(tmp_path):
+    app = create_app(root=tmp_path / "workspace", detector_comparison_scorer=scorer,
+                     detector_comparison_status=lambda: status())
+    completed(app, tmp_path)
+    job = app.state.store.get("job")
+    result = job["result"]
+    result["model"] = {"name": "NII wav2vec-small-anti-deepfake", "weights_sha256": "a" * 64}
+    app.state.store.update("job", result=result)
+    with TestClient(app) as client:
+        response = client.post("/api/analyses/job/detector-comparison")
+        assert response.status_code == 422
+        assert "NII-on-NII" in response.json()["detail"]
+
+
 def test_rejects_quiet_short_and_over_30_second_audio(tmp_path):
     app = create_app(root=tmp_path / "workspace", detector_comparison_scorer=scorer,
                      detector_comparison_status=lambda: status())

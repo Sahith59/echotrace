@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from .claims_router import load_claim_artifacts
 from .interpretation import evidence_for, evidence_hash
+from .analyst_review import load_analyst_review
 
 SUMMARY_PATH = Path(__file__).with_name('validation_summary.json')
 BOUNDARY = ('Synthesis, voice similarity and factual claims are independent assessments. '
@@ -33,6 +34,7 @@ def case_report(store, job_id):
         'synthesis': job['result'],
         'speaker_comparison': json.loads(row['report']) if row else None,
         'detector_comparison': json.loads(detector['report']) if detector else None,
+        'analyst_review': load_analyst_review(store, job_id),
         **load_claim_artifacts(store, job_id),
         'overall_authenticity_probability': None, 'interpretation_boundary': BOUNDARY,
     }
@@ -51,6 +53,10 @@ def printable(report):
                      esc(f"{detector['candidate_score'] * 100:.2f}") + ' / 100 · difference ' +
                      esc(f"{detector['score_difference'] * 100:+.2f}") + ' score points (0–100 scale). ' + esc(detector['limitation'])
                      if detector else 'No experimental detector comparison generated.')
+    analyst = report.get('analyst_review') or {"status": "needs_review", "notes": "", "version": 0}
+    analyst_text = ('<p><b>' + esc(analyst['status'].replace('_', ' ')) + '</b> · revision ' +
+                    esc(analyst.get('version', 0)) + '</p><p>' +
+                    esc(analyst.get('notes') or 'No analyst notes recorded.') + '</p>')
     interpretation = synthesis.get('interpretation')
     provider_label = {'groq': 'Groq', 'xai': 'Grok'}.get((interpretation or {}).get('provider'), 'Unknown provider')
     ai_title = '<h3>AI interpretation (' + provider_label + ')</h3>'
@@ -90,6 +96,7 @@ def printable(report):
         esc(synthesis.get('score_kind', 'uncalibrated model score')) + '</p><p>A low score does not establish authenticity.</p>'
         + ai_html + '<h2>2. Speaker reference</h2><p>' + esc(speaker_text) + '</p><p>Similarity is not an identity verdict.</p>'
         '<h2>Experimental detector comparison</h2><p>' + detector_text + '</p>'
+        '<h2>Analyst review</h2>' + analyst_text +
         '<h2>3. Transcript</h2><p>' + esc(transcript.get('text') or 'No transcript generated.') + '</p>'
         '<small>Version ' + esc(transcript.get('version', '—')) + ' · ' + esc(transcript.get('source', 'unavailable')) + '</small>'
         '<h2>4. Claim reviews</h2>' + (claims or '<p>No claims reviewed.</p>') +
