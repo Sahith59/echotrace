@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from echotrace.api import create_app
 
@@ -46,12 +47,13 @@ def test_model_evaluation_discloses_failed_promotion_and_linked_weights(tmp_path
         assert 'not sponsor' in report['scope'].lower()
 
 
-def test_printable_report_surfaces_ai_notes_and_claim_timestamps():
+@pytest.mark.parametrize("provider,label", [("xai", "Grok"), ("groq", "Groq"), ("unknown", "Unknown provider")])
+def test_printable_report_surfaces_ai_notes_and_claim_timestamps(provider, label):
     from echotrace.case_report import printable
     from echotrace.interpretation import evidence_for, evidence_hash
     synthesis = {'synthetic_score': .15, 'score_kind': 'uncalibrated_model_score'}
     synthesis['interpretation'] = {
-        'status': 'generated', 'provider': 'xai', 'model': 'grok-test',
+        'status': 'generated', 'provider': provider, 'model': 'test-model',
         'evidence_sha256': evidence_hash(evidence_for(synthesis)),
         'report': {'summary': 'Review <carefully>.',
                    'findings': [{'text': 'The score is uncalibrated.', 'evidence_ids': ['calibration']}],
@@ -65,7 +67,7 @@ def test_printable_report_surfaces_ai_notes_and_claim_timestamps():
                           'transcript_version': 1, 'evidence': []}]}
     page = printable(report)
     readable = page.split('<pre>')[0]
-    assert 'AI interpretation (Grok)' in readable
+    assert f'AI interpretation ({label})' in readable
     assert 'Review &lt;carefully&gt;.' in readable
     assert 'The score is uncalibrated. [calibration]' in readable
     assert 'Listen to the original.' in readable
