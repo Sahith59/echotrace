@@ -30,6 +30,7 @@ def test_speaker_source_transitive_links_never_cross_splits():
 def test_split_membership_is_independent_of_manifest_order():
     records = [dict(file_id=str(i), label=i % 2, group_id=f'g{i}', sha256=f'h{i}')
                for i in range(12)]
-    first = grouped_split(records, random_state=7)
-    second = grouped_split(list(reversed(records)), random_state=7)
-    assert set(first['validation_ids']) == set(second['validation_ids'])
+    for seed in range(20):
+        first = grouped_split(records, validation_fraction=.4, random_state=seed)
+        second = grouped_split(list(reversed(records)), validation_fraction=.4, random_state=seed)
+        assert set(first['validation_ids']) == set(second['validation_ids'])
