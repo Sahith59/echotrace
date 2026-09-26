@@ -83,7 +83,7 @@ export default function AIInterpretation({ jobId }: { jobId: string }) {
 
   return <section className="detail-section ai-interpretation" aria-labelledby="ai-interpretation-title">
     <div className="section-heading"><div><span className="eyebrow">07 / AI REVIEW</span><h2 id="ai-interpretation-title">AI interpretation</h2></div><Sparkles size={18} className="subtle-icon" aria-hidden="true" /></div>
-    <p className="ai-interpretation-caveat">Groq receives measured findings only; no audio, filenames, or transcripts. Its summary can err and is not a detection result.</p>
+    <p className="ai-interpretation-caveat">Groq receives the primary detector’s measured findings only; no audio, filenames, or transcripts. Its summary can err and is not a detection result.</p>
     {active.phase === 'loading' && <p className="ai-interpretation-state" role="status"><LoaderCircle size={14} className="spin" /> Checking interpretation…</p>}
     {active.report && <div className="ai-interpretation-report">
       <div className="ai-interpretation-meta">Generated with {active.report.provider === 'xai' ? 'Grok (xAI)' : 'Groq'} · {active.report.model}</div>

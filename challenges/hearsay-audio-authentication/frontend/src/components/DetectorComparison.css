@@ -1,0 +1,7 @@
+.detector-comparison { margin-top: 20px; }
+.detector-scorecards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.detector-scorecards > div { border: 1px solid #454545; border-radius: 12px; padding: 20px; background: rgba(255,255,255,.025); }
+.detector-scorecards span { color: #aaa; font-size: 12px; }
+.detector-scorecards h3 { font-size: 14px; line-height: 1.5; margin: 8px 0 16px; font-weight: 500; overflow-wrap: anywhere; }
+.detector-scorecards strong { font-size: clamp(24px, 3vw, 34px); letter-spacing: -.04em; font-weight: 500; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .detector-scorecards { grid-template-columns: 1fr; } }

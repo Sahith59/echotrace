@@ -46,3 +46,42 @@ it('shows a rejected input without manufacturing a score and permits retry', asy
   expect(screen.queryByText(/\/ 100/)).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Run second detector' })).toBeEnabled()
 })
+
+it('loads a saved comparison without spending inference and clears it when the recording changes', async () => {
+  const fetcher = vi.fn((url: string) => Promise.resolve(response(url.endsWith('/status')
+    ? { available: true } : url.includes('/first/') ? report : { status: 'not_generated' })))
+  vi.stubGlobal('fetch', fetcher)
+  const view = render(<DetectorComparison jobId="first" />)
+  expect(await screen.findByText('98.0 / 100')).toBeInTheDocument()
+  view.rerender(<DetectorComparison jobId="second" />)
+  expect(await screen.findByRole('button', { name: 'Run second detector' })).toBeEnabled()
+  expect(screen.queryByText('98.0 / 100')).not.toBeInTheDocument()
+  expect(fetcher).not.toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'POST' }))
+})
+
+it('can recover from an initial network failure', async () => {
+  let offline = true
+  vi.stubGlobal('fetch', vi.fn((url: string) => offline ? Promise.reject(Error('Local server unavailable.')) : Promise.resolve(response(
+    url.endsWith('/status') ? { available: true } : { status: 'not_generated' },
+  ))))
+  render(<DetectorComparison jobId="sample" />)
+  expect(await screen.findByText('Local server unavailable.')).toBeInTheDocument()
+  offline = false
+  await userEvent.click(screen.getByRole('button', { name: 'Check comparison availability' }))
+  expect(await screen.findByRole('button', { name: 'Run second detector' })).toBeEnabled()
+})
+
+it('does not show an old in-flight comparison on a different recording', async () => {
+  let finish!: (value: Response) => void
+  vi.stubGlobal('fetch', vi.fn((url: string, options?: RequestInit) => options?.method === 'POST'
+    ? new Promise<Response>(resolve => { finish = resolve }) : Promise.resolve(response(
+      url.endsWith('/status') ? { available: true } : { status: 'not_generated' },
+    ))))
+  const view = render(<DetectorComparison jobId="first" />)
+  await userEvent.click(await screen.findByRole('button', { name: 'Run second detector' }))
+  expect(screen.getByRole('button', { name: 'Running second detector…' })).toBeDisabled()
+  view.rerender(<DetectorComparison jobId="second" />)
+  finish(response(report))
+  expect(await screen.findByRole('button', { name: 'Run second detector' })).toBeEnabled()
+  expect(screen.queryByText('98.0 / 100')).not.toBeInTheDocument()
+})
