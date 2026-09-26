@@ -124,3 +124,16 @@ def test_submission_preserves_template_order_headers_and_scale(tmp_path):
     write_csv(predictions, ["file_id", "synthetic_score"], [("a", "0.2"), ("a", "0.3")])
     with pytest.raises(ValueError, match="Duplicate file_id"):
         export_submission(predictions, expected, config, output)
+
+
+def test_submission_rejects_failed_rows_even_with_finite_scores(tmp_path):
+    predictions=tmp_path/'predictions.csv'
+    expected=tmp_path/'expected.csv'
+    config=tmp_path/'config.json'
+    output=tmp_path/'output.csv'
+    write_csv(predictions,['file_id','synthetic_score','status'],[('a','0.5','failed')])
+    write_csv(expected,['file_id'],[('a',)])
+    config.write_text(json.dumps({'expected_id_column':'file_id','output_id_column':'file_id','output_score_column':'synthetic_score','score_scale':'0-1','score_direction':'synthetic_high','columns':['file_id','synthetic_score'],'official_schema_confirmed':True}))
+    with pytest.raises(ValueError,match='completed'):
+        export_submission(predictions,expected,config,output,require_official=True)
+    assert not output.exists()
