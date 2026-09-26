@@ -128,19 +128,66 @@ export default function App() {
   const [playing, setPlaying] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const audio = useRef<HTMLAudioElement>(null)
+  const mobileMenu = useRef<HTMLButtonElement>(null)
+  const mobileClose = useRef<HTMLButtonElement>(null)
+  const mobileDrawer = useRef<HTMLElement>(null)
+  const mainColumn = useRef<HTMLDivElement>(null)
+  const skipLink = useRef<HTMLAnchorElement>(null)
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (!mobileNav) return
-    const closeOnEscape = (event: KeyboardEvent) => {
+    const drawer = mobileDrawer.current
+    const background: HTMLElement[] = []
+    if (skipLink.current) background.push(skipLink.current)
+    if (mainColumn.current) background.push(mainColumn.current)
+    background.forEach(node => {
+      node.setAttribute('inert', '')
+      node.setAttribute('aria-hidden', 'true')
+    })
+    mobileClose.current?.focus()
+
+    const containFocus = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        event.preventDefault()
         setMobileNav(false)
-        document.querySelector<HTMLButtonElement>('.mobile-menu')?.focus()
+        return
+      }
+      if (event.key !== 'Tab' || !drawer) return
+      const controls = Array.from(drawer.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      ))
+      if (!controls.length) return
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (event.shiftKey && (document.activeElement === first || !drawer.contains(document.activeElement))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !drawer.contains(document.activeElement))) {
+        event.preventDefault()
+        first.focus()
       }
     }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
+    window.addEventListener('keydown', containFocus)
+    return () => {
+      window.removeEventListener('keydown', containFocus)
+      background.forEach(node => {
+        node.removeAttribute('inert')
+        node.removeAttribute('aria-hidden')
+      })
+      if (mobileMenu.current?.isConnected) mobileMenu.current.focus()
+    }
   }, [mobileNav])
+
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const mobileViewport = window.matchMedia('(max-width: 800px)')
+    const closeAtDesktop = (event: MediaQueryListEvent) => {
+      if (!event.matches) setMobileNav(false)
+    }
+    mobileViewport.addEventListener('change', closeAtDesktop)
+    return () => mobileViewport.removeEventListener('change', closeAtDesktop)
+  }, [])
 
   const loadJobs = useCallback(async () => {
     const list = await api<Job[]>('/api/analyses')
@@ -249,11 +296,11 @@ export default function App() {
   }
 
   return <div className="app-shell">
-    <a className="skip-link" href="#main-content">Skip to workspace</a>
+    <a ref={skipLink} className="skip-link" href="#main-content">Skip to workspace</a>
     <GlassFilter />
     <div className="ambient-scene" aria-hidden="true"><div className="ambient-orb orb-one" /><div className="ambient-orb orb-two" /><div className="ambient-grid" /></div>
-    <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`} aria-label="Analysis history" id="workspace-navigation">
-      <div className="brand"><div className="brand-mark"><AudioLines size={20} strokeWidth={2.2} /></div><div><strong>ECHOTRACE</strong><small>Audio review workspace</small></div><button className="icon-button mobile-close" onClick={() => setMobileNav(false)} aria-label="Close navigation"><X size={18} /></button></div>
+    <aside ref={mobileDrawer} className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`} aria-label="Analysis history" id="workspace-navigation" role={mobileNav ? 'dialog' : undefined} aria-modal={mobileNav || undefined}>
+      <div className="brand"><div className="brand-mark"><AudioLines size={20} strokeWidth={2.2} /></div><div><strong>ECHOTRACE</strong><small>Audio review workspace</small></div><button ref={mobileClose} className="icon-button mobile-close" onClick={() => setMobileNav(false)} aria-label="Close navigation"><X size={18} /></button></div>
       <div className="sidebar-main">
         <div className="sidebar-section-label">WORKSPACE</div>
         <button className={`nav-item ${!batchOpen ? 'nav-active' : ''}`} onClick={() => { setSelectedId(null); setBatchOpen(false); setMobileNav(false) }}><ScanLine size={17} /> Investigation <span>{jobs.length}</span></button>
@@ -269,9 +316,9 @@ export default function App() {
       <div className="sidebar-footer"><span className={`connection-dot ${health?.status === 'ok' ? 'online' : ''}`} /><div><strong>{health?.status === 'ok' ? 'Local processing available' : 'Server unavailable'}</strong><small>Files stay on this device</small></div></div>
     </aside>
 
-    {mobileNav && <button className="mobile-scrim" aria-label="Close navigation" onClick={() => setMobileNav(false)} />}
-    <div className="main-column">
-      <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={mobileNav} aria-controls="workspace-navigation" onClick={() => setMobileNav(true)}><Menu size={20} /></button><span className="topbar-eyebrow">Audio review / {batchOpen ? 'Batch export' : selected ? 'Recording' : 'Workspace'}</span></div><div className="topbar-right"><button className="topbar-add" onClick={() => fileInput.current?.click()} disabled={uploading}><Plus size={16} /> Add recording</button></div></header>
+    {mobileNav && <button className="mobile-scrim" aria-hidden="true" tabIndex={-1} onClick={() => setMobileNav(false)} />}
+    <div ref={mainColumn} className="main-column">
+      <header className="topbar"><div className="topbar-left"><button ref={mobileMenu} className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={mobileNav} aria-controls="workspace-navigation" onClick={() => setMobileNav(true)}><Menu size={20} /></button><span className="topbar-eyebrow">Audio review / {batchOpen ? 'Batch export' : selected ? 'Recording' : 'Workspace'}</span></div><div className="topbar-right"><button className="topbar-add" onClick={() => fileInput.current?.click()} disabled={uploading}><Plus size={16} /> Add recording</button></div></header>
       <input aria-label="Choose audio recordings" ref={fileInput} className="sr-only" type="file" multiple accept=".wav,.mp3,.m4a,.flac,.ogg,.opus,.aac,audio/*" onChange={event => event.target.files && uploadFiles(event.target.files)} />
       {error && <div className="error-banner" role="alert"><CircleAlert size={18} /><span>{error}</span><button className="icon-button" onClick={() => setError(null)} aria-label="Dismiss error"><X size={17} /></button></div>}
 
