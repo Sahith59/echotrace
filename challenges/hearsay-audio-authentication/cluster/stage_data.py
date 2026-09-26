@@ -185,7 +185,7 @@ def stage_data(inventory_path: Path, train_manifest: Path, dev_manifest: Path,
     """Download, verify, extract, and publish a fresh bounded T/D subset."""
     inventory_path, train_manifest, dev_manifest = map(Path, (inventory_path, train_manifest, dev_manifest))
     output = Path(output_dir)
-    if output.exists():
+    if output.exists() or output.is_symlink():
         raise FileExistsError(f'Output already exists: {output}')
     inventory = _inventory(inventory_path)
     train_fields, train_rows = _read_manifest(train_manifest, 'train', 'flac_T')
@@ -231,7 +231,7 @@ def stage_data(inventory_path: Path, train_manifest: Path, dev_manifest: Path,
                 'dev': len(members['flac_D']) - len(selected_dev)},
         }
         (temp / 'provenance.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n', encoding='utf-8')
-        if output.exists():
+        if output.exists() or output.is_symlink():
             raise FileExistsError(f'Output already exists: {output}')
         temp.rename(output)
     return report
