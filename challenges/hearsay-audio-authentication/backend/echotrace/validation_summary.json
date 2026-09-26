@@ -1,0 +1,69 @@
+{
+  "scope": "ASVspoof 5 public development subset; not sponsor evaluation. Thresholds chosen on a separate selection split. Scores remain uncalibrated.",
+  "serving_model": "Original pretrained AASIST-L",
+  "experiments": [
+    {
+      "name": "AASIST-L adaptation / run 01",
+      "status": "completed",
+      "promoted": false,
+      "reason": "Candidate recall below the predeclared 80% target.",
+      "sample_count": 2000,
+      "baseline_weights_sha256": "814331d088032bb4c3fa61cc014789eadeed464209dd094ab3a2dd6ffbdce27a",
+      "candidate_weights_sha256": "b7cdbf17ab0254c06d501d844efa7ac370087a51103b3531fdc8edb04e34372e",
+      "baseline": {
+        "genuine_count": 979,
+        "synthetic_count": 1021,
+        "confusion": {
+          "tn": 937,
+          "fp": 42,
+          "fn": 791,
+          "tp": 230
+        },
+        "recall": 0.22526934378060726,
+        "false_positive_rate": 0.04290091930541369,
+        "recall_interval_95": [
+          0.20070160892577124,
+          0.2518966489105636
+        ],
+        "false_positive_rate_interval_95": [
+          0.03189384984093652,
+          0.05748115365768938
+        ],
+        "roc_auc": 0.6982619335126792,
+        "average_precision": 0.7257896606430629
+      },
+      "candidate": {
+        "genuine_count": 979,
+        "synthetic_count": 1021,
+        "confusion": {
+          "tn": 940,
+          "fp": 39,
+          "fn": 567,
+          "tp": 454
+        },
+        "recall": 0.4446620959843291,
+        "false_positive_rate": 0.03983656792645557,
+        "recall_interval_95": [
+          0.41444501411342044,
+          0.47529402890887157
+        ],
+        "false_positive_rate_interval_95": [
+          0.029276554161572932,
+          0.05399370075715548
+        ],
+        "roc_auc": 0.8447805482217658,
+        "average_precision": 0.8653342590301641
+      },
+      "thresholds": {
+        "baseline": 0.9998533328374227,
+        "candidate": 0.0028374670655466616
+      },
+      "gates": {
+        "max_false_positive_rate": 0.05,
+        "min_recall": 0.8,
+        "min_recall_gain": 0.1,
+        "min_each_class": 100
+      }
+    }
+  ]
+}

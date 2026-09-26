@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
+from .case_report import create_case_router
 from .pilot import create_pilot_router
 from .interpretation import create_interpretation_router
 from .speaker_router import create_speaker_router
@@ -128,6 +129,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
     app.include_router(create_interpretation_router(store, interpreter))
     app.include_router(create_speaker_router(store))
     app.include_router(create_claims_router(store))
+    app.include_router(create_case_router(store))
 
     def get_job(job_id):
         try:
