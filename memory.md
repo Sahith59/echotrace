@@ -4,7 +4,7 @@ Last updated: 2026-09-26, release-integration iteration. **This opening state su
 
 ## Latest approved UI/workflow iteration — 2026-09-26
 
-This section supersedes older continuation notes below. User approved the workflow and requested light theme from woven reference + pasted glass calendar. Implemented light surfaces, IBM Plex Sans body/serif headings, local generated woven texture, contextual info and reduced-motion transitions. Calendar adapted into working local-date queue filter under existing src/components/ui/Tailwind/TS/motion setup.
+This section supersedes older continuation notes below. User approved the workflow and requested light theme from woven reference + pasted glass calendar. The later visual correction replaced the generated approximation with the exact user-supplied image (pixel-matched), exposed it without the heavy blur/overlay, and applied matte glass, subtle optical displacement, raised/inset surfaces, stronger hierarchy, and a stripe-free selected recording. IBM Plex Sans body/serif headings, contextual info and reduced-motion transitions remain. Calendar adapted into working local-date queue filter under existing src/components/ui/Tailwind/TS/motion setup.
 
 New primary is pinned NII whole-file <=30seconds, same API/CLI, no truncation; historical AASIST remains. Serving decision is a scoped prototype choice, not passed old training acceptance contract. Baseline4504670 result retrieval blocked at cluster login banner; do not duplicate training. No extraGPUused.
 

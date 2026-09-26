@@ -201,6 +201,7 @@ Groq activation is complete. The ignored root `.env` remains backend-only; never
 ## Approved continuation: UI and phases3C–5
 
 - [x] Replace dark monochrome styling with light textured glass, readable text hierarchy, semantic button/status colors and reduced-motion transitions.
+- [x] Correct the visual reference to the exact user-supplied woven image; expose it through matte glass, remove the selected-recording left stripe, and make the case heading and score interpretation scannable.
 - [x] Adapt supplied calendar into real queue date filtering; add keyboard-usable contextual info buttons.
 - [x] Phase3C prototype primary migration: pinned NII shared API/CLI, parity/runtime checks,30second limit, fail-closed input/model handling, preserved historical AASIST reports. See serving-decision document for measured and unmeasured boundaries.
 - [x] Phase4A: Review recording / Check reliability / Case evidence navigation; durable analyst status and notes with optimistic concurrency and local draft retention.
