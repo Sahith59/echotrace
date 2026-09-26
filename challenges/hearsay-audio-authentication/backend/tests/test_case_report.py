@@ -119,5 +119,6 @@ def test_printable_report_surfaces_ai_notes_and_claim_timestamps(provider, label
     assert 'Passage 0.02–4.42 s · transcript version 1' in readable
     synthesis['synthetic_score'] = .8
     stale = printable(report).split('<pre>')[0]
-    assert 'Review &lt;carefully&gt;.' not in stale
-    assert 'Saved AI interpretation no longer matches the measurements.' in stale
+    assert 'Review &lt;carefully&gt;.' in stale
+    assert 'Older saved interpretation' in stale
+    assert 'New comparison evidence is available; regenerate interpretation.' in stale

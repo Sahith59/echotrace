@@ -3,19 +3,49 @@ from __future__ import annotations
 
 import html
 import json
+import math
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .claims_router import load_claim_artifacts
-from .interpretation import evidence_for, evidence_hash
+from .interpretation import evidence_for, evidence_for_job, evidence_hash
 from .analyst_review import load_analyst_review
+from .model_provenance import same_model
 
 SUMMARY_PATH = Path(__file__).with_name('validation_summary.json')
 BOUNDARY = ('Synthesis, voice similarity and factual claims are independent assessments. '
             'No combined authenticity probability is calculated. Neither voice similarity '
             'nor a synthesis score proves identity, intent or factual truth.')
+
+
+def _stress_comparisons(store, job):
+    result = job.get('result') or {}
+    primary_score = result.get('synthetic_score')
+    if not isinstance(primary_score, (int, float)) or not math.isfinite(primary_score):
+        return []
+    comparisons = []
+    seen = set()
+    for child in store.list():
+        child_result = child.get('result') or {}
+        kind = (child.get('transform') or {}).get('kind')
+        score = child_result.get('synthetic_score')
+        input_sha = (child_result.get('input') or {}).get('sha256')
+        if (child.get('parent_id') == job.get('id') and child.get('status') == 'completed'
+                and kind in {'mp3', 'noise'} and kind not in seen
+                and child_result.get('parent_id') == job.get('id')
+                and (child_result.get('transform') or {}).get('kind') == kind
+                and same_model(result.get('model'), child_result.get('model'))
+                and isinstance(score, (int, float)) and math.isfinite(score) and 0 <= score <= 1
+                and isinstance(input_sha, str) and input_sha):
+            comparisons.append({
+                'id': child['id'], 'kind': kind, 'synthetic_score': score,
+                'score_difference': round(score - primary_score, 10),
+                'input_sha256': input_sha, 'model': child_result['model'],
+            })
+            seen.add(kind)
+    return comparisons
 
 
 def case_report(store, job_id):
@@ -28,12 +58,23 @@ def case_report(store, job_id):
     with store.connect() as db:
         row = db.execute('SELECT report FROM speaker_comparisons WHERE job_id=?', (job_id,)).fetchone()
         detector = db.execute('SELECT report FROM detector_comparisons WHERE job_id=?', (job_id,)).fetchone()
+    current_evidence_sha256 = evidence_hash(evidence_for_job(store, job))
+    interpretation = (job['result'] or {}).get('interpretation')
+    if not interpretation or interpretation.get('status') != 'generated':
+        interpretation_status = 'not_generated'
+    elif interpretation.get('evidence_sha256') == current_evidence_sha256:
+        interpretation_status = 'current'
+    else:
+        interpretation_status = 'outdated'
     return {
         'schema_version': 'echotrace.case.v1', 'job_id': job_id,
         'filename': job['filename'], 'created_at': job['created_at'],
         'synthesis': job['result'],
         'speaker_comparison': json.loads(row['report']) if row else None,
         'detector_comparison': json.loads(detector['report']) if detector else None,
+        'stress_comparisons': _stress_comparisons(store, job),
+        'interpretation_status': interpretation_status,
+        'current_evidence_sha256': current_evidence_sha256,
         'analyst_review': load_analyst_review(store, job_id),
         **load_claim_artifacts(store, job_id),
         'overall_authenticity_probability': None, 'interpretation_boundary': BOUNDARY,
@@ -62,18 +103,26 @@ def printable(report):
     ai_title = '<h3>AI interpretation (' + provider_label + ')</h3>'
     ai_html = '<h3>AI interpretation</h3><p>No AI interpretation generated.</p>'
     if interpretation and interpretation.get('status') == 'generated':
-        saved_evidence = interpretation.get('evidence')
-        expected_evidence = saved_evidence if isinstance(saved_evidence, list) else evidence_for(synthesis)
-        if interpretation.get('evidence_sha256') != evidence_hash(expected_evidence):
-            ai_html = ai_title + '<p>Saved AI interpretation no longer matches the measurements.</p>'
-        else:
-            brief = interpretation['report']
-            ai_html = (ai_title + '<small>AI-written · ' +
-                esc(interpretation.get('model', '')) + ' · Review against the measurements.</small><p>' +
-                esc(brief['summary']) + '</p><ul>' + ''.join('<li>' + esc(finding['text']) +
-                ' [' + esc(', '.join(finding['evidence_ids'])) + ']</li>' for finding in brief['findings']) +
-                '</ul><p><b>Suggested next steps</b></p><ul>' +
-                ''.join('<li>' + esc(step) + '</li>' for step in brief['next_steps']) + '</ul>')
+        current_hash = report.get('current_evidence_sha256') or evidence_hash(evidence_for(synthesis))
+        interpretation_status = report.get('interpretation_status') or (
+            'current' if interpretation.get('evidence_sha256') == current_hash else 'outdated')
+        brief = interpretation['report']
+        history_label = ''
+        if interpretation_status == 'outdated':
+            history_label = ('<p><b>New comparison evidence is available; regenerate interpretation.</b></p>'
+                             '<small>Older saved interpretation · generated ' +
+                             esc(interpretation.get('generated_at', 'date unavailable')) + '</small>')
+        ai_html = (ai_title + history_label + '<small>AI-written · ' +
+            esc(interpretation.get('model', '')) + ' · Review against the measurements.</small><p>' +
+            esc(brief['summary']) + '</p><ul>' + ''.join('<li>' + esc(finding['text']) +
+            ' [' + esc(', '.join(finding['evidence_ids'])) + ']</li>' for finding in brief['findings']) +
+            '</ul><p><b>Suggested next steps</b></p><ul>' +
+            ''.join('<li>' + esc(step) + '</li>' for step in brief['next_steps']) + '</ul>')
+    stress_html = ''.join(
+        '<li>' + esc(item['kind'].title()) + ' stress test · score ' +
+        esc(f"{item['synthetic_score'] * 100:.2f}") + ' / 100 · difference ' +
+        esc(f"{item['score_difference'] * 100:+.2f}") + ' score points · model-matched</li>'
+        for item in report.get('stress_comparisons', []))
     def passage(item):
         span = item.get('span')
         if not span:
@@ -98,6 +147,7 @@ def printable(report):
         esc(synthesis.get('score_kind', 'uncalibrated model score')) + '</p><p>A low score does not establish authenticity.</p>'
         + ai_html + '<h2>2. Speaker reference</h2><p>' + esc(speaker_text) + '</p><p>Similarity is not an identity verdict.</p>'
         '<h2>Experimental detector comparison</h2><p>' + detector_text + '</p>'
+        '<h2>Matched stress comparisons</h2>' + (('<ul>' + stress_html + '</ul>') if stress_html else '<p>No matched stress comparisons generated.</p>') +
         '<h2>Analyst review</h2>' + analyst_text +
         '<h2>3. Transcript</h2><p>' + esc(transcript.get('text') or 'No transcript generated.') + '</p>'
         '<small>Version ' + esc(transcript.get('version', '—')) + ' · ' + esc(transcript.get('source', 'unavailable')) + '</small>'
