@@ -23,6 +23,8 @@ Final job **4504574** used one A100 for 40m52s within its hard 3h30 allocation. 
 
 Independence is established only against our frozen 10,000-file train, 2,000-file selection and prior evaluation ledgers. The Gary Stafford model card describes 1,866 author-collected YouTube/TTS clips, while its Gustking base card does not provide a complete upstream training inventory. This run therefore does not claim acceptance3 is independent of every upstream pretraining source. The web continues serving the original AASIST-L.
 
+Post-hoc slice review found that compressed bona fide audio drove the failure: candidate FPR was 21.9%–59.0% on C01–C04 and C06–C10, while uncompressed audio, C05 and C11 were at or below 2.63%. No threshold was retuned from this observation. After excluding every acceptance3 and prior-ledger speaker and source, eval-aa retains 2,950 files (1,672 genuine / 1,278 fake), 2,202 sources and 97 speakers, but only 10 synthetic speakers. This can support a frozen file/source-disjoint follow-up holdout, with limited synthetic-speaker diversity and no sponsor-distribution claim. No further GPU experiment was submitted.
+
 ## Historical first-run setup (05:25 UTC checkpoint)
 
 ## Location and scope
