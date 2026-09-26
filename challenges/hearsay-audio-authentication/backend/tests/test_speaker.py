@@ -1,5 +1,6 @@
 import hashlib
 import json
+import stat
 from pathlib import Path
 
 import numpy as np
@@ -203,3 +204,24 @@ def test_main_app_registers_speaker_routes(tmp_path):
         response = client.get("/api/speaker/status")
     assert response.status_code == 200
     assert response.json()["model"]["id"] == "microsoft/wavlm-base-plus-sv"
+
+
+def test_sensitive_reference_temp_file_is_owner_only(tmp_path):
+    app, store = app_for(tmp_path)
+    observed_modes = []
+
+    class InspectingService:
+        def compare(self, job, reference_path, reference_label):
+            observed_modes.append(stat.S_IMODE(reference_path.stat().st_mode))
+            return {"status": "completed"}
+
+    secure_app = FastAPI()
+    secure_app.include_router(create_speaker_router(store, InspectingService()))
+    with TestClient(secure_app) as client:
+        response = client.post(
+            "/api/analyses/complete/speaker-comparison",
+            data={"consent": "true"},
+            files={"file": ("private.wav", b"sensitive voice")},
+        )
+    assert response.status_code == 200
+    assert observed_modes == [0o600]

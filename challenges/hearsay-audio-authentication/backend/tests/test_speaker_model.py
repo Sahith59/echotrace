@@ -1,4 +1,5 @@
 import sys
+import hashlib
 from types import SimpleNamespace
 
 import numpy as np
@@ -12,6 +13,7 @@ from echotrace.speaker import (
     SpeakerComparisonError,
     WavLMSpeakerEmbedder,
 )
+import echotrace.speaker as speaker
 
 
 def test_long_audio_is_bounded_to_evenly_spaced_model_windows():
@@ -80,3 +82,32 @@ def test_safe_local_model_loader_options_are_fixed(tmp_path, monkeypatch):
         "trust_remote_code": False,
         "use_safetensors": True,
     }
+
+
+def test_runtime_load_never_downloads_missing_speaker_model(tmp_path, monkeypatch):
+    embedder = WavLMSpeakerEmbedder(tmp_path)
+    monkeypatch.setattr(embedder, "_dependencies_available", lambda: True)
+    monkeypatch.setattr(embedder, "_download", lambda: pytest.fail("runtime download attempted"))
+    with pytest.raises(SpeakerComparisonError, match="explicit setup"):
+        embedder._load()
+
+
+def test_verified_weight_hash_is_cached_until_file_metadata_changes(tmp_path, monkeypatch):
+    payload = b"weights"
+    monkeypatch.setattr(speaker, "MODEL_WEIGHTS_BYTES", len(payload))
+    monkeypatch.setattr(speaker, "MODEL_WEIGHTS_SHA256", hashlib.sha256(payload).hexdigest())
+    embedder = WavLMSpeakerEmbedder(tmp_path)
+    embedder.model_dir.mkdir(parents=True)
+    for filename in speaker.MODEL_FILES:
+        (embedder.model_dir / filename).write_bytes(payload if filename == "model.safetensors" else b"{}")
+    calls = []
+    original = speaker._sha256
+    monkeypatch.setattr(speaker, "_sha256", lambda path: calls.append(path) or original(path))
+
+    assert embedder.status()["ready"] is True
+    assert embedder.status()["ready"] is True
+    assert len(calls) == 1
+
+    (embedder.model_dir / "model.safetensors").write_bytes(b"changed")
+    assert embedder.status()["ready"] is False
+    assert len(calls) == 2

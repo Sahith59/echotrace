@@ -42,14 +42,18 @@ class UnavailableReviewer:
         raise AssertionError("provider must not run without consent")
 
 
-def app_for(tmp_path):
+def app_for(tmp_path, *, reviewer=None, transcriber=None):
     store = Store(tmp_path)
     audio = tmp_path / "recording.wav"
     audio.write_bytes(b"audio")
     store.create("job", "recording.wav", audio)
     store.update("job", status="completed", stage="completed", result={"synthetic_score": 0.99})
     app = FastAPI()
-    app.include_router(create_claims_router(store, transcriber=FakeTranscriber(), reviewer=UnavailableReviewer()))
+    app.include_router(create_claims_router(
+        store,
+        transcriber=transcriber or FakeTranscriber(),
+        reviewer=reviewer or UnavailableReviewer(),
+    ))
     app.state.store = store
     return app
 
@@ -157,3 +161,47 @@ def test_status_and_missing_or_incomplete_jobs_fail_closed(tmp_path):
         assert client.post("/api/analyses/missing/claims", json={
             "text": "A claim", "external_search_consent": False
         }).status_code == 404
+
+
+def test_external_review_receives_claim_only_not_audio_or_transcript(tmp_path):
+    seen = []
+
+    class Reviewer:
+        def status(self):
+            return {"available": True, "provider": "xai", "model": "grok-test",
+                    "reason": None, "connection_verified": False}
+
+        def review(self, claim):
+            seen.append(claim)
+            return {"verdict": "uncheckable", "rationale": "No public sources found.",
+                    "evidence": [], "method": "ai_web_search", "provider": "xai",
+                    "model": "grok-test", "prompt_version": "test", "reviewed_at": "now"}
+
+    app = app_for(tmp_path, reviewer=Reviewer())
+    with TestClient(app) as client:
+        transcript = client.post("/api/analyses/job/transcript").json()
+        assert "bridge" in transcript["text"]
+        response = client.post("/api/analyses/job/claims", json={
+            "text": "A separate public claim.",
+            "transcript_version": 1,
+            "external_search_consent": True,
+        })
+    assert response.status_code == 201
+    assert seen == ["A separate public claim."]
+    assert "bridge" not in str(seen)
+
+
+def test_per_job_claim_and_transcript_caps_prevent_unbounded_storage(tmp_path, monkeypatch):
+    monkeypatch.setattr("echotrace.claims_router.MAX_TRANSCRIPT_VERSIONS", 2)
+    monkeypatch.setattr("echotrace.claims_router.MAX_CLAIMS_PER_JOB", 2)
+    with TestClient(app_for(tmp_path)) as client:
+        assert client.post("/api/analyses/job/transcript").status_code == 201
+        assert client.post("/api/analyses/job/transcript").status_code == 201
+        assert client.post("/api/analyses/job/transcript").status_code == 429
+        for text in ("First claim", "Second claim"):
+            assert client.post("/api/analyses/job/claims", json={
+                "text": text, "external_search_consent": False,
+            }).status_code == 201
+        assert client.post("/api/analyses/job/claims", json={
+            "text": "Third claim", "external_search_consent": False,
+        }).status_code == 429

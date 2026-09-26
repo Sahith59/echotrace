@@ -5,7 +5,7 @@ import pytest
 from echotrace.claims import ClaimReviewError, GrokClaimReviewer, validate_public_url
 
 
-def response_for(review, citations):
+def response_for(review, citations, *, web_search_calls=1):
     return {
         "output": [{
             "type": "message",
@@ -19,6 +19,7 @@ def response_for(review, citations):
             }],
         }],
         "citations": citations,
+        "usage": {"server_side_tool_usage_details": {"web_search_calls": web_search_calls}},
     }
 
 
@@ -115,6 +116,30 @@ def test_grok_review_rejects_hallucinated_citation():
 
     with pytest.raises(ClaimReviewError, match="not observed"):
         reviewer.review("A factual claim")
+
+
+def test_grok_review_fails_closed_when_provider_did_not_run_web_search():
+    source = "https://example.gov/report"
+    reviewer = GrokClaimReviewer(
+        api_key="key",
+        transport=lambda payload: response_for({
+            "verdict": "supported",
+            "rationale": "The response claims support despite skipping search.",
+            "evidence": [{
+                "url": source,
+                "title": "Unverified result",
+                "publisher": None,
+                "published_at": None,
+                "quote": None,
+                "stance": "supports",
+            }],
+        }, [source], web_search_calls=0),
+    )
+
+    result = reviewer.review("A factual claim")
+    assert result["verdict"] == "uncheckable"
+    assert result["evidence"] == []
+    assert "did not report a completed web search" in result["rationale"]
 
 
 @pytest.mark.parametrize("url", [
