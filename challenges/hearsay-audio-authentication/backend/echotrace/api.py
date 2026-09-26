@@ -219,7 +219,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
         filename = (file.filename or "recording").replace("\\", "/").split("/")[-1][:240]
         suffix = Path(filename).suffix.lower()
         # Filename never becomes a path; FFmpeg verifies actual media contents.
-        path = folder / ("original" + (suffix if suffix in {".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac", ".webm", ".mp4"} else ".bin"))
+        path = folder / ("original" + (suffix if suffix in {".wav", ".mp3", ".m4a", ".flac", ".ogg", ".opus", ".aac", ".webm", ".mp4"} else ".bin"))
         total = 0
         try:
             with path.open("wb") as target:
@@ -253,7 +253,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
         job = get_job(job_id)
         if not Path(job["path"]).is_file():
             raise HTTPException(409, "Audio is not ready")
-        return FileResponse(job["path"])
+        return FileResponse(job["path"], media_type="audio/ogg" if Path(job["path"]).suffix == ".opus" else None)
 
     @app.get("/api/analyses/{job_id}/report")
     def report(job_id: str):
