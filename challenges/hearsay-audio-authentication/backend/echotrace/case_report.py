@@ -62,7 +62,9 @@ def printable(report):
     ai_title = '<h3>AI interpretation (' + provider_label + ')</h3>'
     ai_html = '<h3>AI interpretation</h3><p>No AI interpretation generated.</p>'
     if interpretation and interpretation.get('status') == 'generated':
-        if interpretation.get('evidence_sha256') != evidence_hash(evidence_for(synthesis)):
+        saved_evidence = interpretation.get('evidence')
+        expected_evidence = saved_evidence if isinstance(saved_evidence, list) else evidence_for(synthesis)
+        if interpretation.get('evidence_sha256') != evidence_hash(expected_evidence):
             ai_html = ai_title + '<p>Saved AI interpretation no longer matches the measurements.</p>'
         else:
             brief = interpretation['report']

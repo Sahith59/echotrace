@@ -10,6 +10,11 @@ from fastapi.testclient import TestClient
 from echotrace.api import Store, create_app
 
 
+def test_health_advertises_primary_whole_file_duration_limit(tmp_path):
+    with TestClient(create_app(tmp_path, analyzer=fake_analyzer)) as client:
+        assert client.get("/api/health").json()["limits"]["max_duration_s"] == 30
+
+
 def fake_analyzer(path, progress=None):
     """Explicit test double; never registered in the running application."""
     if path.read_bytes() == b"corrupt":

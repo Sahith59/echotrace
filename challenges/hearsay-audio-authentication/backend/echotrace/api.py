@@ -232,7 +232,7 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
     @app.get("/api/health")
     def health():
         from .pipeline import model_status
-        return {"status": "ok", "model": model_status(), "limits": {"max_bytes": MAX_BYTES, "max_duration_s": 120}}
+        return {"status": "ok", "model": model_status(), "limits": {"max_bytes": MAX_BYTES, "max_duration_s": 30}}
 
     @app.post("/api/analyses", status_code=202)
     async def upload(file: UploadFile):

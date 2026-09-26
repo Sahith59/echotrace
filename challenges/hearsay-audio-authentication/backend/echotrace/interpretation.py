@@ -5,6 +5,8 @@ import hashlib
 import json
 import math
 import os
+import re
+import sqlite3
 import threading
 import urllib.error
 import urllib.request
@@ -15,13 +17,18 @@ from dotenv import dotenv_values
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from .model_provenance import same_model
+
 ENV_PATH = Path(__file__).resolve().parents[4] / ".env"
 PROMPT_VERSION = "evidence-brief-groq-v2"
 ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class InterpretationError(ValueError):
-    pass
+    def __init__(self, message, *, http_status=None, error_code=None):
+        super().__init__(message)
+        self.http_status = http_status
+        self.error_code = error_code
 
 
 class Finding(BaseModel):
@@ -41,7 +48,7 @@ def _finite(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
-def evidence_for(result: dict) -> list[dict]:
+def evidence_for(result: dict, extra_evidence: list[dict] | None = None) -> list[dict]:
     """No audio, filenames, hashes, transcript, labels or free-form input text."""
     score = result.get("synthetic_score")
     score = score if _finite(score) and 0 <= score <= 1 else None
@@ -67,7 +74,80 @@ def evidence_for(result: dict) -> list[dict]:
         if all(_finite(v) for v in values) and 0 <= values[0] < values[1] and 0 <= values[2] <= 1:
             facts.append({"id": f"window_{index:03}", "label": "Scored time window",
                           "value": dict(zip(("start_s", "end_s", "score"), values))})
+    allowed_extras = {
+        "stress.mp3.score": ("MP3 stress-test model score", "0–1", 0, 1),
+        "stress.mp3.score_difference": ("MP3 stress-test score difference", "score difference", -1, 1),
+        "stress.noise.score": ("Noise stress-test model score", "0–1", 0, 1),
+        "stress.noise.score_difference": ("Noise stress-test score difference", "score difference", -1, 1),
+        "detector_comparison.primary_score": ("Primary detector score in comparison", "0–1", 0, 1),
+        "detector_comparison.candidate_score": ("Second detector score", "0–1", 0, 1),
+        "detector_comparison.score_difference": ("Second minus primary detector score", "score difference", -1, 1),
+    }
+    seen_extra = set()
+    for item in extra_evidence or []:
+        evidence_id = item.get("id") if isinstance(item, dict) else None
+        value = item.get("value") if isinstance(item, dict) else None
+        if evidence_id in allowed_extras and evidence_id not in seen_extra and _finite(value):
+            label, unit, lower, upper = allowed_extras[evidence_id]
+            if lower <= value <= upper:
+                facts.append({"id": evidence_id, "label": label, "value": value, "unit": unit})
+                seen_extra.add(evidence_id)
     return facts
+
+
+def evidence_for_job(store, job: dict) -> list[dict]:
+    """Build the prompt facts from current, provenance-matched persisted measurements."""
+    result = job.get("result") or {}
+    primary_score = result.get("synthetic_score")
+    extras = []
+    stress_kinds = set()
+    for child in store.list():
+        child_result = child.get("result") or {}
+        kind = (child.get("transform") or {}).get("kind")
+        score = child_result.get("synthetic_score")
+        if (child.get("parent_id") == job.get("id") and child.get("status") == "completed"
+                and kind in {"mp3", "noise"} and kind not in stress_kinds
+                and child_result.get("parent_id") == job.get("id")
+                and (child_result.get("transform") or {}).get("kind") == kind
+                and same_model(result.get("model"), child_result.get("model"))
+                and _finite(primary_score) and _finite(score) and 0 <= score <= 1):
+            extras.extend([
+                {"id": f"stress.{kind}.score", "value": score},
+                {"id": f"stress.{kind}.score_difference", "value": round(score - primary_score, 10)},
+            ])
+            stress_kinds.add(kind)
+
+    try:
+        with store.connect() as db:
+            row = db.execute(
+                "SELECT report,input_sha FROM detector_comparisons WHERE job_id=?", (job.get("id"),)
+            ).fetchone()
+    except sqlite3.OperationalError:
+        row = None
+    if row:
+        try:
+            report = json.loads(row["report"])
+        except (TypeError, json.JSONDecodeError):
+            report = {}
+        expected_sha = (result.get("input") or {}).get("sha256")
+        primary = report.get("primary_score")
+        candidate = report.get("candidate_score")
+        difference = report.get("score_difference")
+        valid = (
+            report.get("status") == "generated"
+            and row["input_sha"] == expected_sha == report.get("input_sha256")
+            and report.get("primary_model") == result.get("model")
+            and report.get("model") != result.get("model")
+            and primary == primary_score
+            and all(_finite(value) for value in (primary, candidate, difference))
+        )
+        if valid:
+            extras.extend([
+                {"id": "detector_comparison.primary_score", "value": primary},
+                {"id": "detector_comparison.candidate_score", "value": candidate},
+                {"id": "detector_comparison.score_difference", "value": difference},
+            ])
+    return evidence_for(result, extras)
 
 
 def evidence_hash(facts):
@@ -94,7 +174,8 @@ class Interpreter:
 
     def _request(self, payload, key):
         request = urllib.request.Request(ENDPOINT, data=json.dumps(payload).encode(), headers={
-            "Authorization": f"Bearer {key}", "Content-Type": "application/json"}, method="POST")
+            "Authorization": f"Bearer {key}", "Content-Type": "application/json",
+            "User-Agent": "ECHOTRACE/0.1 local-evidence-brief"}, method="POST")
         # Fixed HTTPS endpoint. Never forward credentials or follow redirects.
         class NoRedirect(urllib.request.HTTPRedirectHandler):
             def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -106,19 +187,35 @@ class Interpreter:
                     raise InterpretationError("Groq returned an oversized response.")
                 return json.loads(raw)
         except urllib.error.HTTPError as exc:
+            error_code = None
+            try:
+                raw_error = exc.read(16385)
+                if len(raw_error) <= 16384:
+                    error = json.loads(raw_error).get("error", {})
+                    candidate = error.get("code") or error.get("type")
+                    if isinstance(candidate, str) and re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", candidate):
+                        error_code = candidate
+            except (AttributeError, OSError, TypeError, ValueError, json.JSONDecodeError):
+                pass
+            diagnostic = f" (HTTP {exc.code}" + (f", code: {error_code}" if error_code else "") + ")"
             if exc.code in (401, 403):
-                raise InterpretationError("Groq authentication failed. Check your Groq key and model access.") from None
+                raise InterpretationError(
+                    "Groq authentication or model permission failed" + diagnostic + ". Check your Groq key and model access.",
+                    http_status=exc.code, error_code=error_code,
+                ) from None
             if exc.code == 429:
-                raise InterpretationError("Groq rate or quota limit reached. Try again later.") from None
-            raise InterpretationError("Groq request failed. Check the configured model and Groq service status.") from None
+                raise InterpretationError("Groq rate or quota limit reached" + diagnostic + ". Try again later.",
+                                          http_status=exc.code, error_code=error_code) from None
+            raise InterpretationError("Groq request failed" + diagnostic + ". Check the configured model and Groq service status.",
+                                      http_status=exc.code, error_code=error_code) from None
         except (OSError, ValueError):
             raise InterpretationError("Groq could not be reached or returned an invalid response. Try again.") from None
 
-    def generate(self, result):
+    def generate(self, result, *, facts=None):
         model, key = self._config()
         if not key and not self.transport:
             raise InterpretationError(self.status()["reason"])
-        facts = evidence_for(result)
+        facts = evidence_for(result) if facts is None else evidence_for(result, facts)
         schema = Brief.model_json_schema()
         system = (
             "Write a concise audio-review brief using only the supplied measured evidence. "
@@ -168,7 +265,7 @@ def create_interpretation_router(store, interpreter=None):
 
     def cached(job):
         value = job["result"].get("interpretation")
-        if value and value.get("evidence_sha256") == evidence_hash(evidence_for(job["result"])):
+        if value and value.get("evidence_sha256") == evidence_hash(evidence_for_job(store, job)):
             return value
         return {"status": "not_generated"}
 
@@ -190,7 +287,7 @@ def create_interpretation_router(store, interpreter=None):
             if saved["status"] == "generated":
                 return saved
             try:
-                generated = service.generate(job["result"])
+                generated = service.generate(job["result"], facts=evidence_for_job(store, job))
             except InterpretationError as exc:
                 raise HTTPException(503, str(exc)) from None
             result = dict(job["result"], interpretation=generated)

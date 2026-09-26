@@ -183,6 +183,7 @@ def test_provider_error_captures_only_bounded_status_and_error_type(monkeypatch)
         def read(self, maximum):
             assert maximum == 16385
             return json.dumps({"error": {"type": "model_permission_denied", "message": "secret remote detail"}}).encode()
+        def close(self): pass
     class Opener:
         def open(self, request, timeout):
             raise urllib.error.HTTPError(request.full_url, 403, "secret reason", {}, Body())
@@ -205,6 +206,7 @@ def test_http_boundary_sends_only_evidence_and_validates_response(monkeypatch):
         def open(self, request, timeout):
             body = json.loads(request.data)
             assert request.headers["Authorization"] == "Bearer test-key"
+            assert request.headers["User-agent"] == "ECHOTRACE/0.1 local-evidence-brief"
             assert "private" not in json.dumps(body)
             assert body["response_format"] == {"type": "json_object"}
             assert "audio_review" in body["messages"][0]["content"]
