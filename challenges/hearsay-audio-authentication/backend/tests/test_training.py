@@ -122,7 +122,8 @@ def test_validation_loss_uses_global_weight_denominator():
     criterion = torch.nn.CrossEntropyLoss(weight=torch.tensor([1.0, 3.0]))
     loader = DataLoader(TensorDataset(x, target), batch_size=2)
     actual = training._validate(model, loader, criterion, torch.device("cpu"), float("inf"))
-    expected = float(criterion(model(x)[1], target))
+    with torch.no_grad():
+        expected = float(criterion(model(x)[1], target))
     assert actual["loss"] == pytest.approx(expected)
 
 
