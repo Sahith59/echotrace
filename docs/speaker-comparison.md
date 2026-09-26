@@ -89,7 +89,8 @@ synthetic-score preservation, status/error contracts, pinned downloads,
 SafeTensors-only loading, and bounded long-audio windows.
 
 GREEN command: `uv run pytest -q tests/test_speaker.py
-tests/test_speaker_model.py` reports 11 passed. Focused coverage with
+tests/test_speaker_model.py` reports 12 passed, including registration in the
+main app. The complete backend suite reports 212 passed. Focused coverage with
 `uv run --with coverage coverage run
 --source=echotrace.speaker,echotrace.speaker_router -m pytest -q
 tests/test_speaker.py tests/test_speaker_model.py` is 81% overall (speaker

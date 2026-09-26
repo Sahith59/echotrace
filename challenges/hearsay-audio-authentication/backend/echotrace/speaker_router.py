@@ -14,7 +14,6 @@ def create_speaker_router(store, service=None) -> APIRouter:
     service = service or SpeakerComparisonService(store)
     router = APIRouter()
     temp_root = store.root / ".speaker-temp"
-    temp_root.mkdir(parents=True, exist_ok=True)
 
     def job_for(job_id: str, *, require_complete: bool = False):
         try:
@@ -50,6 +49,7 @@ def create_speaker_router(store, service=None) -> APIRouter:
         label = re.sub(r"\s+", " ", (reference_label or "Trusted reference").strip())
         if not label or len(label) > 80 or any(ord(char) < 32 for char in label):
             raise HTTPException(422, "Reference label must contain 1 to 80 printable characters.")
+        temp_root.mkdir(parents=True, exist_ok=True)
         temp_path = temp_root / (uuid.uuid4().hex + ".upload")
         total = 0
         try:
@@ -73,6 +73,10 @@ def create_speaker_router(store, service=None) -> APIRouter:
         finally:
             file.file.close()
             temp_path.unlink(missing_ok=True)
+            try:
+                temp_root.rmdir()
+            except OSError:
+                pass
 
     @router.delete("/api/analyses/{job_id}/speaker-comparison", status_code=204)
     def delete_comparison(job_id: str):
