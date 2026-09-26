@@ -24,7 +24,7 @@ Native unfamiliar-file chooser automation remains limited by browser file permis
 ## Regression and packaging checks
 
 - Frontend: 51 tests across eight files passed; production TypeScript/Vite build passed.
-- Backend: 288 tests passed before the final interpretation-scope refinement; see the final release verification note below for the post-refinement count.
+- Backend: 290 tests passed after the final interpretation-scope refinement. The v3 evidence contract explicitly distinguishes the whole-file display span from independent windows and same-detector transformations from independent corroboration.
 - Built wheel inspected: includes `primary_detector.py`, `analyst_review.py`, `nii_parity.json` and `validation_summary.json`; contains no `.env`, audio examples or model-weight files.
 - Meaningful RED/GREEN contracts cover contextual help/calendar, analyst conflict/draft behavior, primary detector failures/parity, evidence links/refresh, mixed-model guards and report freshness. Queue/navigation integration checks were added after those UI features were implemented; they are regression tests, not claimed test-first development.
 
@@ -37,3 +37,5 @@ The pinned NII model is a pretrained detector, not a newly invented architecture
 Paired AASIST baseline job 4504670 results still need retrieval; cluster jump-host attempts timed out. No duplicate job or extra GPU training was launched. No relative superiority or sponsor-performance claim is made.
 
 Speaker similarity does not prove identity; transcript/source review does not prove truth. Hosted claim-source retrieval remains unavailable until source provenance can be validated. AI prose still needs analyst review. Full screen-reader and formal accessibility certification are not claimed.
+
+The final backend was restarted with no queued/running jobs. Existing reports and analyst notes survived. The prior brief was visibly marked outdated in the printable report after the evidence contract changed.

@@ -32,7 +32,7 @@ jobs:
           test -f echotrace/vendor/AASIST-L.conf
       - name: Install locked dependencies
         run: uv sync --frozen --all-groups
-      - name: Set up pinned baseline checkpoint
+      - name: Set up pinned primary NII checkpoint
         run: uv run echotrace setup-model
       - name: Test backend
         run: uv run pytest -q

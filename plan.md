@@ -184,7 +184,7 @@ Remaining gates:
 - [x] Finish clean cluster parity record for pinned NII adapter (CPU4504660, completed). Corrected five-input CPUcomparison passes declared1e-3logit/1e-4probability limits; earlier setup failures preserved.
 - [x] Run frozen external benchmark at predeclared threshold0.5: CPU4504662 completed, all2,000 model-scored, recall93.7%, FPR2.4%, AUROC0.9925. One quiet genuine row is retained in these model-only results; app-eligible comparison must use the common1,999 rows. No threshold tuning on this benchmark; no ASVspoof5 independence claim for NII.
 - [x] Make the reviewed prototype serving decision after measured absolute gates, reference parity, runtime and provenance checks; do not describe it as scientific superiority or passage of the older training-specific acceptance contract.
-- [ ] Publish the current source update; no deployment. Local verification is complete: 288 backend tests, 51 frontend tests and production build passed.
+- [ ] Publish the current source update; no deployment. Local verification is complete: 290 backend tests, 51 frontend tests and production build passed.
 
 - [x] Integrate and browser-test an on-demand, research-only NII second-detector comparison. Keep primary score unchanged, preserve both model identities, and never average uncalibrated scores. Frontend seven journeys pass; real genuine/synthetic comparisons, quiet rejection, saved reports, and 375px layout verified in Chrome.
 
