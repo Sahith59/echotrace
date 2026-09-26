@@ -99,7 +99,7 @@ Obtain the sponsor dataset, metric, schema, deadline and event rules. Evaluate t
 
 ## Larger public benchmark and comparison candidate
 
-ASVspoof 5 Track 1 is the selected large public train/development source. The official protocol archive was downloaded and checked against the published MD5. Prepared metadata includes 182,357 train, 140,950 development Track 1, and 680,774 evaluation Track 1 records. Audio is **not downloaded or verified**. Preserve these official partitions; do not run a random split across their union. Read `docs/large-dataset-review.md` at repository root for source and licensing details.
+ASVspoof 5 Track 1 is the selected large public train/development source. The official protocol archive was downloaded and checked against the published MD5. Prepared metadata includes 182,357 train, 140,950 development Track 1, and 680,774 evaluation Track 1 records. Only selected audio archives have been downloaded and verified on the cluster; the full corpus is not staged. The dated run ledger records exact archive checksums, decoded subsets and completed experiments. Preserve these official partitions; do not run a random split across their union. Read `docs/large-dataset-review.md` at repository root for source and licensing details.
 
 After obtaining the official protocols and audio in the documented folder layout, convert each protocol independently from the backend directory:
 
@@ -126,7 +126,7 @@ This comparison runner is deliberately limited to 256 files and CPU while checki
 - **To check the workflow:** upload your own short recording, use playback/seek and export. A custom recording without known provenance cannot establish detector correctness.
 - **To train:** do neither through the web upload. Training is a separate offline process using designated labeled training data. Uploading audio does not teach or change the model.
 
-Current app limit:50 MiB and120seconds. A low synthesis score does not prove identity or truth. Public pilot audio is under `backend/artifacts/public-pilot/original/en/` (genuine) and `backend/artifacts/public-pilot/fake/en/` (synthetic); these directories are ignored by Git. Do not publish clips without their required terms/attribution.
+Current app limit: 50 MiB and 120 seconds. A low synthesis score does not prove identity or truth. Public pilot audio is under `backend/artifacts/public-pilot/original/en/` (genuine) and `backend/artifacts/public-pilot/fake/en/` (synthetic); these directories are ignored by Git. Do not publish clips without their required terms/attribution.
 
 ## Try the fixed 24-recording demo
 
@@ -136,9 +136,9 @@ The local sample consists of 12 genuine and 12 synthetic recordings. It is a sma
 
 ## Grok review and experimental training
 
-Set `XAI_API_KEY` in the repository root.env; `ECHOTRACE_LLM_MODEL` defaults to `grok-4.7`. The backend reads configuration when requested. Use **Check configuration** then **Generate interpretation** on a completed recording. Only measured findings go to xAI; no audio/filenames/transcripts are sent. Reports are cached and included in JSON export. See [Grok integration](../../docs/ai-interpretation.md).
+Set `XAI_API_KEY` in the repository root `.env`; `ECHOTRACE_LLM_MODEL` defaults to `grok-4.7`. The backend reads configuration when requested. Use **Check configuration** then **Generate interpretation** on a completed recording. Only measured findings go to xAI; no audio/filenames/transcripts are sent. Reports are cached and included in JSON export. See [Grok integration](../../docs/ai-interpretation.md).
 
-The [experimental training runner](docs/training-runner.md) accepts frozen train/selection manifests and a bounded configuration. It does not start automatically or replace the web detector. The24demo clips are excluded; independent acceptance evaluation is required before promotion.
+The [experimental training runner](docs/training-runner.md) accepts frozen train/selection manifests and a bounded configuration. It does not start automatically or replace the web detector. The 24 demo clips are excluded; independent acceptance evaluation is required before promotion.
 
 ## Prepare optional local models
 
