@@ -147,10 +147,12 @@ select:focus-visible, summary:focus-visible, [role=slider]:focus-visible {
 .page-intro h1 { font-size: clamp(34px, 4vw, 57px); }
 .result-intro h1 { font-size: clamp(27px, 2.5vw, 36px); }
 .page-intro p { font-weight: 540; }
-.recent-recording { border-color: #2f506246; }
-.recent-recording:hover { color: #173e52; background: #ffffff45; }
-.recent-recording strong { font-weight: 720; }
-.recent-recording small, .workspace-footnote { color: #355563; }
+.recent-recordings { background: linear-gradient(150deg, #344d60cf, #625c73c4); }
+.recent-recording { color: #f8fcfe; border-color: #ffffff42; }
+.recent-recording:hover { color: #fff; background: #ffffff20; }
+.recent-recording strong { color: #fff; font-weight: 720; }
+.recent-recording small, .recent-status { color: #e2ebf0; }
+.workspace-footnote { color: #355563; }
 
 /* Content panels use bright typography on dark translucent glass. */
 .liquid-glass :is(h2, h3, strong), .case-panel :is(h2, h3, strong),

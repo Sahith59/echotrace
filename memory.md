@@ -1,6 +1,10 @@
 # ECHOTRACE persistent memory
 
-Last updated: 2026-09-26, atmospheric-glass design iteration. **This opening state supersedes all dated historical notes below.**
+Last updated: 2026-09-26, local-server handoff correction. **This opening state supersedes all dated historical notes below.**
+
+## Current local availability — 2026-09-26
+
+User reported a blank white page at `http://127.0.0.1:5173/` after the prior turn. Root cause: both temporary exec sessions had stopped; `curl` could not connect to ports 5173 or 8000 and neither port had a listener. Started API and Vite in detached `tmux` sessions `echotrace-api` and `echotrace-web`. New `challenges/hearsay-audio-authentication/scripts/dev.sh` starts, checks and stops these sessions; a stop/start cycle returned both health endpoints and a fresh Chrome reload rendered the actual workspace. Browser first screenshot immediately after reload briefly showed preloaded dark styling before the full CSS/image settled; the subsequent screenshot showed the intended teal/lilac glass. The latest UI touchup strengthens contrast in the recent-recordings glass list. This is a local development server, not deployment; after a machine restart run `./scripts/dev.sh start` from the challenge directory. Do not claim the server is running without checking `./scripts/dev.sh status`.
 
 ## Current visual implementation — 2026-09-26
 

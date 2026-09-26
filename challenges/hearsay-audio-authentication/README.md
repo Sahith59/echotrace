@@ -16,6 +16,8 @@ Current development is **release integration and independent model evaluation**.
 
 Prerequisites: Python 3.11 or 3.12, [uv](https://docs.astral.sh/uv/), FFmpeg/ffprobe on PATH, and Node/npm. Commands below start in this challenge directory. The app binds to loopback; do not expose it publicly without authentication and deployment hardening.
 
+After dependencies and the model are installed, start both local services in detached tmux sessions with `./scripts/dev.sh start`. This keeps the page available after an IDE terminal or assistant command session closes. Use `./scripts/dev.sh status` to check both services and `./scripts/dev.sh stop` to stop them. The two-terminal commands below also work, but those servers stop when their terminals close.
+
 Terminal 1:
 
 ```sh
