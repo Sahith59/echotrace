@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from echotrace.api import Store, create_app
-from echotrace.interpretation import Interpreter, InterpretationError, evidence_for, evidence_for_job
+from echotrace.interpretation import Interpreter, InterpretationError, evidence_for, evidence_for_job, evidence_hash
 
 
 def analysis():
@@ -46,6 +46,31 @@ def test_real_provider_boundary_with_injected_transport_and_provenance():
     assert result["report"] == response()
     assert calls[0]["stream"] is False and calls[0]["response_format"]["type"] == "json_object"
     assert "private-identity" not in json.dumps(calls)
+
+
+def test_nii_whole_file_and_stress_semantics_are_explicit_in_prompt():
+    calls = []
+    nii = analysis()
+    nii["model"] = {"name": "NII", "weights_sha256": "weights"}
+    nii["aggregation"] = {"method": "whole_file_layer_norm_mean_pool", "truncation": "rejected"}
+    facts = evidence_for(nii, [
+        {"id": "stress.mp3.score", "value": .11},
+        {"id": "stress.mp3.score_difference", "value": .02},
+    ])
+    service = Interpreter(model="test-model", transport=lambda payload: (
+        calls.append(payload) or {"choices": [{"message": {"content": json.dumps(response())}}]}))
+    generated = service.generate(nii, facts=facts)
+    sent = json.loads(calls[0]["messages"][1]["content"])["evidence"]
+    whole_file = next(item for item in sent if item["id"] == "whole_file_span")
+    assert "same whole-file score" in whole_file["label"].lower()
+    mp3 = next(item for item in sent if item["id"] == "stress.mp3.score")
+    assert "same detector" in mp3["label"].lower()
+    prompt = calls[0]["messages"][0]["content"].lower()
+    assert "not a probability" in prompt
+    assert "not independent corroboration" in prompt
+    assert "normal" in prompt and "typical" in prompt and "reference" in prompt
+    assert generated["prompt_version"] == "evidence-brief-groq-v3"
+    assert nii["synthetic_score"] == .09
 
 
 @pytest.mark.parametrize("bad", [
@@ -90,6 +115,21 @@ def test_api_generated_notes_persist_without_changing_detector(tmp_path):
         assert client.post("/api/analyses/missing/interpretation").status_code == 404
     with TestClient(create_app(tmp_path, interpreter=service)) as client:
         assert client.get("/api/analyses/sample/interpretation").json()["status"] == "generated"
+
+
+def test_old_prompt_version_is_not_returned_as_current(tmp_path):
+    store = Store(tmp_path)
+    store.create("sample", "private.wav", tmp_path / "source.wav")
+    stored = analysis()
+    facts = evidence_for(stored)
+    stored["interpretation"] = {
+        "status": "generated", "provider": "groq", "model": "test-model",
+        "prompt_version": "evidence-brief-groq-v2", "evidence_sha256": evidence_hash(facts),
+        "evidence": facts, "report": response(),
+    }
+    store.update("sample", status="completed", result=stored)
+    with TestClient(create_app(tmp_path, interpreter=Interpreter(model="test", transport=lambda _: None))) as client:
+        assert client.get("/api/analyses/sample/interpretation").json() == {"status": "not_generated"}
 
 
 def test_store_evidence_adds_only_current_matched_stress_and_second_model(tmp_path):
