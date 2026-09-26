@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from .model_provenance import same_model
 
 ENV_PATH = Path(__file__).resolve().parents[4] / ".env"
-PROMPT_VERSION = "evidence-brief-groq-v2"
+PROMPT_VERSION = "evidence-brief-groq-v3"
 ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
 
@@ -52,16 +52,22 @@ def evidence_for(result: dict, extra_evidence: list[dict] | None = None) -> list
     """No audio, filenames, hashes, transcript, labels or free-form input text."""
     score = result.get("synthetic_score")
     score = score if _finite(score) and 0 <= score <= 1 else None
+    calibrated = result.get("score_kind") == "calibrated"
     facts = [
-        {"id": "score", "label": "Synthetic speech model score", "value": score, "unit": "0–1"},
+        {"id": "score", "label": ("Calibrated synthetic speech model score" if calibrated else
+         "Uncalibrated synthetic speech model score; not a probability"), "value": score, "unit": "0–1"},
         {"id": "calibration", "label": "Score status", "value": "unavailable" if score is None else
-         ("calibrated" if result.get("score_kind") == "calibrated" else "uncalibrated")},
+         ("calibrated" if calibrated else "uncalibrated")},
         {"id": "scope", "label": "Assessment scope", "value":
-         "Synthesis detection only; speaker identity, origin and factual truth are not established. A low score does not prove genuine audio."},
+         "Synthesis detection only. The score is not a probability or confidence. Speaker identity, origin and factual truth are not established. A low score does not prove genuine audio."},
     ]
-    labels = {"rms": ("Average level", "dBFS"), "peak": ("Peak amplitude", "FS"),
-              "clipping": ("Near-clipped samples", "%"), "quiet": ("Quiet frames", "%"),
-              "centroid": ("Spectral centroid", "Hz"), "high_band": ("High-band energy", "%")}
+    descriptive = "; descriptive measurement, no reference range supplied"
+    labels = {"rms": ("Average level" + descriptive, "dBFS"),
+              "peak": ("Peak amplitude" + descriptive, "FS"),
+              "clipping": ("Near-clipped samples" + descriptive, "%"),
+              "quiet": ("Quiet frames" + descriptive, "%"),
+              "centroid": ("Spectral centroid" + descriptive, "Hz"),
+              "high_band": ("High-band energy" + descriptive, "%")}
     seen = set()
     for item in result.get("evidence", []):
         key = item.get("id")
@@ -69,16 +75,22 @@ def evidence_for(result: dict, extra_evidence: list[dict] | None = None) -> list
             name, unit = labels[key]
             facts.append({"id": key, "label": name, "value": item["value"], "unit": unit})
             seen.add(key)
-    for index, interval in enumerate(result.get("intervals", [])[:64], 1):
+    intervals = result.get("intervals", [])[:64]
+    aggregation = result.get("aggregation") or {}
+    whole_file = (len(intervals) == 1 and isinstance(aggregation, dict)
+                  and str(aggregation.get("method", "")).startswith("whole_file"))
+    for index, interval in enumerate(intervals, 1):
         values = [interval.get(k) for k in ("start_s", "end_s", "score")]
         if all(_finite(v) for v in values) and 0 <= values[0] < values[1] and 0 <= values[2] <= 1:
-            facts.append({"id": f"window_{index:03}", "label": "Scored time window",
+            facts.append({"id": "whole_file_span" if whole_file else f"window_{index:03}",
+                          "label": ("Display span for the same whole-file score; not an independent window, localization, or consistency measurement"
+                                    if whole_file else "Scored time window"),
                           "value": dict(zip(("start_s", "end_s", "score"), values))})
     allowed_extras = {
-        "stress.mp3.score": ("MP3 stress-test model score", "0–1", 0, 1),
-        "stress.mp3.score_difference": ("MP3 stress-test score difference", "score difference", -1, 1),
-        "stress.noise.score": ("Noise stress-test model score", "0–1", 0, 1),
-        "stress.noise.score_difference": ("Noise stress-test score difference", "score difference", -1, 1),
+        "stress.mp3.score": ("Same detector score after MP3 transformation; robustness observation, not independent corroboration", "0–1", 0, 1),
+        "stress.mp3.score_difference": ("Same detector MP3 score difference; robustness observation, not independent corroboration", "score difference", -1, 1),
+        "stress.noise.score": ("Same detector score after noise transformation; robustness observation, not independent corroboration", "0–1", 0, 1),
+        "stress.noise.score_difference": ("Same detector noise score difference; robustness observation, not independent corroboration", "score difference", -1, 1),
         "detector_comparison.primary_score": ("Primary detector score in comparison", "0–1", 0, 1),
         "detector_comparison.candidate_score": ("Second detector score", "0–1", 0, 1),
         "detector_comparison.score_difference": ("Second minus primary detector score", "score difference", -1, 1),
@@ -223,6 +235,10 @@ class Interpreter:
             "Do not change or invent scores, claim verified probabilities, infer speaker identity, truth, "
             "exact edit boundaries, generator identity, or declare a recording genuine/fake with certainty. "
             "Quality/spectral measurements are descriptive, not proof of synthesis or causes of model scores. "
+            "No population or reference ranges are supplied, so never call levels normal, abnormal, typical, atypical, good, bad, or characteristic of speech. "
+            "A whole-file display span repeats the single whole-file score; never call it windowed analysis, localization, segment agreement, or consistency. "
+            "Transformation stress results use the same detector and are robustness observations, not independent corroboration; never say they confirm, reinforce, or independently support the primary assessment. "
+            "An uncalibrated 0–1 model score is not a probability, likelihood, or confidence and must not be described as one. "
             "Explain low scores without treating them as authentication. If score is unavailable, say so. "
             "Every finding must cite supplied evidence IDs. Offer practical review next steps. "
             "Summary and next steps must stay within these facts. Return only the required JSON schema."
@@ -265,7 +281,8 @@ def create_interpretation_router(store, interpreter=None):
 
     def cached(job):
         value = job["result"].get("interpretation")
-        if value and value.get("evidence_sha256") == evidence_hash(evidence_for_job(store, job)):
+        if (value and value.get("prompt_version") == PROMPT_VERSION
+                and value.get("evidence_sha256") == evidence_hash(evidence_for_job(store, job))):
             return value
         return {"status": "not_generated"}
 
