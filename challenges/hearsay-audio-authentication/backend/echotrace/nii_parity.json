@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "case_count": 5,
+  "max_abs_logit_difference": 3.790855407714844e-05,
+  "max_abs_probability_difference": 6.183981895446777e-07,
+  "logit_tolerance": 0.001,
+  "probability_tolerance": 0.0001
+}

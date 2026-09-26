@@ -15,8 +15,17 @@ from .audio import AudioError, decode_audio, measure_audio
 from .nii_candidate import MIN_SAMPLES, MAX_DURATION_S, candidate_status, score_samples
 
 
-PARITY_PATH = Path(__file__).resolve().parents[1] / "artifacts" / "nii-model" / "parity.json"
+PARITY_PATH = Path(__file__).with_name("nii_parity.json")
 PARITY_SHA256 = "63cce2d5d70e7ac4c507452228cc913fc738bf2a3402fd56640287add4c0e6ff"
+PARITY_PROVENANCE = {
+    "evidence_job": "4504660",
+    "reference_sha256": "57b300af09cbf887d0c2d2ca67a62f5650ffc23d3f609aeca62e5496c3eda038",
+    "fixed_bundle_sha256": "f4e7250aa2053d7639334d47f6be7b9699afb4a1f88c034fd44f8530a043e12a",
+    "weights_sha256": "828ee456122f86d5d631cb7895a10e5c62c78a4fcb8a8b1c42cb5838a9abcfe0",
+    "adapter_red_commit": "512c3e5",
+    "adapter_green_commit": "6cc6fed",
+    "source_revision": "0dea622bde8f064c8ee5a557f2598643123fc6b6",
+}
 LIMITATION = (
     "Experimental, uncalibrated research comparison. The score difference is descriptive, not confidence, "
     "and neither score establishes authenticity. Existing project candidates failed promotion gates; this "
@@ -55,7 +64,8 @@ def comparison_status() -> dict:
     available = bool(model.get("available") and parity["approved"])
     reason = None if available else (model.get("reason") or parity["reason"])
     return {**model, "available": available, "reason": reason, "parity_approved": parity["approved"],
-            "parity_sha256": PARITY_SHA256, "experimental": True, "research_only": True,
+            "parity_sha256": PARITY_SHA256, "parity_provenance": PARITY_PROVENANCE,
+            "experimental": True, "research_only": True,
             "promotion_status": "research_only_not_promoted", "limitation": LIMITATION}
 
 
@@ -169,6 +179,12 @@ def create_detector_comparison_router(store, scorer=None, status_provider=None):
                 "parity": {"approved": True, "marker_sha256": model.get("parity_sha256")},
                 "limitation": LIMITATION,
             }
+            try:
+                source_unchanged = path.is_file() and _sha256(path) == actual_sha
+            except OSError:
+                source_unchanged = False
+            if not source_unchanged:
+                raise HTTPException(409, "The original recording changed while detector comparison was running.")
             encoded = json.dumps(report, allow_nan=False, separators=(",", ":"))
             try:
                 with store.connect() as db:
