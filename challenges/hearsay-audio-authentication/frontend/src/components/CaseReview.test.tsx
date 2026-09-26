@@ -125,3 +125,15 @@ it('shows action errors without replacing an existing successful transcript', as
   expect(await screen.findByRole('alert')).toHaveTextContent('Decoder failed.')
   expect(screen.getByDisplayValue('Saved text.')).toBeInTheDocument()
 })
+it('carries the selected transcript passage and time range into a claim review', async () => {
+  const original = fetchMock.getMockImplementation()!
+  fetchMock.mockImplementation((url:string,init?:RequestInit)=>url.endsWith('/transcript') ? Promise.resolve(response({status:'generated',version:1,text:'A specific statement.',segments:[{id:1,start_s:1,end_s:3,text:'A specific statement.'}]})) : original(url,init))
+  render(<CaseReview jobId="a" onSeek={()=>{}} />)
+  await userEvent.click(await screen.findByRole('button',{name:'Review passage 1 as a claim'}))
+  expect(screen.getByLabelText('Claim to review')).toHaveValue('A specific statement.')
+  await userEvent.click(screen.getByText('Record an analyst review'))
+  await userEvent.type(screen.getByLabelText('Reasoning'),'No source has been reviewed.')
+  await userEvent.click(screen.getByRole('button',{name:'Save analyst review'}))
+  const call=fetchMock.mock.calls.find(([,init])=>init?.method==='POST')!
+  expect(JSON.parse(call[1].body).span).toEqual({start_s:1,end_s:3})
+})
