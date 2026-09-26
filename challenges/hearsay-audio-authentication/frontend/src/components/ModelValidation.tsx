@@ -11,6 +11,7 @@ type Slice = { value: string; sample_count: number; baseline: Metrics; candidate
 type Experiment = {
   name: string; promoted: boolean; reason: string; sample_count: number
   baseline: Metrics; candidate: Metrics; codec_slices?: Slice[]
+  baseline_model?: string; candidate_model?: string
 }
 type Evaluation = { scope: string; serving_model: string; experiments: Experiment[] }
 const percentage = (value: number | null) => value == null ? 'Not available' : `${(value * 100).toFixed(1)}%`
@@ -22,6 +23,7 @@ function ExperimentReview({ experiment }: { experiment: Experiment }) {
   const { baseline, candidate } = slice ?? experiment
   return <section>
     <h3>{experiment.name}</h3>
+    {experiment.baseline_model && <p className="case-help">Baseline: {experiment.baseline_model} · Candidate: {experiment.candidate_model ?? "Not specified"}</p>}
     <p className="case-help">{experiment.promoted ? 'Promoted after evaluation' : 'Experimental · not serving'} · {experiment.sample_count.toLocaleString()} evaluated recordings</p>
     {!!experiment.codec_slices?.length && <div className="validation-condition">
       <label>Recording condition
