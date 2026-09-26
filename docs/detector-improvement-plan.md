@@ -1,6 +1,6 @@
 # Detector recovery and five-hour adaptation plan
 
-Date: 2026-09-25. This supersedes the prior decision to defer all training. The user authorized five hours of GPU work and prioritizes detector usefulness. Cluster staging is underway; training/evaluation is queued behind data checks. See the [active run ledger](cluster-run-2026-09-25.md) before submitting anything else.
+Date: 2026-09-25. This supersedes the prior decision to defer all training. The user authorized five hours of GPU work and prioritizes detector usefulness. Cluster staging and all-file auditing completed; training/evaluation job 4503646 is running and has written a checkpoint. See the [active run ledger](cluster-run-2026-09-25.md) before submitting anything else.
 
 ## What is actually implemented
 
@@ -8,7 +8,7 @@ AASIST-L is the only learned detector in the web pipeline. FFmpeg decodes mono 1
 
 AI interpretation now has an on-demand Grok integration; live output review still requires the user's API key. The separate measurement limitations use deterministic rules. RMS, clipping, quiet frames and spectral measurements are computed observations; they do not contribute independent learned votes to the synthesis score. Very quiet input gets no score. Manipulation type is undetermined. Speaker verification, truth determination and calibration remain unimplemented.
 
-Phase 3A software includes the bounded runner, three-way preparation, full CPU audio audit, whole-file checkpoint evaluation and acceptance reporting with attack/codec slices. Local CPU and actual A100 numerical smoke tests verify execution only. No new speech-trained detector has been promoted. Independent audio staging remains open; adaptation has not started. See [checkpoint evaluation](checkpoint-evaluation.md) and [cluster handoff](cluster-handoff.md).
+Phase 3A software includes the bounded runner, three-way preparation, full CPU audio audit, whole-file checkpoint evaluation and acceptance reporting with attack/codec slices. Local CPU and actual A100 numerical smoke tests verify execution only. No new speech-trained detector has been promoted. All 14,000 selected recordings passed auditing; adaptation is running. Final independent evaluation remains pending. See [checkpoint evaluation](checkpoint-evaluation.md) and [cluster handoff](cluster-handoff.md).
 
 ## Evidence and hypotheses
 
@@ -28,10 +28,10 @@ These are diagnostic results only. Poor transfer to newer generators/recording c
 ### Phase 3A — data and experiment preparation (before GPU clock)
 
 - Keep current24 as demonstration/regression material, excluded from fitting, calibration and independent acceptance claims.
-- Development source: official ASVspoof5 train/dev. The first run stages only `flac_T_aa.tar` and `flac_D_aa.tar`, totaling 14,169,763,840 archive bytes, in verified personal cluster storage. This is a subset of the 57,561,937,920-byte train/dev release; do not claim full-corpus coverage. Audio staging is underway.
+- Development source: official ASVspoof5 train/dev. The first run stages only `flac_T_aa.tar` and `flac_D_aa.tar`, totaling 14,169,763,840 archive bytes, in verified personal cluster storage. This is a subset of the 57,561,937,920-byte train/dev release; do not claim full-corpus coverage. Audio staging completed; actual split counts and coverage are in the current plan and run ledger.
 - Target a bounded10k–30k training subset, chosen by fixed rules across genuine/spoof, speakers and attack types; actual size is selected from audited availability and measured throughput, not promised in advance.
 - Preserve official train/dev/eval boundaries. Group linked sources/speakers and duplicates. Partition development groups into checkpoint/threshold selection, optional calibration and a locked acceptance subset before fitting; ensure sufficient genuine/synthetic counts. Never tune on the locked subset or official evaluation labels.
-- Implemented: reproducible PyTorch runner with shared decoding, explicit class-map conversion (manifest1=synthetic vs AASIST target0=spoof), seeded sampling, weighted loss, best checkpoint, wall-clock limit, memory controls and config/hash/split provenance. Resume and patience early stopping are not implemented. Checkpoint selection uses first-crop loss; a separate evaluator checks the intended whole-file serving policy. Leakage, class mapping, gradients and checkpoint reload have software tests. CUDA compatibility and generated-signal throughput passed on an A100; real speech data and measured decoding throughput remain required.
+- Implemented: reproducible PyTorch runner with shared decoding, explicit class-map conversion (manifest1=synthetic vs AASIST target0=spoof), seeded sampling, weighted loss, best checkpoint, wall-clock limit, memory controls and config/hash/split provenance. Resume and patience early stopping are not implemented. Checkpoint selection uses first-crop loss; a separate evaluator checks the intended whole-file serving policy. Leakage, class mapping, gradients and checkpoint reload have software tests. CUDA compatibility and generated-signal throughput passed on an A100; the real-data CPU audit subsequently decoded all 14,000 selected files in about 29 minutes.
 - Primary bounded experiment: fine-tune existing AASIST-L checkpoint on new training data, with conservative learning rate and validation-selected checkpoint. This minimizes adapter uncertainty; improvement is a hypothesis, not a promised result.
 - A pretrained wav2vec2 anti-spoofing model is the next architecture candidate if adaptation fails. Do not spend the same five-hour budget on an uncontrolled architecture sweep. Check checkpoint license, runtime and reproducibility first.
 - Acceptance: data installed and audited, partitions frozen, baseline on exact evaluation files, training smoke test and throughput estimate. No GPU hours spent on downloading.

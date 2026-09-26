@@ -21,3 +21,5 @@ Full frontend verification: `npm test -- --run` → 18 passed across 3 files; `n
 Root browser confirmation: at 375 × 812, opening focuses Close navigation; Shift+Tab wraps to the last recording; forward Tab stays in the drawer; Escape removes modal/inert state and restores Open navigation. This is a focused keyboard check, not a full screen-reader/accessibility certification.
 
 Checkpoint timing deviation: the agent executed RED and GREEN but returned without the requested immediate Git checkpoints. Root records the tests/configuration and implementation separately after integration; those commits must not be described as having been created at the original RED/GREEN execution times.
+
+Git record: `ff71b52` stores the behavioral tests/configuration; `95dfb18` stores the repair. Root repeated the three focused tests successfully before the repair commit. Existing coverage configuration covers the two previously tested feature components; this focused App test does not establish a whole-App 80% coverage claim.

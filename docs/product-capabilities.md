@@ -16,7 +16,7 @@ ECHOTRACE is a recorded-audio investigation workbench for an analyst reviewing a
 | Evidence export | Download analysis JSON with hashes, configuration, evidence and results | Analyst report; does not certify authenticity |
 | Batch CSV export | Select scored recordings and export IDs/scores | Official sponsor columns/scale/order are not yet provided |
 | AI interpretation | Request a Grok brief linked to recorded measurements and save it with the result | Integration tested; key absent at last status check, so live output not yet reviewed |
-| Independent model evaluation | Compare baseline and candidate on separate selection/acceptance data | Command-line reports, not a web dashboard; real cluster experiment pending |
+| Independent model evaluation | Compare baseline and candidate on separate selection/acceptance data | Command-line reports, not a web dashboard; real cluster training is running; independent results pending |
 | Error breakdowns | Compare missed synthetic and falsely flagged genuine recordings by attack and codec | Descriptive acceptance report; small or single-class slices have limited meaning |
 
 The speech detector makes the numerical assessment. Grok explains the supplied measurements; it cannot change the score or verify a speaker's identity or the truth of a statement.
@@ -34,8 +34,8 @@ The distinctive combination is inspectable audio evidence, an actual robustness 
 
 ## Ordered remaining work
 
-- **Phase 3A:** prepare independent audio and frozen splits; environment and numerical GPU compatibility are already verified. The first corpus stage is one official ASVspoof5 train archive and one dev archive, about 14.17 GB of archive downloads. This is an archive-bounded subset; audit actual classes, attacks and speakers before freezing a smaller experiment.
-- **Phase 3B:** adapt AASIST-L within the one-node/one-GPU five-hour allocation. No training from scratch or multi-node sweep.
+- **Phase 3A — complete for the public run:** official train/dev `aa` archives staged and 14,000 selected files audited, with separate training/selection/acceptance manifests. Actual subset coverage and limitations are recorded in the run ledger.
+- **Phase 3B — running:** adapt AASIST-L within the one-node/one-GPU five-hour allocation; job 4503646 has started and saved a checkpoint. No training from scratch or multi-node sweep.
 - **Phase 3C:** compare frozen models at selection-chosen thresholds; review aggregate and attack/codec errors, confidence intervals and serving performance. Only then consider a web-model replacement with rollback.
 - **Phase 2 follow-through:** show the accepted model's measured validation summary and verify live Grok wording. Keep unsupported cases and low-score limitations visible.
 - **Phases 4/5:** finish responsive/restart/export QA, rehearse, freeze the pipeline and adapt CSV to official sponsor requirements.
