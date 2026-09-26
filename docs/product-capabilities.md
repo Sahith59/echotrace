@@ -10,10 +10,10 @@ ECHOTRACE is a local workbench for someone investigating a suspicious recorded m
 4. **Compare changed conditions.** Produce a separately saved MP3 or noisy copy and rerun inference. See whether the score changes. The original remains intact; score stability does not establish correctness.
 5. **Compare a trusted voice.** With explicit permission, upload a reference sample. A pinned Microsoft WavLM model computes two speaker embeddings and their cosine similarity. It cannot identify an unknown person or distinguish identity from a convincing clone/replay. Reference audio is temporary; comparison metadata is separately removable.
 6. **Read and correct the words.** Faster-whisper runs locally, returns timestamped text, and retains immutable analyst corrections. A failed retry does not erase a successful transcript. Speech recognition may be wrong and should be reviewed.
-7. **Review a claim against sources.** Select one factual statement. Optional Grok web search requires explicit consent to send that claim text; it returns citation-checked source evidence or an inconclusive/error state. Alternatively, record your own assessment and source URLs, clearly labeled analyst-written. Correcting a transcript marks earlier linked claims stale. This is not lie detection.
-8. **Explain the measurements.** Separate optional Grok interpretation summarizes supplied measurement evidence. It receives no recording, filename or transcript and cannot change the synthesis score. No API key means no generated AI explanation.
+7. **Review a claim against sources.** Select one factual statement. Record your own assessment and source URLs, clearly labeled analyst-written. Hosted Groq search is currently unavailable: the new provider’s source-provenance contract has not been validated. The app does not fabricate web citations. Correcting a transcript marks earlier linked claims stale. This is not lie detection.
+8. **Explain the measurements.** Separate optional Groq interpretation summarizes supplied measurement evidence. It receives no recording, filename or transcript and cannot change the synthesis score. No API key means no generated AI explanation.
 9. **Export a case.** The printable report and JSON include synthesis, speaker evidence, transcript versions and claim reviews separately. The app never combines these into an authenticity probability. Batch view exports completed scored analyses as an analyst CSV.
-10. **Check the detector's measured limits.** The validation panel shows actual public-data experiments and explicit promotion decisions, including failed goals.
+10. **Check the detector's measured limits.** The validation panel shows actual public-data experiments and explicit promotion decisions, including failed goals. A recording-condition selector exposes measured codec-specific false positives and class counts; it does not guess the codec of an uploaded file.
 
 ## What is implemented versus validated
 
@@ -25,7 +25,7 @@ ECHOTRACE is a local workbench for someone investigating a suspicious recorded m
 | Speaker reference | Implemented | Real pinned-model smoke and live API comparison; no calibrated identity decision or population-level verification accuracy |
 | Local transcript/corrections | Implemented | Real CPU model and browser transcript/correction journey; no claimed speech-recognition accuracy benchmark |
 | Analyst claim review | Implemented | Browser save, stale-version warning, persistence and case export verified |
-| Grok interpretation/web search | Implemented and transport-tested | Live provider verification awaits a configured xAI key; no live generated output has been claimed |
+| Groq interpretation | Implemented and transport-tested | Live generation awaits a Groq key; hosted claim search remains unavailable; analyst source review works |
 | Case JSON / printable HTML | Implemented | Escaping, boundaries, browser report contents and download event verified |
 | Batch / official CSV adapter | Implemented | Exact-ID/finite-score/schema checks; official held-out data and schema not supplied |
 | Model training and evaluation | Implemented and executed | GPU run ledgers and independent public-corpus metrics; public metrics are not sponsor accuracy |
@@ -51,3 +51,11 @@ It cannot prove who spoke, whether a person intended to deceive, recording origi
 - **Extensions:** speaker comparison, transcription/source review and unified reporting, now implemented alongside the core workbench.
 
 The authoritative live checklist is [plan.md](../plan.md). Deployment is outside this source-release iteration.
+
+## Honest differentiation
+
+The detector architecture is not our invention. Commercial tools already provide deepfake detection, voice authentication, and investigation interfaces: see [Resemble Detect](https://docs.resemble.ai/detect), [Pindrop Pulse](https://www.pindrop.com/pulse-for-meetings), and the [NII AntiDeepfake research models](https://github.com/nii-yamagishilab/AntiDeepfake). We have not established that any ECHOTRACE feature is unique in the market.
+
+Our project-level contribution is a reproducible investigation workflow: original and stressed recordings stay linked, detector versions and measured failures remain visible, transcript corrections preserve history and invalidate dependent claim reviews, and exports keep synthesis, voice similarity and factual evidence separate. The analyst can inspect how and where a model fails instead of trusting one impressive percentage. The new codec-condition view makes that failure analysis directly inspectable.
+
+That is useful engineering and a defensible hackathon demonstration. A stronger learned detector still needs independently measured performance; extra panels do not substitute for it. The NII candidate is being checked against its authors’ implementation and a frozen external benchmark before any serving decision. ASVspoof5 is part of NII training, so it cannot validate that candidate independently. Public benchmark results cannot guarantee sponsor ranking.

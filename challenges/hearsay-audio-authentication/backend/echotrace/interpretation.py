@@ -81,7 +81,7 @@ class Interpreter:
     def _config(self):
         # Read at use time so adding a key does not require a process restart.
         values = dotenv_values(ENV_PATH) if ENV_PATH.is_file() else {}
-        model = self.model_override or os.environ.get("ECHOTRACE_LLM_MODEL") or values.get("ECHOTRACE_LLM_MODEL") or "llama-3.3-70b-versatile"
+        model = self.model_override or os.environ.get("ECHOTRACE_LLM_MODEL") or values.get("ECHOTRACE_LLM_MODEL") or "openai/gpt-oss-120b"
         key = self.key_override if self.key_override is not None else os.environ.get("GROQ_API_KEY") or values.get("GROQ_API_KEY") or ""
         return model, key.strip()
 
@@ -132,7 +132,8 @@ class Interpreter:
         )
         payload = {"model": model, "messages": [{"role": "system", "content": system + " audio_review JSON schema: " + json.dumps(schema)},
                     {"role": "user", "content": json.dumps({"evidence": facts}, allow_nan=False)}],
-                   "stream": False, "max_tokens": 1600,
+                   "stream": False, "max_completion_tokens": 2400,
+                   "reasoning_effort": "low",
                    "response_format": {"type": "json_object"}}
         try:
             output = self.transport(payload) if self.transport else self._request(payload, key)

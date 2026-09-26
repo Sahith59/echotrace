@@ -154,5 +154,5 @@ def test_groq_config_does_not_use_xai_key_and_refreshes_env(monkeypatch, tmp_pat
     assert service.status()["provider"] == "groq"
     env.write_text("GROQ_API_KEY=test-groq-secret\n")
     assert service.status()["available"] is True
-    assert service.status()["model"] == "llama-3.3-70b-versatile"
+    assert service.status()["model"] == "openai/gpt-oss-120b"
     assert "test-groq-secret" not in json.dumps(service.status())

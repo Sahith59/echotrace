@@ -2,6 +2,12 @@
 
 Last updated: 2026-09-26, release-integration iteration. **This opening state supersedes all dated historical notes below.**
 
+## Latest continuation — 2026-09-26
+
+This section supersedes the previous release-close snapshot below. User confirmed **Groq** (not xAI). Private root `.env` has an empty `GROQ_API_KEY` slot and model `openai/gpt-oss-120b`; secrets preserved and never printed. Groq interpretation implemented, endpoint/key separation and invalid-output tests pass (16). Historical xAI reports keep their original provider. Hosted claim search is being disabled honestly pending validated current Groq provenance; analyst source review stays functional. Compound was decommissioned Sep21; Llama3.3 free/developer model retired Aug16.
+
+Detector improvement reopened: external In-The-Wild CPU staging job4504651 and official NII Fairseq parity job4504652 are running, no additional GPU budget used. NII is non-serving and ASVspoof5 overlaps its upstream training. Root added actual run03 codec-condition inspection; browser C07 verified 61 genuine/75 synthetic, 59.0% candidate false positives versus26.2% baseline. No model promotion claimed. Continue from agent results before claiming completion.
+
 ## Current operational state
 
 - **Delivery scope:** verified local prototype and evidence extensions, new private `Sahith59/echotrace` repository and source push. Deployment is excluded. Published private repository: https://github.com/Sahith59/echotrace. Application commit eb14365 passed GitHub CI run36230750860: 249 backend passed/one macOS-only skip,32 frontend passed/build. Final documentation-only publication record does not change tested application code.

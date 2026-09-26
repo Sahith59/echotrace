@@ -18,7 +18,7 @@ The app separates three questions: **Does the recording resemble synthesized spe
 
 ## Architecture
 
-React + TypeScript + Vite provide the graphite workbench. FastAPI and SQLite manage local uploads and durable analyses. FFmpeg decodes supported media; PyTorch runs the pinned speech detector; WavLM compares consented voice references; faster-whisper transcribes locally. Optional xAI integrations explain measurements or search sources for a selected claim, with separate consent and provenance.
+React + TypeScript + Vite provide the graphite workbench. FastAPI and SQLite manage local uploads and durable analyses. FFmpeg decodes supported media; PyTorch runs the pinned speech detector; WavLM compares consented voice references; faster-whisper transcribes locally. Optional Groq interpretation explains measured evidence. Analyst source reviews retain their own provenance; hosted claim search remains unavailable pending a validated Groq retrieval contract.
 
 Weights, datasets, recordings, workspaces, credentials and build outputs are intentionally excluded from this repository. Setup commands obtain pinned models. Keep the service on loopback until deployment authentication and operational controls are designed.
 

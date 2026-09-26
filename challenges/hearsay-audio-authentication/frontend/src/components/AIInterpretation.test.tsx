@@ -4,9 +4,9 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AIInterpretation from './AIInterpretation'
 
-const status = { available: true, provider: 'groq', model: 'llama-3.3-70b-versatile', reason: null }
+const status = { available: true, provider: 'groq', model: 'openai/gpt-oss-120b', reason: null }
 const generated = {
-  status: 'generated', provider: 'groq', model: 'llama-3.3-70b-versatile', prompt_version: '1',
+  status: 'generated', provider: 'groq', model: 'openai/gpt-oss-120b', prompt_version: '1',
   evidence_sha256: 'abc', generated_at: '2026-09-25T12:00:00Z',
   report: {
     summary: 'Review the uncertain acoustic pattern.',

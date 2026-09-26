@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. This is the authoritative checklist. **The workbench and requested evidence extensions are implemented. Two independent public-data detector experiments completed and failed promotion goals. A final native adaptation experiment is preparing a new locked public-evaluation holdout. Release packaging and verification are underway; live Grok and official sponsor submission still require external inputs.**
+Updated 2026-09-26. **The user reopened detector improvement and confirmed Groq as the interpretation provider. Three completed detector experiments failed promotion; original AASIST-L remains serving. Groq interpretation is implemented and transport-tested; an authenticated request awaits the user's key. External In-The-Wild preparation and official NII adapter parity are running as bounded CPU jobs. No new GPU time has been used.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 
@@ -10,7 +10,7 @@ ECHOTRACE helps an analyst investigate a suspicious recorded voice message: uplo
 
 Required challenge outputs: supported audio-file input, automatic orchestration of multiple forensic methods, a synthesis score on a 0–100 scale, and CSV predictions for the sponsor's held-out data. Manipulation subtype is optional in the detailed brief. See [challenge text](challenges/hearsay-audio-authentication/CHALLENGE.md).
 
-The numerical score comes from the speech detector. Signal measurements describe the recording. Grok explains supplied measurements and cannot change the score. Current scores are uncalibrated; low scores do not prove authenticity. Speaker similarity and source-backed claim reviews are implemented as separate evidence workflows; neither proves identity or truth.
+The numerical score comes from the speech detector. Signal measurements describe the recording. Groq explains supplied measurements and cannot change the score. Current scores are uncalibrated; low scores do not prove authenticity. Speaker similarity and source-backed claim reviews are implemented as separate evidence workflows; neither proves identity or truth.
 
 ## Current phase overview
 
@@ -18,13 +18,13 @@ The numerical score comes from the speech detector. Signal measurements describe
 | --- | --- | --- |
 | 0 — Requirements | Internal requirements documented; sponsor details missing | Official data, metric, CSV template, full rules and NSA cutoff confirmed |
 | 1 — Baseline | Working pipeline and public diagnostic evaluation | Sponsor-specific baseline evaluation and schema validation remain open |
-| 2 — Workbench | Implemented; local checks complete with stated exceptions | Manual unfamiliar-file upload and live Grok verification remain |
+| 2 — Workbench | Implemented; local checks complete with stated exceptions | Manual unfamiliar-file upload and live Groq verification remain |
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
 | 3B — Adapt | Completed: adaptation and frozen-candidate experiments | Final job 4504574 finished; artifacts retained |
 | 3C — Evaluate | Three experiments evaluated; quality gate failed | Representative codec data and a fresh independent benchmark before another promotion attempt |
-| 4 — Demonstrate | Local rehearsal and saved fallback complete | Venue/display rehearsal and live Grok remain external checks |
+| 4 — Demonstrate | Local rehearsal and saved fallback complete | Venue/display rehearsal and live Groq remain external checks |
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
-| Extensions — Speaker and claims | Implemented and tested | Live Grok remains unverified without a key; similarity is not identity proof |
+| Extensions — Speaker and claims | Implemented and tested | Live Groq remains unverified without a key; similarity is not identity proof |
 
 ## Phase 0 — Requirements
 
@@ -69,7 +69,7 @@ Known diagnostic: the original detector caught 6/12 synthetic recordings and fal
 - [x] Real MP3/noise derivatives, playback, separate analyses and score differences.
 - [x] JSON report and selected analyst CSV export; reject failed/scoreless/duplicate selections server-side.
 - [x] Graphite glass interface, local Public Sans typography, visible focus/skip link and reduced-motion implementation.
-- [x] Grok backend and UI integration: on-demand evidence-only requests, validated citations, cache, provenance, explicit failure states and unchanged detector score.
+- [x] Groq backend and UI integration: on-demand evidence-only requests, validated citations, cache, provenance, explicit failure states and unchanged detector score.
 
 ### Acceptance checks
 
@@ -81,7 +81,7 @@ Known diagnostic: the original detector caught 6/12 synthetic recordings and fal
 - [x] Repair the reproduced mobile keyboard focus escape and verify focus entry, Tab containment and Escape restoration in Chrome. Automated tests also cover desktop resize and cleanup.
 - [ ] Complete unfamiliar-file browser upload journey. Automated browser file selection is blocked by the Chrome extension's file-URL permission; backend format tests pass.
 - [x] Inspect desktop, 375×812 phone and 812×375 landscape layouts; verify no page overflow and visible input focus. Mobile focus containment/reduced-motion implementation are tested. This is not a formal screen-reader/WCAG certification or pixel-regression suite.
-- [ ] Verify live Grok output, citations, persistence and unchanged score after the user saves `XAI_API_KEY` in root `.env`. Key is absent at last status check.
+- [ ] Verify live Groq interpretation output, evidence references, persistence and unchanged score after the user saves `GROQ_API_KEY` in root `.env`. Key is absent at last status check.
 - [x] Present measured validation summaries with checkpoint hashes and explicit failed/not-promoted status; never label an experimental model as serving.
 
 Evidence: [restart verification](docs/phase2-restart-verification.md), [phase verification](docs/phase-verification.md), [feature inventory](docs/product-capabilities.md). Analyst CSV is implemented; official sponsor-format export remains a Phase 5 gate.
@@ -141,7 +141,7 @@ Post-hoc diagnosis finds much higher false positives on several compressed genui
 - [x] Exercise genuine, synthetic/missed-detection, corrupt, quiet, noisy and compressed cases through browser/API checks; preserve their actual results.
 - [x] Present independent before/after detector results in the live validation panel, including failed promotion decisions; the final run is included in the release summary.
 - [x] Save real genuine and missed-synthetic case JSON/HTML with SHA-256 manifest under ignored `artifacts/release-demo/`; explicitly label them prior runs.
-- [x] Verify the local desktop and responsive layouts, report/export/seek/claim controls and honest unavailable states. Unfamiliar-file browser chooser and live Grok remain the Phase 2 external checks; actual venue/display rehearsal is still needed.
+- [x] Verify the local desktop and responsive layouts, report/export/seek/claim controls and honest unavailable states. Unfamiliar-file browser chooser and live Groq remain the Phase 2 external checks; actual venue/display rehearsal is still needed.
 
 Demo sequence: suspicious recording → actual assessment → listen to a scored passage → compare a compressed/noisy copy → evidence-linked explanation when configured → export report → measured detector comparison. Do not claim precise edit localization, identity proof or factual truth from a synthesis score.
 
@@ -160,16 +160,27 @@ Demo sequence: suspicious recording → actual assessment → listen to a scored
 ## Requested evidence extensions
 
 - [x] **Speaker-reference comparison:** consented local reference, pinned WavLM embeddings, quality gates, cosine similarity, temporary reference deletion and separately removable metadata. Real model/self-match and automated failure checks pass. No calibrated genuine/impostor/clone/replay population benchmark or identity claim is made.
-- [x] **Transcript and claim workflow:** local timestamped transcription, immutable corrections, passage-to-claim time links, analyst-supplied evidence and optional consented Grok web search. Sources must occur in provider citations; failed/unsupported responses remain unresolved. Live provider validation requires the missing key. This is not lie detection.
+- [x] **Transcript and claim workflow:** local timestamped transcription, immutable corrections, passage-to-claim time links, analyst-supplied evidence and analyst-supplied public source URLs. Hosted Groq search is currently unavailable pending validated retrieval provenance; historical provider reviews remain visible. This is not lie detection.
 - [x] **Integrated case report:** JSON and printable HTML show synthesis, speaker reference, transcript versions and claim reviews separately; escaped untrusted text and no overall authenticity probability.
 
 ## Handoff and next work
 
-The authorized private source repository is published and the application CI passed. This iteration stops at source handoff; deployment awaits the user's next direction. A final documentation-only commit records publication without changing the tested application.
+The earlier source release is published. The user reopened detector improvement and Groq integration; current source changes must pass fresh checks and be pushed after integration. Deployment still awaits user direction.
 
 Remaining gates:
 
-1. Save the xAI key locally and verify real interpretation/search output; manually exercise the unfamiliar-file browser chooser.
+1. Save the Groq key locally and verify real interpretation output; manually exercise the unfamiliar-file browser chooser.
 2. Obtain official NSA held-out files, CSV schema, metric, cutoff and submission instructions; use the strict export pipeline and resolve every failed row.
 3. Address compressed-genuine false positives using representative training/selection data and a fresh benchmark before claiming a strong detector or promoting a candidate. Do not retune the inspected acceptance sets.
 4. Plan deployment authentication, storage/retention and hosting in the next user-directed iteration. No deployment or official competition entry was performed here.
+
+## Reopened detector and provider iteration
+
+- [x] Confirm provider is Groq; create ignored owner-only key placeholder and adapt evidence interpretation.
+- [x] Add condition-specific benchmark inspection from actual run03 report; browser C07 slice checked.
+- [ ] Finish source-search provider migration and regression tests. Hosted search must remain unavailable until actual retrieved URL provenance can be validated; analyst review remains supported.
+- [ ] Freeze and audit In-The-Wild external manifest (CPU4504651), preserving all selected rows and errors.
+- [ ] Verify pinned NII adapter numerical parity with official Fairseq reference (CPU4504652).
+- [ ] Run frozen external benchmark at predeclared threshold0.5, report recall/FPR/AUROC and all exclusions. No threshold tuning on this benchmark; no ASVspoof5 independence claim for NII.
+- [ ] Promote only if measured gates, reference parity, runtime and provenance checks justify it. Otherwise retain truthful experimental status.
+- [ ] Refresh complete tests/browser/provider status and publish source update; no deployment.

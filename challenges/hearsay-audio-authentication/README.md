@@ -10,7 +10,7 @@ The first working prototype is implemented. It runs the official AASIST-L checkp
 
 The [problem validation](../../docs/problem-validation.md) links primary FBI/FTC evidence; the [product review](../../docs/product-validation.md) explains why recorded-audio triage fits this challenge. Evidence of voice-cloning harm does not prove our detector works.
 
-Current development is **release integration and independent model evaluation**. The [training runner](docs/training-runner.md), [three-way data preparation](../../docs/data-preparation.md), [whole-file checkpoint evaluation and acceptance](../../docs/checkpoint-evaluation.md), and [one-GPU cluster package](../../docs/cluster-handoff.md) are implemented and locally tested. A real A100 run completed 6,000 training steps and independent evaluation. Its recall improved from 22.5% to 44.5% at about 4% false positives, but failed the predeclared 80% recall target and was not promoted. The final native adaptation completed 1,250 steps and reached 87.4% recall but 24.4% false positives on a separate balanced 2,000-file holdout. It also failed promotion. The app retains AASIST-L and displays all three measured experiments. Total GPU allocation was 1h44m53; no job remains active. The [Grok interpretation integration](../../docs/ai-interpretation.md) is available after configuring a backend API key; it summarizes recorded evidence without altering the detector score.
+Current development is **release integration and independent model evaluation**. The [training runner](docs/training-runner.md), [three-way data preparation](../../docs/data-preparation.md), [whole-file checkpoint evaluation and acceptance](../../docs/checkpoint-evaluation.md), and [one-GPU cluster package](../../docs/cluster-handoff.md) are implemented and locally tested. A real A100 run completed 6,000 training steps and independent evaluation. Its recall improved from 22.5% to 44.5% at about 4% false positives, but failed the predeclared 80% recall target and was not promoted. The final native adaptation completed 1,250 steps and reached 87.4% recall but 24.4% false positives on a separate balanced 2,000-file holdout. It also failed promotion. The app retains AASIST-L and displays all three measured experiments. Total GPU allocation was 1h44m53; no job remains active. The [Groq interpretation integration](../../docs/ai-interpretation.md) is available after configuring a backend API key; it summarizes recorded evidence without altering the detector score.
 
 ## Run locally
 
@@ -37,7 +37,7 @@ Open **http://127.0.0.1:5173**. Upload a WAV, MP3 or M4A, or select multiple rec
 
 `setup-model` downloads the pinned official 426 KB AASIST-L checkpoint and verifies its SHA-256. No model download occurs during inference. Missing weights yield measured signal observations with no synthetic score. Vendor code/license/provenance are in `backend/echotrace/vendor/`; upstream attribution remains intact.
 
-Jobs and source audio persist in `artifacts/workspace/`. Model weights are cached in `backend/artifacts/`. These paths are ignored by Git. `ECHOTRACE_WORKSPACE` can set a different local job directory. Interrupted jobs are marked failed on restart and can be retried. Core local analysis needs no cloud credentials. Optional Grok interpretation and web search require your own xAI key and may incur provider charges.
+Jobs and source audio persist in `artifacts/workspace/`. Model weights are cached in `backend/artifacts/`. These paths are ignored by Git. `ECHOTRACE_WORKSPACE` can set a different local job directory. Interrupted jobs are marked failed on restart and can be retried. Core local analysis needs no cloud credentials. Optional Groq interpretation requires your own Groq key and may incur provider charges. Hosted claim search is unavailable until its source-provenance contract is validated.
 
 ## What the UI does
 
@@ -47,7 +47,7 @@ Jobs and source audio persist in `artifacts/workspace/`. Model weights are cache
 - Batch: select completed scored files and download an **analyst** CSV. It is explicitly not the sponsor's confirmed schema.
 - Speaker reference: consent-gated, local Microsoft WavLM embeddings and uncalibrated cosine similarity. Temporary reference audio is deleted after processing; comparison metadata can be removed.
 - Transcript: local faster-whisper speech recognition, timestamp seeking, immutable corrections and explicit errors.
-- Claims: source-backed analyst reviews, or optional Grok web search with claim-only disclosure and explicit consent. Previous claims are marked stale when the transcript changes.
+- Claims: source-backed analyst reviews, with hosted Groq search explicitly unavailable pending validated source provenance. Previous claims are marked stale when the transcript changes.
 - Case report: downloadable JSON and printable HTML keep the four evidence types separate, with provenance and no combined authenticity probability.
 - Detector validation: actual independent before/after metrics, including failed promotion gates.
 
@@ -134,9 +134,9 @@ On the intake page, expand **Try a known recording**, select a labeled MLAAD-tin
 
 The local sample consists of 12 genuine and 12 synthetic recordings. It is a small selected diagnostic set, not an independent accuracy benchmark. Custom uploads remain supported. These 24 clips are for interface diagnostics; training and independent evaluation use a separate ASVspoof 5 subset.
 
-## Grok review and experimental training
+## Groq review and experimental training
 
-Set `XAI_API_KEY` in the repository root `.env`; `ECHOTRACE_LLM_MODEL` defaults to `grok-4.7`. The backend reads configuration when requested. Use **Check configuration** then **Generate interpretation** on a completed recording. Only measured findings go to xAI; no audio/filenames/transcripts are sent. Reports are cached and included in JSON export. See [Grok integration](../../docs/ai-interpretation.md).
+Set `GROQ_API_KEY` in the repository root `.env`; `ECHOTRACE_LLM_MODEL` defaults to `openai/gpt-oss-120b`. The backend reads configuration when requested. Use **Check configuration** then **Generate interpretation** on a completed recording. Only measured findings go to Groq; no audio/filenames/transcripts are sent. Reports are cached and included in JSON export. See [Groq integration](../../docs/ai-interpretation.md).
 
 The [experimental training runner](docs/training-runner.md) accepts frozen train/selection manifests and a bounded configuration. It does not start automatically or replace the web detector. The 24 demo clips are excluded; independent acceptance evaluation is required before promotion.
 
@@ -149,7 +149,7 @@ uv run python -m echotrace.speaker
 uv run python -m echotrace.transcription --model base --cache-dir ../artifacts/workspace/models/faster-whisper
 ```
 
-Create root `.env` from `.env.example` if it does not exist, then edit `XAI_API_KEY` locally. Never put it in a `VITE_` variable, a screenshot, or Git. Without a key, local detection, speaker comparison, transcription, analyst review and exports remain usable; live Grok is unavailable.
+Create root `.env` from `.env.example` if it does not exist, then edit `GROQ_API_KEY` locally. Never put it in a `VITE_` variable, a screenshot, or Git. Without a key, local detection, speaker comparison, transcription, analyst review and exports remain usable; live Groq is unavailable.
 
 ## Verification
 
