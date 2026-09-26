@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 
 from echotrace.api import Store
 from echotrace.claims_router import create_claims_router, load_claim_artifacts
+from echotrace.transcription import TranscriptionError
 
 
 class FakeTranscriber:
@@ -205,3 +206,31 @@ def test_per_job_claim_and_transcript_caps_prevent_unbounded_storage(tmp_path, m
         assert client.post("/api/analyses/job/claims", json={
             "text": "Third claim", "external_search_consent": False,
         }).status_code == 429
+
+
+def test_failed_transcript_retry_preserves_latest_successful_text_and_error_attempt(tmp_path):
+    class SometimesFails(FakeTranscriber):
+        attempts = 0
+
+        def transcribe(self, path):
+            self.attempts += 1
+            if self.attempts == 2:
+                raise TranscriptionError("Local transcription timed out.")
+            return super().transcribe(path)
+
+    with TestClient(app_for(tmp_path, transcriber=SometimesFails())) as client:
+        first = client.post("/api/analyses/job/transcript")
+        assert first.status_code == 201
+        assert client.post("/api/analyses/job/transcript").status_code == 503
+
+        transcript = client.get("/api/analyses/job/transcript").json()
+        assert transcript["status"] == "generated"
+        assert transcript["version"] == 1
+        assert transcript["text"] == "The bridge opened in 2020."
+        assert transcript["latest_attempt"]["status"] == "error"
+        assert transcript["latest_attempt"]["version"] == 2
+        assert "timed out" in transcript["latest_attempt"]["error"]
+
+        artifacts = load_claim_artifacts(client.app.state.store, "job")
+        assert artifacts["transcript"]["version"] == 1
+        assert artifacts["transcript"]["latest_attempt"]["status"] == "error"
