@@ -112,6 +112,32 @@ def test_rejects_bad_archive_checksum_without_publishing(tmp_path, monkeypatch):
     assert not output.exists()
 
 
+def test_rejects_same_size_corruption_by_md5(tmp_path, monkeypatch):
+    inventory, train, dev, opener = fixture(tmp_path, monkeypatch)
+    def corrupted(url, timeout):
+        data = bytearray(opener(url, timeout).read())
+        data[-1] ^= 1
+        return io.BytesIO(data)
+    output = tmp_path / 'staged'
+    with pytest.raises(ValueError, match='checksum'):
+        staging.stage_data(inventory, train, dev, output, opener=corrupted)
+    assert not output.exists()
+
+
+def test_rejects_dangling_symlink_output_before_download(tmp_path, monkeypatch):
+    inventory, train, dev, _ = fixture(tmp_path, monkeypatch)
+    output = tmp_path / 'staged'
+    output.symlink_to(tmp_path / 'missing-target', target_is_directory=True)
+    calls = []
+    def forbidden(url, timeout):
+        calls.append(url)
+        raise AssertionError('download should not start')
+    with pytest.raises(FileExistsError):
+        staging.stage_data(inventory, train, dev, output, opener=forbidden)
+    assert calls == []
+    assert output.is_symlink()
+
+
 @pytest.mark.parametrize('unsafe', ['../../escape.flac', 'flac_T/evil-link'])
 def test_rejects_traversal_and_link_members(tmp_path, monkeypatch, unsafe):
     inventory, train, dev, opener = fixture(tmp_path, monkeypatch, unsafe=unsafe)
