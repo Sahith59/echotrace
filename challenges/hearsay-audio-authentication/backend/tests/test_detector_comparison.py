@@ -159,3 +159,34 @@ def test_parity_marker_is_hash_and_schema_gated(tmp_path, monkeypatch):
     payload["case_count"] = 4
     marker.write_text(json.dumps(payload))
     assert detector_comparison._parity_status(marker)["approved"] is False
+
+
+def test_packaged_parity_marker_is_pinned_and_has_associated_provenance():
+    assert detector_comparison.PARITY_PATH.name == "nii_parity.json"
+    assert detector_comparison.PARITY_PATH.parent.name == "echotrace"
+    assert hashlib.sha256(detector_comparison.PARITY_PATH.read_bytes()).hexdigest() == detector_comparison.PARITY_SHA256
+    assert detector_comparison._parity_status()["approved"] is True
+    provenance = detector_comparison.PARITY_PROVENANCE
+    assert provenance["weights_sha256"] == "828ee456122f86d5d631cb7895a10e5c62c78a4fcb8a8b1c42cb5838a9abcfe0"
+    assert len(provenance["reference_sha256"]) == 64
+    assert provenance["adapter_green_commit"] == "6cc6fed"
+
+
+def test_source_changed_during_scoring_returns_409_without_cache_write(tmp_path):
+    app = None
+    path = None
+    def mutating_scorer(samples):
+        assert path is not None
+        path.write_bytes(path.read_bytes() + b"changed-during-scoring")
+        return scorer(samples)
+    app = create_app(root=tmp_path / "workspace", detector_comparison_scorer=mutating_scorer,
+                     detector_comparison_status=lambda: status())
+    path = completed(app, tmp_path)
+    before = app.state.store.get("job")["result"]
+    with TestClient(app) as client:
+        response = client.post("/api/analyses/job/detector-comparison")
+        assert response.status_code == 409
+        assert "changed" in response.json()["detail"].lower()
+        assert client.get("/api/analyses/job").json()["result"] == before
+    with app.state.store.connect() as db:
+        assert db.execute("SELECT COUNT(*) FROM detector_comparisons").fetchone()[0] == 0
