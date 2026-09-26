@@ -111,3 +111,18 @@ def test_verified_weight_hash_is_cached_until_file_metadata_changes(tmp_path, mo
     (embedder.model_dir / "model.safetensors").write_bytes(b"changed")
     assert embedder.status()["ready"] is False
     assert len(calls) == 2
+
+
+def test_tampered_pinned_model_config_is_not_treated_as_ready(tmp_path, monkeypatch):
+    weights = b"weights"
+    embedder = WavLMSpeakerEmbedder(tmp_path)
+    embedder.model_dir.mkdir(parents=True)
+    (embedder.model_dir / "model.safetensors").write_bytes(weights)
+    (embedder.model_dir / "config.json").write_bytes(b"safe-config")
+    (embedder.model_dir / "preprocessor_config.json").write_bytes(b"safe-preprocessor")
+    monkeypatch.setattr(speaker, "MODEL_WEIGHTS_BYTES", len(weights))
+    monkeypatch.setattr(speaker, "MODEL_WEIGHTS_SHA256", hashlib.sha256(weights).hexdigest())
+
+    assert embedder.status()["ready"] is True
+    (embedder.model_dir / "config.json").write_bytes(b"evil-config")
+    assert embedder.status()["ready"] is False
