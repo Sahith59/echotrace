@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. **The user reopened detector improvement and confirmed Groq as the interpretation provider. Three completed detector experiments failed promotion; original AASIST-L remains serving. Groq interpretation is implemented and transport-tested; an authenticated request awaits the user's key. External In-The-Wild preparation and official NII adapter parity are running as bounded CPU jobs. No new GPU time has been used.**
+Updated 2026-09-26. **Groq interpretation is implemented; an authenticated request awaits the user's key. Three earlier adapted detectors failed promotion. The pinned NII detector has now passed reference parity and a frozen 2,000-file In-The-Wild benchmark at threshold 0.5: 93.7% recall, 2.4% false positives, AUROC 0.9925. It is integrated as an optional research comparison. Original AASIST-L remains the primary API/CLI/CSV detector; primary promotion requires the separate integration steps below. No new GPU time was used.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 
@@ -21,7 +21,7 @@ The numerical score comes from the speech detector. Signal measurements describe
 | 2 — Workbench | Implemented; local checks complete with stated exceptions | Manual unfamiliar-file upload and live Groq verification remain |
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
 | 3B — Adapt | Completed: adaptation and frozen-candidate experiments | Final job 4504574 finished; artifacts retained |
-| 3C — Evaluate | Three experiments evaluated; quality gate failed | Representative codec data and a fresh independent benchmark before another promotion attempt |
+| 3C — Evaluate | Earlier adaptations failed; NII external benchmark passed absolute gates | Complete baseline comparison and primary-pipeline migration checks; public benchmark replication is not sponsor validation |
 | 4 — Demonstrate | Local rehearsal and saved fallback complete | Venue/display rehearsal and live Groq remain external checks |
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
 | Extensions — Speaker and claims | Implemented and tested | Live Groq remains unverified without a key; similarity is not identity proof |
@@ -178,9 +178,21 @@ Remaining gates:
 
 - [x] Confirm provider is Groq; create ignored owner-only key placeholder and adapt evidence interpretation.
 - [x] Add condition-specific benchmark inspection from actual run03 report; browser C07 slice checked.
-- [ ] Finish source-search provider migration and regression tests. Hosted search must remain unavailable until actual retrieved URL provenance can be validated; analyst review remains supported.
-- [ ] Freeze and audit In-The-Wild external manifest (CPU4504651), preserving all selected rows and errors.
-- [ ] Verify pinned NII adapter numerical parity with official Fairseq reference (CPU4504652).
-- [ ] Run frozen external benchmark at predeclared threshold0.5, report recall/FPR/AUROC and all exclusions. No threshold tuning on this benchmark; no ASVspoof5 independence claim for NII.
+- [x] Finish source-search provider migration and regression tests. Hosted search must remain unavailable until actual retrieved URL provenance can be validated; analyst review remains supported.
+- [x] Freeze and audit In-The-Wild external manifest (successful CPU4504655): 2,000 rows balanced1,000/class, all<=30s, onequiet retained; zeroexact-byte overlaps against16,458project hashes. Source IDs absent, upstream pretraining independence not established.
+- [x] Finish clean cluster parity record for pinned NII adapter (CPU4504660, completed). Corrected five-input CPUcomparison passes declared1e-3logit/1e-4probability limits; earlier setup failures preserved.
+- [x] Run frozen external benchmark at predeclared threshold0.5: CPU4504662 completed, all2,000 model-scored, recall93.7%, FPR2.4%, AUROC0.9925. One quiet genuine row is retained in these model-only results; app-eligible comparison must use the common1,999 rows. No threshold tuning on this benchmark; no ASVspoof5 independence claim for NII.
 - [ ] Promote only if measured gates, reference parity, runtime and provenance checks justify it. Otherwise retain truthful experimental status.
 - [ ] Refresh complete tests/browser/provider status and publish source update; no deployment.
+
+- [x] Integrate and browser-test an on-demand, research-only NII second-detector comparison. Keep primary score unchanged, preserve both model identities, and never average uncalibrated scores. Frontend seven journeys pass; real genuine/synthetic comparisons, quiet rejection, saved reports, and 375px layout verified in Chrome.
+
+### Next implementation milestone: promote the validated detector deliberately
+
+- [ ] Finish same-file AASIST baseline comparison and common app-eligible denominator audit. NII result is public benchmark replication; the authors have previously evaluated this dataset.
+- [ ] Route the shared primary API/CLI pipeline through pinned NII with its verified whole-file <=30-second preprocessing; do not silently truncate or extend validation to two-minute aggregation.
+- [ ] Preserve existing AASIST reports and their model IDs; prevent mixed-model robustness comparisons and ambiguous CSV exports.
+- [ ] Verify primary inference parity, runtime, missing-model/quiet/long-file failures and rollback; update upload limits and model status consistently.
+- [ ] Keep historical experiments and separate speaker/claim evidence. Groq explanations must refer to the actual primary model's evidence.
+
+Current Groq activation step: enter `GROQ_API_KEY` in the ignored root `.env`, then **Check configuration → Generate interpretation**. Never paste the key into chat. Configuration and transport tests are complete; live authenticated generation is pending.
