@@ -1,6 +1,6 @@
 """Content-level independence audit for a locked acceptance manifest."""
 from __future__ import annotations
-import argparse, csv, hashlib, json
+import argparse, csv, hashlib, json, re
 from collections import Counter
 from pathlib import Path
 
@@ -24,6 +24,15 @@ def _prior_ledger(run):
     validation=list(provenance.get("validation") or [])
     return {"records":records,"train":train,"validation":validation}
 
+def _validated_hashes(records,description):
+    hashes=[]
+    for index,record in enumerate(records):
+        digest=record.get("sha256")
+        if not isinstance(digest,str) or not re.fullmatch(r"[0-9a-f]{64}",digest):
+            raise ValueError(f"Invalid SHA-256 in {description} at record {index}")
+        hashes.append(digest)
+    return hashes
+
 def run(manifest,dataset_root,prior_runs,output):
     records=_acceptance_records(Path(manifest),Path(dataset_root))
     if len(records)!=2000 or Counter(r["label"] for r in records)!={0:1000,1:1000}:
@@ -36,10 +45,12 @@ def run(manifest,dataset_root,prior_runs,output):
         ledger=_prior_ledger(path)
         if not ledger["records"]:raise ValueError(f"Prior evaluation records missing: {path}")
         coverage[str(path)]={key:len(value) for key,value in ledger.items()}
-        previous += ledger["records"]+ledger["train"]+ledger["validation"]
+        for name,items in ledger.items():
+            _validated_hashes(items,f"{path}:{name}")
+            previous += items
     if not any(counts["train"]==10000 and counts["validation"]==2000 for counts in coverage.values()):
         raise ValueError("Frozen 10000/2000 training and selection provenance is missing")
-    previous_hashes={r.get("sha256") for r in previous if r.get("sha256")}
+    previous_hashes=set(_validated_hashes(previous,"combined prior ledger"))
     overlaps=sorted(set(hashes)&previous_hashes)
     if overlaps:raise ValueError(f"Acceptance original-file bytes overlap previous data: {len(overlaps)} hashes")
     result={"ready":True,"acceptance_rows":len(records),"labels":Counter(r["label"] for r in records),
