@@ -46,3 +46,15 @@ it('shows a server failure and permits retry without fabricating evidence', asyn
   expect(await screen.findByRole('alert')).toHaveTextContent('Offline')
   expect(screen.getByRole('button', { name: 'Reload evidence' })).toBeEnabled()
 })
+it('saves analyst evidence with an explicit stance matching the verdict', async () => {
+  render(<CaseReview jobId="a" onSeek={() => {}} />)
+  await screen.findByText('Configure xAI locally.')
+  await userEvent.click(screen.getByText('Record an analyst review'))
+  await userEvent.type(screen.getByLabelText('Claim to review'), 'A verifiable statement.')
+  await userEvent.selectOptions(screen.getByLabelText('Assessment'), 'supported')
+  await userEvent.type(screen.getByLabelText('Reasoning'), 'The source directly supports this statement.')
+  await userEvent.type(screen.getByLabelText('Source URL'), 'https://example.org/source')
+  await userEvent.click(screen.getByRole('button', { name: 'Save analyst review' }))
+  const call = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!
+  expect(JSON.parse(call[1].body).analyst_review.evidence[0].stance).toBe('supports')
+})
