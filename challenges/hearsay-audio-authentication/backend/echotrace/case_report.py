@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .claims_router import load_claim_artifacts
+from .interpretation import evidence_for, evidence_hash
 
 SUMMARY_PATH = Path(__file__).with_name('validation_summary.json')
 BOUNDARY = ('Synthesis, voice similarity and factual claims are independent assessments. '
@@ -43,10 +44,28 @@ def printable(report):
     speaker = report['speaker_comparison']
     speaker_text = (f"Cosine similarity {speaker['similarity']['cosine']:.4f} · uncalibrated · "
                     f"reference: {speaker['reference']['label']}" if speaker else 'No reference comparison performed.')
+    interpretation = synthesis.get('interpretation')
+    ai_html = '<h3>AI interpretation (Grok)</h3><p>No AI interpretation generated.</p>'
+    if interpretation and interpretation.get('status') == 'generated':
+        if interpretation.get('evidence_sha256') != evidence_hash(evidence_for(synthesis)):
+            ai_html = '<h3>AI interpretation (Grok)</h3><p>Saved AI interpretation no longer matches the measurements.</p>'
+        else:
+            brief = interpretation['report']
+            ai_html = ('<h3>AI interpretation (Grok)</h3><small>AI-written · ' +
+                esc(interpretation.get('model', '')) + ' · Review against the measurements.</small><p>' +
+                esc(brief['summary']) + '</p><ul>' + ''.join('<li>' + esc(finding['text']) +
+                ' [' + esc(', '.join(finding['evidence_ids'])) + ']</li>' for finding in brief['findings']) +
+                '</ul><p><b>Suggested next steps</b></p><ul>' +
+                ''.join('<li>' + esc(step) + '</li>' for step in brief['next_steps']) + '</ul>')
+    def passage(item):
+        span = item.get('span')
+        if not span:
+            return ''
+        return '<p><small>Passage ' + esc(f"{span['start_s']:.2f}–{span['end_s']:.2f} s · transcript version {item.get('transcript_version', '—')}") + '</small></p>'
     transcript = report['transcript']
     claims = ''.join('<article><h3>' + esc(item['text']) + '</h3><p><b>' +
         esc(item.get('verdict', 'uncheckable').replace('_', ' ')) + '</b> · ' + esc(item.get('method', '')) +
-        '</p><p>' + esc(item.get('rationale', '')) + '</p>' +
+        '</p><p>' + esc(item.get('rationale', '')) + '</p>' + passage(item) +
         ('<p><b>Transcript changed; this review needs rechecking.</b></p>' if item.get('stale_transcript') else '') +
         '<ul>' + ''.join('<li>' + esc(source.get('title') or source['url']) + '<br>' + esc(source['url']) + '</li>'
                         for source in item.get('evidence', [])) + '</ul></article>' for item in report['claims'])
@@ -60,7 +79,7 @@ def printable(report):
         esc(report['job_id']) + ' · ' + esc(report['created_at']) + '</p><p>' + esc(BOUNDARY) + '</p>'
         '<h2>1. Synthesis assessment</h2><p><b>' + esc(score_text) + '</b> · ' +
         esc(synthesis.get('score_kind', 'uncalibrated model score')) + '</p><p>A low score does not establish authenticity.</p>'
-        '<h2>2. Speaker reference</h2><p>' + esc(speaker_text) + '</p><p>Similarity is not an identity verdict.</p>'
+        + ai_html + '<h2>2. Speaker reference</h2><p>' + esc(speaker_text) + '</p><p>Similarity is not an identity verdict.</p>'
         '<h2>3. Transcript</h2><p>' + esc(transcript.get('text') or 'No transcript generated.') + '</p>'
         '<small>Version ' + esc(transcript.get('version', '—')) + ' · ' + esc(transcript.get('source', 'unavailable')) + '</small>'
         '<h2>4. Claim reviews</h2>' + (claims or '<p>No claims reviewed.</p>') +
