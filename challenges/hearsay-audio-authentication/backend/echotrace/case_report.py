@@ -49,7 +49,7 @@ def printable(report):
     detector = report.get('detector_comparison')
     detector_text = ('Primary ' + esc(f"{detector['primary_score'] * 100:.2f}") + ' / 100 · experimental NII ' +
                      esc(f"{detector['candidate_score'] * 100:.2f}") + ' / 100 · difference ' +
-                     esc(f"{detector['score_difference']:+.4f}") + '. ' + esc(detector['limitation'])
+                     esc(f"{detector['score_difference'] * 100:+.2f}") + ' score points (0–100 scale). ' + esc(detector['limitation'])
                      if detector else 'No experimental detector comparison generated.')
     interpretation = synthesis.get('interpretation')
     provider_label = {'groq': 'Groq', 'xai': 'Grok'}.get((interpretation or {}).get('provider'), 'Unknown provider')
