@@ -1,6 +1,8 @@
 # ECHOTRACE persistent memory
 
-Last updated: 2026-09-26, lighter mineral glass, independent-corpus stress check and local end-to-end run. **This opening state supersedes all dated historical notes below.**
+Last updated: 2026-09-26, restored smoky graphite glass, independent-corpus stress check and local end-to-end run. **This opening state supersedes all dated historical notes below.**
+
+The user preferred the previous darker translucent component palette shown in their recording-assessment screenshot. `frontend/src/reference-glass.css` was restored exactly to the prior graphite color layer, retaining only the newer validation-panel readability and failure-warning styles. The neutral pearl-grey background image, component markup, workflows and detector are unchanged. Chrome visually confirmed the review and reliability screens; 52 frontend tests and production build passed. This supersedes the lighter-surface paragraph below.
 
 The current app serves pinned NII for new <=30-second recordings and retains historical AASIST cases. A frozen, paired ArA-DF-2026 Arabic/channel sample scored 198 of 200 selected files under the app limit. NII: 60/98 synthetic caught (61.2%), 7/100 genuine falsely flagged (7.0%), AUROC 0.902; historical AASIST on the identical eligible IDs: 77/98 caught, 93/100 false alarms. This fails the 80% recall / 5% false-positive quality goal. The NII model card lists MLAAD among its training sources, so the 24 demo clips cannot independently validate it. The earlier In-the-Wild result replicates author-evaluated data. `docs/ara-df-2026-stress-check.md` has immutable hashes, limits and reproduction. No threshold or serving weights were changed. The live reliability panel now shows the failed ArA result first. Separate cluster job 4504670 remains inaccessible: `ssh trends` timed out; direct `elpis` reached login but rejected the available key. No new cluster job launched.
 

@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. **The lighter mineral-glass workspace and guided investigation are implemented. New API/CLI analyses use pinned NII whole-file scoring (<=30 seconds); legacy AASIST results remain immutable. Live WAV→NII→MP3 comparison→JSON/CSV and real Groq interpretation have been verified. The frozen ArA-DF-2026 sample exposed a detector-quality shortfall (61.2% synthetic recall, 7.0% genuine false positives), now shown first in the live validation panel. Phase 3C serving is complete but quality remains open. Official sponsor data/schema/submission and deployment remain external gates.**
+Updated 2026-09-26. **The smoky graphite-glass workspace and guided investigation are implemented; the neutral pearl-grey background remains. New API/CLI analyses use pinned NII whole-file scoring (<=30 seconds); legacy AASIST results remain immutable. Live WAV→NII→MP3 comparison→JSON/CSV and real Groq interpretation have been verified. The frozen ArA-DF-2026 sample exposed a detector-quality shortfall (61.2% synthetic recall, 7.0% genuine false positives), now shown first in the live validation panel. Phase 3C serving is complete but quality remains open. Official sponsor data/schema/submission and deployment remain external gates.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 

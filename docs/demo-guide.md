@@ -1,28 +1,62 @@
-# ECHOTRACE demonstration
+# ECHOTRACE application walkthrough
 
-## Explain the problem in one sentence
+ECHOTRACE is a **local workbench for reviewing a suspicious voice recording**. An analyst can obtain a first synthesis assessment, inspect its limits, add separate evidence, and hand a reproducible case to the next reviewer. The system does not prove who spoke or whether the words are true.
 
-“A convincing voice message can be synthetic, a genuine voice can be replayed, and a real recording can contain false statements. ECHOTRACE keeps these questions separate and preserves the evidence behind each assessment.”
+## Start and orient yourself
 
-## Five-minute walkthrough
+From the challenges/hearsay-audio-authentication directory, run **./scripts/dev.sh status**. If stopped, run **./scripts/dev.sh start**, then open **http://127.0.0.1:5173/**. The local API uses port 8000. The repository-root .env holds the optional GROQ_API_KEY; keep it private. Detection, playback, reviews and exports do not require Groq.
 
-1. **Add a recording.** On the intake page use a local WAV/MP3/M4A, or expand the known-recording selector. The 24 optional public examples run through the same upload and real detector as custom files. Labels are reference information and never model input.
-2. **Read the assessment.** Explain that the number is an uncalibrated synthesis score. Show a genuine and a synthetic clip; include a documented missed detection. A low score cannot prove a recording is genuine.
-3. **Listen and compare.** Play the original, seek a scored interval, and create an MP3 or noisy derivative. Show the separate analysis and score difference. Stable results do not establish correctness.
-4. **Compare a reference.** Upload a permitted trusted voice recording, explicitly consent, and run the local WavLM comparison. Explain the cosine scale, quality limits and deleted reference audio. A same-recording diagnostic should score near one, but does not validate identity recognition.
-5. **Inspect the words.** Create a local transcript, play a timestamped passage and save a correction. Explain that automatic transcription can be wrong; previous versions are retained.
-6. **Review a claim.** Enter one factual statement. If Grok is configured, consent to sending that claim only and inspect its cited sources. Otherwise record a clearly labeled analyst review. Private facts and subjective statements should remain uncheckable. Change a transcript and show the stale-review warning.
-7. **Export the case.** Open the printable report or download case JSON. Synthesis, speaker, transcript and claims are separate, with hashes/model provenance and no overall authenticity probability. Batch view exports selected scored rows as an analyst CSV.
-8. **Show actual validation.** Expand the detector validation panel. Explain the completed GPU experiments, their held-out results, and why a candidate that fails our goals is not promoted. Never present the inspected 24 examples as independent accuracy evidence.
+The left rail has **Investigation** for individual recordings, **Batch & export** for the queue, and **Recent recordings** for saved cases. A saved case can be reopened without running the detector again. Older AASIST cases are labeled separately from newer NII cases.
 
-## Failure demonstrations
+## 1. Add one recording
 
-Use only QA copies: empty or corrupt audio should fail clearly; silence should have no synthesis score; unsupported/overlong files should return useful errors; an unavailable Grok provider should be disabled rather than produce a canned AI report. Failed and scoreless rows cannot be exported as valid numerical predictions. Original recordings remain intact when derivatives are created.
+Choose **Add recording** or **Choose audio files**. Select a permitted WAV, MP3, M4A or another FFmpeg-decodable file. Multiple selections become separate jobs. Current NII-primary limits are **50 MiB and 30 seconds per file**. Corrupt, too-quiet or overlong input fails explicitly rather than receiving a fabricated score or being silently truncated.
 
-## Offline fallback
+For a quick tour, expand **Try a known recording** on the intake screen, preview one of the 24 labeled MLAAD examples, and choose **Analyze this sample**. They use the same upload and scoring path as a custom file. Their labels are reference information and are never model input. They are *interface demonstrations*, not independent NII accuracy evidence: the [NII model card](https://huggingface.co/nii-yamagishilab/wav2vec-small-anti-deepfake) lists MLAAD among its training sources.
 
-The original detector, prepared voice model and prepared transcription model run locally. Retain a saved real analysis and its exported report before the demo. Clearly label saved evidence as a prior run; do not animate it as new computation. Grok web search requires connectivity and a configured key. Source repository setup does not include copyrighted recordings or model weights.
+Uploading performs **inference**, not training. The detector does not learn from web uploads. The original audio and result stay in the local workspace.
 
-## Competition handoff
+## 2. Review the recording
 
-Official sponsor data, metric, CSV template, event deadline and submission destination are still required for final submission. The strict CLI adapter rejects missing/duplicate IDs, failed or nonfinite predictions, and unconfirmed example schemas. Deployment is a subsequent task.
+Open a finished case from Recent recordings or the queue. **Review recording** is the first of three steps.
+
+- **Synthesis assessment:** the large 0–100 display is a synthetic-high model score. It is uncalibrated: 80% on this display is not a verified 80% probability. A low score is not proof of a real voice. New recordings use pinned NII whole-file scoring, which cannot locate an edit or name a generator.
+- **Review context:** shows job status, exact model, processing time, decoded sample rate and channels. The short case ID and **JSON report** are at the top.
+- **Audio timeline:** play the original, seek on the waveform, or select an interval row. With NII, the scored interval is the **entire file**, not a detected splice.
+- **Forensic observations:** measured level, clipping, quiet frames and spectral properties describe recording quality. They do not cause or explain the neural score. The nearby information buttons explain each area.
+- **AI interpretation:** when Groq is configured, choose **Generate interpretation**. It receives measured findings, not audio, filename or transcript. Its evidence references open the corresponding measurements. Check the prose: it cannot change the detector score.
+
+## 3. Check reliability
+
+Choose **Check reliability**. Read **Measurement limitations** and expand **Technical provenance** for the source hash and model version.
+
+In **Stress comparison**, choose **MP3 compression** or **Add noise**. The app preserves the original, creates a named derivative, runs the *same* model again, and shows both scores and their difference. You can play the derivative and open its own case. A stable score under one transformation does not establish authenticity.
+
+Expand **Detector validation · measured performance**. The first card is the newer ArA-DF-2026 Arabic/channel stress check. At unchanged threshold 0.5, NII caught **60 of 98** eligible synthetic clips and falsely flagged **7 of 100** genuine clips; two selected clips exceeded the 30-second app limit. That **misses** the project's 80% recall / 5% false-positive goal. The favorable In-the-Wild result below it replicates a corpus the model authors had previously evaluated. Neither is the NSA sponsor's withheld evaluation. Historical adaptation experiments and their failed promotion decisions remain visible.
+
+## 4. Leave an analyst handoff
+
+Choose **Case evidence**. In **Record the next step**, select **Needs review**, **Corroboration requested**, or **Review complete**, add your own notes, and choose **Save review**. Review complete means a person completed a review; it does **not** certify the recording as authentic. Notes and status are versioned separately from the detector output.
+
+Optional independent evidence appears below:
+
+- **Speaker reference:** with permission, choose a trusted reference recording, add a label, check consent and choose **Compare reference** if the local WavLM model is ready. Cosine similarity is uncalibrated and cannot prove identity; clones or replays may match. Reference audio is deleted after comparison.
+- **Transcript:** choose **Create transcript** if the local speech model is ready. Listen to timestamped passages, correct errors and **Save correction**. Corrections create new versions and mark linked older claim reviews stale.
+- **Check a factual claim:** enter a checkable statement, expand **Record an analyst review**, and save your assessment, reasoning and source URL. Automated Groq source search is currently disabled because URL-level source provenance is not validated. This is source review, not lie detection.
+
+Use **Download case JSON** or **Printable report** under “Beyond the waveform” for a handoff that keeps synthesis, speaker similarity, words and factual claims separate. The top **JSON report** exports the synthesis-analysis result alone.
+
+## 5. Review a collection and export
+
+Open **Batch & export**. Search and filter the queue by analysis/review state or date. Failed and scoreless records remain visible but cannot be selected as scored predictions. Select completed rows from the **same model version**, then choose **Export selected CSV**. This analyst CSV includes file ID, filename, a **0–1 synthetic-high score**, review status, notes and version. The UI shows the score on a 0–100 scale. This six-column export is **not** the official NSA submission schema; the sponsor's test files, metric and exact CSV rules must be confirmed.
+
+## Suggested seven-minute live demonstration
+
+1. **Problem, 30 seconds:** “A convincing recorded voice can be synthesized. We need a reproducible way to triage it, inspect model limits, and leave evidence for the next reviewer.”
+2. **Upload and assessment, 90 seconds:** show a saved known synthetic NII case (the Jane Eyre example currently displays an elevated score), then a saved known genuine NII case (the Wives and Daughters example currently displays a low score). Say these are *illustrations*, not an accuracy test.
+3. **Hear and inspect, 60 seconds:** play and seek the original, show the whole-file interval and two measured acoustic observations. Point out that measurements and neural scoring are distinct.
+4. **Stress the result, 60 seconds:** run or open a saved MP3 comparison, play the derivative and explain the score delta and its limits.
+5. **Show honest validation, 60 seconds:** expand the ArA failed-goal card. Explain the missed synthetic clips and false alarms and why the team did not hide them or silently retune.
+6. **Handoff, 90 seconds:** open a saved Groq brief and evidence reference if available, show an analyst note, then open the unified report and batch analyst CSV.
+
+Keep a saved real case and its report for an offline fallback. Clearly identify a saved case as a prior run. The [phase checklist](../plan.md) tracks the remaining detector-quality and official sponsor-data gates.
