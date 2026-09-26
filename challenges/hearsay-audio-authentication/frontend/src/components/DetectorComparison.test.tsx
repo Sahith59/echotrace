@@ -85,3 +85,13 @@ it('does not show an old in-flight comparison on a different recording', async (
   expect(await screen.findByRole('button', { name: 'Run second detector' })).toBeEnabled()
   expect(screen.queryByText('98.0 / 100')).not.toBeInTheDocument()
 })
+
+it('explains a scoreless recording without suggesting the model is offline', async () => {
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve(url.endsWith('/status')
+    ? response({ available: true }) : response({ detail: 'A scored original recording is required.' }, 422))))
+  render(<DetectorComparison jobId="quiet" />)
+  expect(await screen.findByRole('alert')).toHaveTextContent('A scored original recording is required.')
+  expect(screen.queryByText('Detector comparison availability could not be verified.')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Check comparison availability' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Run second detector' })).not.toBeInTheDocument()
+})
