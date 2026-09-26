@@ -24,6 +24,6 @@ Weights, datasets, recordings, workspaces, credentials and build outputs are int
 
 ## Current evidence
 
-Real GPU training and independent public-data evaluation have run. The first adapted AASIST-L candidate improved recall but failed the promotion target. The application shows actual measured results and retains the baseline unless a replacement passes review. Public-corpus results do not establish performance on the unavailable sponsor data.
+Real GPU training and independent public-data evaluation have run. All three candidates failed at least one predeclared promotion goal. The final adapted native model caught 87.4% of synthetic clips but falsely flagged 24.4% of genuine clips on its balanced public holdout; compressed genuine speech remains a major weakness. The application shows actual measured results and retains the baseline unless a replacement passes review. Public-corpus results do not establish performance on the unavailable sponsor data.
 
 The project provides a strict configurable CSV export pipeline. The final official CSV cannot be produced until the sponsor supplies its held-out files and submission contract. No competition result is guaranteed.

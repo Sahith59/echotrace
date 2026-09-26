@@ -1,5 +1,5 @@
 {
-  "scope": "ASVspoof 5 public development subset; not sponsor evaluation. Thresholds chosen on a separate selection split. Scores remain uncalibrated.",
+  "scope": "ASVspoof 5 public development/evaluation subsets; not sponsor evaluation. Thresholds chosen on separate selection data. Holdouts exclude this project's fitting records; complete upstream pretraining is not audited. Scores remain uncalibrated.",
   "serving_model": "Original pretrained AASIST-L",
   "experiments": [
     {
@@ -120,6 +120,69 @@
       "thresholds": {
         "baseline": 0.9998533328374227,
         "candidate": 0.9920379519462585
+      },
+      "gates": {
+        "max_false_positive_rate": 0.05,
+        "min_recall": 0.8,
+        "min_recall_gain": 0.1,
+        "min_each_class": 100
+      }
+    },
+    {
+      "name": "Native wav2vec2 adaptation / run 03",
+      "status": "completed",
+      "promoted": false,
+      "reason": "Recall exceeds 80%, but 24.4% of genuine recordings were falsely flagged, exceeding the 5% limit. Compressed genuine audio is a major failure mode. This distinct balanced holdout is not directly comparable with earlier runs.",
+      "sample_count": 2000,
+      "baseline_weights_sha256": "814331d088032bb4c3fa61cc014789eadeed464209dd094ab3a2dd6ffbdce27a",
+      "candidate_weights_sha256": "ec5b7388348b0f37dae0a7f74de6cfe61f9a9d815a035574ac6579458ca695ad",
+      "baseline": {
+        "genuine_count": 1000,
+        "synthetic_count": 1000,
+        "confusion": {
+          "tn": 760,
+          "fp": 240,
+          "fn": 463,
+          "tp": 537
+        },
+        "recall": 0.537,
+        "false_positive_rate": 0.24,
+        "recall_interval_95": [
+          0.5060124890263216,
+          0.5677043308457475
+        ],
+        "false_positive_rate_interval_95": [
+          0.21455652518754262,
+          0.2674333892249461
+        ],
+        "roc_auc": 0.705381,
+        "average_precision": 0.6769395764663901
+      },
+      "candidate": {
+        "genuine_count": 1000,
+        "synthetic_count": 1000,
+        "confusion": {
+          "tn": 756,
+          "fp": 244,
+          "fn": 126,
+          "tp": 874
+        },
+        "recall": 0.874,
+        "false_positive_rate": 0.244,
+        "recall_interval_95": [
+          0.8519904953398139,
+          0.8931470893129909
+        ],
+        "false_positive_rate_interval_95": [
+          0.2183928321652609,
+          0.2715664681793434
+        ],
+        "roc_auc": 0.9060895,
+        "average_precision": 0.9107454797669291
+      },
+      "thresholds": {
+        "baseline": 0.9998533328374227,
+        "candidate": 0.0015500168083235621
       },
       "gates": {
         "max_false_positive_rate": 0.05,
