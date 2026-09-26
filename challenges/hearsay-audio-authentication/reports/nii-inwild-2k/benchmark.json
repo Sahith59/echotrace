@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "benchmark": "In-the-Wild frozen external 2k",
+  "manifest_sha256": "dbfa528249c855261d64b864956a6b346b0faf40897622bae6e5a28ba1f9309a",
+  "job_id": "4504662",
+  "job_state": "COMPLETED",
+  "elapsed": "00:08:46",
+  "cpu_count": 4,
+  "gpu_count": 0,
+  "max_rss_kib": 3014812,
+  "threshold": 0.5,
+  "threshold_selected_on_this_benchmark": false,
+  "coverage": {
+    "total": 2000,
+    "model_scored": 2000,
+    "failed": 0,
+    "quiet_retained_for_model_benchmark": 1
+  },
+  "metrics": {
+    "auroc": 0.9925,
+    "recall": 0.937,
+    "fpr": 0.024,
+    "true_positive": 937,
+    "false_negative": 63,
+    "false_positive": 24,
+    "true_negative": 976
+  },
+  "predeclared_gate": {
+    "minimum_recall": 0.8,
+    "maximum_fpr": 0.05,
+    "require_complete_model_coverage": true,
+    "passed": true
+  },
+  "corpus_integrity": {
+    "rows_checked_after_run": 2000,
+    "mismatch_count": 0,
+    "passed": true,
+    "report_sha256": "d822b9e26f4d1135fb2c82bba2a7e20faa8f8dc8ea970938ceeb91577577d630"
+  },
+  "remote_artifacts": {
+    "metrics_sha256": "8c094472901aa81b67d1807edd7a53af14e12c4f775f3996183b928d55f1171e",
+    "scores_sha256": "ce0d79850606b0d74b1490103256c4dc8e2ce36145189833ed19fec45a7665a0"
+  },
+  "claim_boundary": "Benchmark replication; not sponsor validation; not used for fitting. Upstream pretraining overlap is unknown. The model was trained with ASVspoof5, so ASVspoof5 cannot independently evaluate it. Model coverage includes one quiet file that the live app quality gate would reject; app-eligible comparative metrics are reported separately."
+}

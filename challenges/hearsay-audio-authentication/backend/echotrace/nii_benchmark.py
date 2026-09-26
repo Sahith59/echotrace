@@ -43,6 +43,8 @@ def evaluate(manifest_path: Path, dataset_root: Path, output_dir: Path, scorer=s
         rows = list(csv.DictReader(source))
     if len(rows) != 2_000 or Counter(row["label"] for row in rows) != {"0": 1_000, "1": 1_000}:
         raise ValueError("Frozen benchmark must contain exactly 1,000 genuine and 1,000 spoof rows")
+    if any(len(row.get("sha256", "")) != 64 for row in rows):
+        raise ValueError("Frozen benchmark requires a SHA-256 for every input")
     output_dir = Path(output_dir)
     if output_dir.exists():
         raise FileExistsError("Benchmark output directory must be new")
@@ -57,6 +59,8 @@ def evaluate(manifest_path: Path, dataset_root: Path, output_dir: Path, scorer=s
             path = (dataset_root / row["path"]).resolve()
             if dataset_root not in path.parents or not path.is_file():
                 raise ValueError("audio_path_unavailable")
+            if _sha256(path) != row["sha256"]:
+                raise ValueError("audio_sha256_mismatch")
             samples = _load_samples(path)
             if len(samples) < MIN_SAMPLES:
                 raise ValueError("shorter_than_400_samples")
@@ -98,6 +102,7 @@ def evaluate(manifest_path: Path, dataset_root: Path, output_dir: Path, scorer=s
             "fpr_gate": MAX_FPR,
             "max_duration_s": 30,
             "long_or_failed_rows_retained": True,
+            "eligibility_scope": "model input eligibility; app quality gates are evaluated separately",
         },
         "coverage": {
             "total": len(ledger), "eligible": len(eligible), "failed": len(ledger) - len(eligible),
@@ -115,7 +120,7 @@ def evaluate(manifest_path: Path, dataset_root: Path, output_dir: Path, scorer=s
             "coverage_passed": len(eligible) == len(ledger),
         },
         "runtime_s": round(time.monotonic() - started, 3),
-        "claim_boundary": "Selection evidence only; ASVspoof5 trained this model and is not independent evaluation data.",
+        "claim_boundary": "Benchmark replication; not sponsor validation; not used for fitting. Upstream pretraining overlap is unknown. ASVspoof5 trained this model and is not independent evaluation data.",
     }
     report["gate"]["eligible_for_review"] = all(report["gate"].values())
     with (output_dir / "scores.csv").open("w", newline="", encoding="utf-8") as target:

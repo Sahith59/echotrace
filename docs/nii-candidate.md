@@ -37,3 +37,11 @@ Parity passed without changing the predeclared limits:
 - Maximum absolute fake-probability difference: `6.183981895446777e-07` (limit `1e-4`).
 
 Local focused verification: `uv run pytest -q tests/test_nii_candidate.py` → 8 passed. The first full backend run reached 253 passing tests and six unrelated claim-provider failures during concurrent provider work; a later root integration run reported the full backend green. This adapter remains candidate-only and is not imported by `pipeline.py`.
+
+## Frozen external benchmark replication
+
+After parity passed, the adapter scored the locked 2,000-row In-the-Wild manifest at the predeclared threshold `0.5`. Job `4504662` completed on CPU in 8 minutes 46 seconds with 2,000/2,000 model inputs scored: AUROC `0.9925`, recall `0.937`, and false-positive rate `0.024`. These meet the predeclared recall (`>=0.80`), FPR (`<=0.05`) and complete model-coverage gates. No threshold was selected on this benchmark.
+
+All 2,000 source files were rehashed against the manifest after the run; every hash matched. The runner now performs this check before scoring each file in future runs and retains a mismatch as an explicit failure row. The frozen set contains one quiet file. It remains in these model-only metrics, while a live-app comparison must exclude it from both models' denominators because the shared app quality gate rejects it.
+
+This is benchmark replication, not sponsor validation, and it was not used for fitting. Upstream pretraining overlap is unknown. The checkpoint remains non-serving pending a same-file, common-eligibility comparison and product review. Evidence is recorded in `challenges/hearsay-audio-authentication/reports/nii-inwild-2k/benchmark.json`.
