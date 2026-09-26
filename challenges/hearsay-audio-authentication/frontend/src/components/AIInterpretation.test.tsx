@@ -4,9 +4,9 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AIInterpretation from './AIInterpretation'
 
-const status = { available: true, provider: 'xai', model: 'grok-4.7', reason: null }
+const status = { available: true, provider: 'groq', model: 'llama-3.3-70b-versatile', reason: null }
 const generated = {
-  status: 'generated', provider: 'xai', model: 'grok-4.7', prompt_version: '1',
+  status: 'generated', provider: 'groq', model: 'llama-3.3-70b-versatile', prompt_version: '1',
   evidence_sha256: 'abc', generated_at: '2026-09-25T12:00:00Z',
   report: {
     summary: 'Review the uncertain acoustic pattern.',
@@ -63,10 +63,10 @@ describe('AIInterpretation', () => {
 
   it('explains when the provider is unavailable', async () => {
     fetchMock.mockImplementation((url: string) => Promise.resolve(response(
-      url.endsWith('/status') ? { ...status, available: false, reason: 'xAI key is missing' } : { status: 'not_generated' },
+      url.endsWith('/status') ? { ...status, available: false, reason: 'Groq key is missing' } : { status: 'not_generated' },
     )))
     render(<AIInterpretation jobId="job-a" />)
-    expect(await screen.findByText(/xAI key is missing/)).toBeInTheDocument()
+    expect(await screen.findByText(/Groq key is missing/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /generate interpretation/i })).not.toBeInTheDocument()
   })
 
@@ -74,11 +74,11 @@ describe('AIInterpretation', () => {
     let checks = 0
     fetchMock.mockImplementation((url: string) => Promise.resolve(response(
       url.endsWith('/status')
-        ? (++checks === 1 ? { ...status, available: false, reason: 'xAI key is missing' } : status)
+        ? (++checks === 1 ? { ...status, available: false, reason: 'Groq key is missing' } : status)
         : { status: 'not_generated' },
     )))
     render(<AIInterpretation jobId="job-a" />)
-    expect(await screen.findByText(/xAI key is missing/)).toBeInTheDocument()
+    expect(await screen.findByText(/Groq key is missing/)).toBeInTheDocument()
     await userEvent.setup().click(screen.getByRole('button', { name: /check configuration/i }))
     expect(await screen.findByRole('button', { name: /generate interpretation/i })).toBeInTheDocument()
   })

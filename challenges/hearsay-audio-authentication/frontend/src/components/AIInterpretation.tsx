@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { CircleAlert, LoaderCircle, Sparkles } from 'lucide-react'
 import './AIInterpretation.css'
 
-type ProviderStatus = { available: boolean; provider: 'xai'; model: string | null; reason: string | null }
+type ProviderStatus = { available: boolean; provider: 'groq' | 'xai'; model: string | null; reason: string | null }
 type Evidence = { id: string; label: string; value: unknown; unit?: string }
 type Generated = {
   status: 'generated'
-  provider: 'xai'
+  provider: 'groq' | 'xai'
   model: string
   prompt_version: string
   evidence_sha256: string
@@ -83,10 +83,10 @@ export default function AIInterpretation({ jobId }: { jobId: string }) {
 
   return <section className="detail-section ai-interpretation" aria-labelledby="ai-interpretation-title">
     <div className="section-heading"><div><span className="eyebrow">07 / AI REVIEW</span><h2 id="ai-interpretation-title">AI interpretation</h2></div><Sparkles size={18} className="subtle-icon" aria-hidden="true" /></div>
-    <p className="ai-interpretation-caveat">Grok receives measured findings only; no audio, filenames, or transcripts. Its summary can err and is not a detection result.</p>
+    <p className="ai-interpretation-caveat">Groq receives measured findings only; no audio, filenames, or transcripts. Its summary can err and is not a detection result.</p>
     {active.phase === 'loading' && <p className="ai-interpretation-state" role="status"><LoaderCircle size={14} className="spin" /> Checking interpretation…</p>}
     {active.report && <div className="ai-interpretation-report">
-      <div className="ai-interpretation-meta">Generated with Grok (xAI) · {active.report.model}</div>
+      <div className="ai-interpretation-meta">Generated with {active.report.provider === 'xai' ? 'Grok (xAI)' : 'Groq'} · {active.report.model}</div>
       <p className="ai-interpretation-summary">{active.report.report.summary}</p>
       {active.report.report.findings.length > 0 && <><h3>Findings</h3><ul>{active.report.report.findings.map((finding, index) => <li key={index}>{finding.text}{finding.evidence_ids.length > 0 && <span className="ai-interpretation-refs"> [{finding.evidence_ids.join(', ')}]</span>}</li>)}</ul></>}
       {active.report.report.next_steps.length > 0 && <><h3>Suggested next steps</h3><ul>{active.report.report.next_steps.map((step, index) => <li key={index}>{step}</li>)}</ul></>}
@@ -97,8 +97,8 @@ export default function AIInterpretation({ jobId }: { jobId: string }) {
       {active.error && !active.provider && <button className="outline-button" onClick={() => setReload(value => value + 1)}>Retry loading interpretation</button>}
       {!active.error && active.provider && !active.provider.available && <p className="ai-interpretation-state">AI interpretation is unavailable. {active.provider.reason || 'The xAI provider is not configured.'}</p>}
       {!active.error && active.provider && !active.provider.available && <button className="outline-button" onClick={() => setReload(value => value + 1)}>Check configuration</button>}
-      {active.provider?.available && <><p className="ai-interpretation-state">Generate a written interpretation on demand using {active.provider.model || 'Grok'}.</p><button className="outline-button" onClick={generate} disabled={active.phase === 'generating'}>{active.phase === 'generating' ? <><LoaderCircle size={14} className="spin" /> Generating interpretation…</> : <><Sparkles size={14} /> {active.error ? 'Retry interpretation' : 'Generate interpretation'}</>}</button></>}
-      {active.phase === 'generating' && <p className="ai-interpretation-state" role="status">Grok is interpreting the measurements. This may take a moment.</p>}
+      {active.provider?.available && <><p className="ai-interpretation-state">Generate a written interpretation on demand using {active.provider.model || 'Groq'}.</p><button className="outline-button" onClick={generate} disabled={active.phase === 'generating'}>{active.phase === 'generating' ? <><LoaderCircle size={14} className="spin" /> Generating interpretation…</> : <><Sparkles size={14} /> {active.error ? 'Retry interpretation' : 'Generate interpretation'}</>}</button></>}
+      {active.phase === 'generating' && <p className="ai-interpretation-state" role="status">Groq is interpreting the measurements. This may take a moment.</p>}
     </>}
   </section>
 }

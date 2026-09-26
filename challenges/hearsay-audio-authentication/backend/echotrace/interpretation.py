@@ -1,4 +1,4 @@
-"""On-demand Grok interpretation of allowlisted evidence, independent of scoring."""
+"""On-demand Groq interpretation of allowlisted evidence, independent of scoring."""
 from __future__ import annotations
 
 import hashlib
@@ -16,8 +16,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 ENV_PATH = Path(__file__).resolve().parents[4] / ".env"
-PROMPT_VERSION = "evidence-brief-v1"
-ENDPOINT = "https://api.x.ai/v1/chat/completions"
+PROMPT_VERSION = "evidence-brief-groq-v2"
+ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class InterpretationError(ValueError):
@@ -81,15 +81,15 @@ class Interpreter:
     def _config(self):
         # Read at use time so adding a key does not require a process restart.
         values = dotenv_values(ENV_PATH) if ENV_PATH.is_file() else {}
-        model = self.model_override or os.environ.get("ECHOTRACE_LLM_MODEL") or values.get("ECHOTRACE_LLM_MODEL") or "grok-4.7"
-        key = self.key_override if self.key_override is not None else os.environ.get("XAI_API_KEY") or values.get("XAI_API_KEY") or ""
+        model = self.model_override or os.environ.get("ECHOTRACE_LLM_MODEL") or values.get("ECHOTRACE_LLM_MODEL") or "llama-3.3-70b-versatile"
+        key = self.key_override if self.key_override is not None else os.environ.get("GROQ_API_KEY") or values.get("GROQ_API_KEY") or ""
         return model, key.strip()
 
     def status(self):
         model, key = self._config()
         available = bool(key or self.transport)
-        return {"available": available, "provider": "xai", "model": model,
-                "reason": None if available else "Grok is not configured. Add XAI_API_KEY to the repository .env file.",
+        return {"available": available, "provider": "groq", "model": model,
+                "reason": None if available else "Groq is not configured. Add GROQ_API_KEY to the repository .env file.",
                 "connection_verified": False}
 
     def _request(self, payload, key):
@@ -103,16 +103,16 @@ class Interpreter:
             with urllib.request.build_opener(NoRedirect).open(request, timeout=45) as response:
                 raw = response.read(262145)
                 if len(raw) > 262144:
-                    raise InterpretationError("Grok returned an oversized response.")
+                    raise InterpretationError("Groq returned an oversized response.")
                 return json.loads(raw)
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
-                raise InterpretationError("Grok authentication failed. Check your xAI key and model access.") from None
+                raise InterpretationError("Groq authentication failed. Check your Groq key and model access.") from None
             if exc.code == 429:
-                raise InterpretationError("Grok rate or quota limit reached. Try again later.") from None
-            raise InterpretationError("Grok request failed. Check the configured model and xAI service status.") from None
+                raise InterpretationError("Groq rate or quota limit reached. Try again later.") from None
+            raise InterpretationError("Groq request failed. Check the configured model and Groq service status.") from None
         except (OSError, ValueError):
-            raise InterpretationError("Grok could not be reached or returned an invalid response. Try again.") from None
+            raise InterpretationError("Groq could not be reached or returned an invalid response. Try again.") from None
 
     def generate(self, result):
         model, key = self._config()
@@ -130,23 +130,22 @@ class Interpreter:
             "Every finding must cite supplied evidence IDs. Offer practical review next steps. "
             "Summary and next steps must stay within these facts. Return only the required JSON schema."
         )
-        payload = {"model": model, "messages": [{"role": "system", "content": system},
+        payload = {"model": model, "messages": [{"role": "system", "content": system + " audio_review JSON schema: " + json.dumps(schema)},
                     {"role": "user", "content": json.dumps({"evidence": facts}, allow_nan=False)}],
                    "stream": False, "max_tokens": 1600,
-                   "response_format": {"type": "json_schema", "json_schema": {
-                       "name": "audio_review", "strict": True, "schema": schema}}}
+                   "response_format": {"type": "json_object"}}
         try:
             output = self.transport(payload) if self.transport else self._request(payload, key)
             content = output["choices"][0]["message"]["content"]
             brief = Brief.model_validate_json(content)
             ids = {x["id"] for x in facts}
             if any(not set(f.evidence_ids) <= ids for f in brief.findings):
-                raise InterpretationError("Grok cited evidence that is not present. No interpretation was saved.")
+                raise InterpretationError("Groq cited evidence that is not present. No interpretation was saved.")
             if any(not isinstance(s, str) or not s.strip() or len(s) > 600 for s in brief.next_steps):
-                raise InterpretationError("Grok returned invalid next steps.")
+                raise InterpretationError("Groq returned invalid next steps.")
         except (KeyError, IndexError, TypeError, ValidationError, json.JSONDecodeError):
-            raise InterpretationError("Grok returned an invalid structured interpretation. Try again.") from None
-        return {"status": "generated", "provider": "xai", "model": model,
+            raise InterpretationError("Groq returned an invalid structured interpretation. Try again.") from None
+        return {"status": "generated", "provider": "groq", "model": model,
                 "prompt_version": PROMPT_VERSION, "evidence_sha256": evidence_hash(facts),
                 "generated_at": datetime.now(timezone.utc).isoformat(),
                 "report": brief.model_dump(), "evidence": facts}
