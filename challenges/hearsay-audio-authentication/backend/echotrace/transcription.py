@@ -6,6 +6,7 @@ import importlib.util
 import math
 import os
 import threading
+from itertools import islice
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -135,7 +136,7 @@ class Transcriber:
                 word_timestamps=False,
                 condition_on_previous_text=True,
             )
-            raw_segments = list(segments_iter)
+            raw_segments = list(islice(segments_iter, MAX_SEGMENTS + 1))
         except TranscriptionError:
             raise
         except Exception:
@@ -153,6 +154,7 @@ class Transcriber:
 
         segments = []
         prior_end = 0.0
+        total_characters = 0
         for index, segment in enumerate(raw_segments):
             start = round(float(segment.start), 3)
             end = round(float(segment.end), 3)
@@ -162,6 +164,9 @@ class Transcriber:
             if (not math.isfinite(start) or not math.isfinite(end) or start < 0 or
                     end <= start or end > MAX_DURATION_S or start + 0.01 < prior_end):
                 raise TranscriptionError("Transcription returned invalid timestamp boundaries.")
+            total_characters += len(text) + (1 if segments else 0)
+            if total_characters > MAX_TRANSCRIPT_CHARS:
+                raise TranscriptionError("Transcript exceeds the 100,000 character limit.")
             segments.append({
                 "id": int(getattr(segment, "id", index)),
                 "start_s": start,
@@ -170,8 +175,6 @@ class Transcriber:
             })
             prior_end = end
         text = " ".join(item["text"] for item in segments).strip()
-        if len(text) > MAX_TRANSCRIPT_CHARS:
-            raise TranscriptionError("Transcript exceeds the 100,000 character limit.")
         probability = getattr(info, "language_probability", None)
         if probability is not None:
             probability = float(probability)

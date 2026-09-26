@@ -1,6 +1,7 @@
 """FastAPI routes for local speaker-reference comparison."""
 from __future__ import annotations
 
+import os
 import re
 import uuid
 from pathlib import Path
@@ -49,11 +50,13 @@ def create_speaker_router(store, service=None) -> APIRouter:
         label = re.sub(r"\s+", " ", (reference_label or "Trusted reference").strip())
         if not label or len(label) > 80 or any(ord(char) < 32 for char in label):
             raise HTTPException(422, "Reference label must contain 1 to 80 printable characters.")
-        temp_root.mkdir(parents=True, exist_ok=True)
+        temp_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+        temp_root.chmod(0o700)
         temp_path = temp_root / (uuid.uuid4().hex + ".upload")
         total = 0
         try:
-            with temp_path.open("wb") as target:
+            descriptor = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "wb") as target:
                 while chunk := file.file.read(1024 * 1024):
                     total += len(chunk)
                     if total > MAX_REFERENCE_BYTES:
@@ -67,7 +70,8 @@ def create_speaker_router(store, service=None) -> APIRouter:
                 message = str(exc)
                 if "Another speaker comparison" in message:
                     raise HTTPException(409, message) from None
-                if "dependencies are unavailable" in message or "weights" in message or "model could not" in message:
+                if ("dependencies are unavailable" in message or "weights" in message or
+                        "model could not" in message or "explicit speaker model setup" in message):
                     raise HTTPException(503, message) from None
                 raise HTTPException(422, message) from None
         finally:

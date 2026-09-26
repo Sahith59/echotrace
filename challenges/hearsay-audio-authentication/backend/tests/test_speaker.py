@@ -188,6 +188,27 @@ def test_status_contract_and_missing_model_error(tmp_path):
     assert response.status_code == 503
     assert "unavailable" in response.json()["detail"].lower()
 
+    class NotPrepared(FakeEmbedder):
+        def status(self):
+            return {"available": True, "ready": False, "model": None,
+                    "reason": "Run the explicit speaker model setup command."}
+
+        def embed(self, samples):
+            raise SpeakerComparisonError("Pinned speaker weights are unavailable; run explicit setup.")
+
+    not_ready_app = FastAPI()
+    not_ready_app.include_router(create_speaker_router(
+        store, SpeakerComparisonService(store, embedder=NotPrepared(), decoder=fake_decode)
+    ))
+    with TestClient(not_ready_app) as client:
+        response = client.post(
+            "/api/analyses/complete/speaker-comparison",
+            data={"consent": "true"},
+            files={"file": ("reference.wav", b"reference")},
+        )
+    assert response.status_code == 503
+    assert "explicit" in response.json()["detail"].lower()
+
 
 def test_audio_quality_gate_boundaries():
     with pytest.raises(SpeakerComparisonError, match="2 seconds"):

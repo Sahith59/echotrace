@@ -190,6 +190,20 @@ class GrokClaimReviewer:
         if review.verdict not in VERDICTS:
             raise ClaimReviewError("Grok returned an invalid claim verdict.")
 
+        usage = response.get("usage", {}).get("server_side_tool_usage_details", {})
+        search_calls = usage.get("web_search_calls")
+        if type(search_calls) is not int or search_calls < 1:
+            return {
+                "verdict": "uncheckable",
+                "rationale": "The provider did not report a completed web search, so no source-backed verdict was accepted.",
+                "evidence": [],
+                "method": "ai_web_search",
+                "provider": "xai",
+                "model": model,
+                "prompt_version": PROMPT_VERSION,
+                "reviewed_at": datetime.now(timezone.utc).isoformat(),
+            }
+
         cleaned = []
         for evidence in review.evidence:
             try:

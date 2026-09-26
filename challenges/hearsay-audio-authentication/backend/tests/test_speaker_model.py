@@ -96,6 +96,10 @@ def test_verified_weight_hash_is_cached_until_file_metadata_changes(tmp_path, mo
     payload = b"weights"
     monkeypatch.setattr(speaker, "MODEL_WEIGHTS_BYTES", len(payload))
     monkeypatch.setattr(speaker, "MODEL_WEIGHTS_SHA256", hashlib.sha256(payload).hexdigest())
+    monkeypatch.setattr(speaker, "MODEL_CONFIG_BYTES", 2)
+    monkeypatch.setattr(speaker, "MODEL_CONFIG_SHA256", hashlib.sha256(b"{}").hexdigest())
+    monkeypatch.setattr(speaker, "MODEL_PREPROCESSOR_BYTES", 2)
+    monkeypatch.setattr(speaker, "MODEL_PREPROCESSOR_SHA256", hashlib.sha256(b"{}").hexdigest())
     embedder = WavLMSpeakerEmbedder(tmp_path)
     embedder.model_dir.mkdir(parents=True)
     for filename in speaker.MODEL_FILES:
@@ -106,11 +110,12 @@ def test_verified_weight_hash_is_cached_until_file_metadata_changes(tmp_path, mo
 
     assert embedder.status()["ready"] is True
     assert embedder.status()["ready"] is True
-    assert len(calls) == 1
+    weights_path = embedder.model_dir / "model.safetensors"
+    assert calls.count(weights_path) == 1
 
     (embedder.model_dir / "model.safetensors").write_bytes(b"changed")
     assert embedder.status()["ready"] is False
-    assert len(calls) == 2
+    assert calls.count(weights_path) == 2
 
 
 def test_tampered_pinned_model_config_is_not_treated_as_ready(tmp_path, monkeypatch):
@@ -122,6 +127,12 @@ def test_tampered_pinned_model_config_is_not_treated_as_ready(tmp_path, monkeypa
     (embedder.model_dir / "preprocessor_config.json").write_bytes(b"safe-preprocessor")
     monkeypatch.setattr(speaker, "MODEL_WEIGHTS_BYTES", len(weights))
     monkeypatch.setattr(speaker, "MODEL_WEIGHTS_SHA256", hashlib.sha256(weights).hexdigest())
+    monkeypatch.setattr(speaker, "MODEL_CONFIG_BYTES", len(b"safe-config"))
+    monkeypatch.setattr(speaker, "MODEL_CONFIG_SHA256", hashlib.sha256(b"safe-config").hexdigest())
+    monkeypatch.setattr(speaker, "MODEL_PREPROCESSOR_BYTES", len(b"safe-preprocessor"))
+    monkeypatch.setattr(
+        speaker, "MODEL_PREPROCESSOR_SHA256", hashlib.sha256(b"safe-preprocessor").hexdigest()
+    )
 
     assert embedder.status()["ready"] is True
     (embedder.model_dir / "config.json").write_bytes(b"evil-config")

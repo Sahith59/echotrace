@@ -5,6 +5,7 @@ identity decision and is intentionally stored outside the synthesis result.
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -23,6 +24,10 @@ MODEL_ID = "microsoft/wavlm-base-plus-sv"
 MODEL_REVISION = "1bfd64eca136543feb28c5ffaf05381c6af33121"
 MODEL_WEIGHTS_SHA256 = "94c3defe08248d81c7b2bd0a058ea9985269cefed13076434669c47fade41182"
 MODEL_WEIGHTS_BYTES = 404_479_908
+MODEL_CONFIG_SHA256 = "c6ac8c0ce55b18d4612677931036fe5ce78093e87361c552a173f00a0bb07514"
+MODEL_CONFIG_BYTES = 58_639
+MODEL_PREPROCESSOR_SHA256 = "99272fe8ccfab114b68b478681ea47ee3a1ce62bb788cb92dd6e4f69fb1f1da2"
+MODEL_PREPROCESSOR_BYTES = 215
 MODEL_FILES = ("config.json", "preprocessor_config.json", "model.safetensors")
 DEFAULT_MODEL_CACHE = Path(__file__).resolve().parents[1] / "artifacts" / "speaker-model"
 MAX_REFERENCE_BYTES = 20 * 1024 * 1024
@@ -72,12 +77,14 @@ def audio_quality(samples: np.ndarray) -> dict:
 class WavLMSpeakerEmbedder:
     """Pinned SafeTensors-only loader for Microsoft's WavLM speaker model."""
 
-    def __init__(self, cache_root: Path):
+    def __init__(self, cache_root: Path, *, allow_download: bool = False):
         self.cache_root = Path(cache_root)
         self.model_dir = self.cache_root / MODEL_REVISION
+        self.allow_download = allow_download
         self._model = None
         self._processor = None
         self._load_lock = threading.Lock()
+        self._verified_model_signature = None
 
     @staticmethod
     def _dependencies_available() -> bool:
@@ -85,10 +92,34 @@ class WavLMSpeakerEmbedder:
                    for name in ("transformers", "huggingface_hub", "safetensors"))
 
     def _weights_valid(self) -> bool:
-        weights = self.model_dir / "model.safetensors"
-        return (weights.is_file() and weights.stat().st_size == MODEL_WEIGHTS_BYTES
-                and _sha256(weights) == MODEL_WEIGHTS_SHA256
-                and all((self.model_dir / name).is_file() for name in MODEL_FILES))
+        expected = {
+            "config.json": (MODEL_CONFIG_BYTES, MODEL_CONFIG_SHA256),
+            "preprocessor_config.json": (MODEL_PREPROCESSOR_BYTES, MODEL_PREPROCESSOR_SHA256),
+            "model.safetensors": (MODEL_WEIGHTS_BYTES, MODEL_WEIGHTS_SHA256),
+        }
+        stats = {}
+        for filename, (size, _) in expected.items():
+            path = self.model_dir / filename
+            if not path.is_file():
+                self._verified_model_signature = None
+                return False
+            stat = path.stat()
+            if stat.st_size != size:
+                self._verified_model_signature = None
+                return False
+            stats[filename] = stat
+        signature = tuple(
+            (name, stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+            for name, stat in sorted(stats.items())
+        )
+        if signature == self._verified_model_signature:
+            return True
+        valid = all(
+            _sha256(self.model_dir / filename) == digest
+            for filename, (_, digest) in expected.items()
+        )
+        self._verified_model_signature = signature if valid else None
+        return valid
 
     def status(self) -> dict:
         model = {"id": MODEL_ID, "revision": MODEL_REVISION,
@@ -99,7 +130,7 @@ class WavLMSpeakerEmbedder:
         ready = self._weights_valid()
         return {"available": True, "ready": ready, "model": model,
                 "reason": None if ready else
-                "Pinned speaker weights are not cached; the first comparison downloads 404,479,908 bytes from the official model repository."}
+                "Pinned speaker weights are not cached. Run the explicit speaker model setup command before comparison."}
 
     def _download(self) -> None:
         from huggingface_hub import hf_hub_download
@@ -119,7 +150,13 @@ class WavLMSpeakerEmbedder:
             ) from exc
         if not self._weights_valid():
             (self.model_dir / "model.safetensors").unlink(missing_ok=True)
+            self._verified_model_signature = None
             raise SpeakerComparisonError("Downloaded speaker weights failed size or SHA-256 verification.")
+
+    def prepare(self) -> None:
+        if not self.allow_download:
+            raise SpeakerComparisonError("Speaker model download is disabled outside explicit setup.")
+        self._download()
 
     def _load(self) -> None:
         if self._model is not None:
@@ -130,7 +167,9 @@ class WavLMSpeakerEmbedder:
             if not self._dependencies_available():
                 raise SpeakerComparisonError("Speaker model dependencies are unavailable.")
             if not self._weights_valid():
-                self._download()
+                raise SpeakerComparisonError(
+                    "Pinned speaker weights are unavailable; run the explicit setup command."
+                )
             try:
                 from transformers import Wav2Vec2FeatureExtractor, WavLMForXVector
 
@@ -215,7 +254,7 @@ class SpeakerComparisonService:
             raise SpeakerComparisonError("Another speaker comparison is running. Try again shortly.")
         try:
             state = self.embedder.status()
-            if not state.get("available"):
+            if not state.get("available") or not state.get("ready"):
                 raise SpeakerComparisonError(state.get("reason") or "Speaker model is unavailable.")
             try:
                 source_samples, source_meta = self.decoder(Path(job["path"]))
@@ -266,3 +305,17 @@ class SpeakerComparisonService:
             return report
         finally:
             self.operation_lock.release()
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description="Prepare the pinned ECHOTRACE speaker model.")
+    parser.add_argument("--cache-dir", type=Path, default=DEFAULT_MODEL_CACHE)
+    args = parser.parse_args(argv)
+    embedder = WavLMSpeakerEmbedder(args.cache_dir, allow_download=True)
+    embedder.prepare()
+    print(f"Prepared pinned speaker model revision {MODEL_REVISION}.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

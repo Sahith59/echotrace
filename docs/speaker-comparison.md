@@ -44,17 +44,26 @@ Transformers `WavLMForXVector` API. It pins repository revision
 
 The 404,479,908-byte SafeTensors file must match SHA-256
 `94c3defe08248d81c7b2bd0a058ea9985269cefed13076434669c47fade41182`.
+The pinned configuration and preprocessor files also have fixed byte sizes and
+SHA-256 values. File metadata caches successful integrity checks within the
+server process, so repeated status requests do not rehash 404 MB; any file
+metadata change forces full verification again.
 Loading is local-only after download, forces `use_safetensors=True`, and disables
 remote code. The repository's pickle checkpoint is never downloaded or loaded.
 Verified files persist in the gitignored
 `challenges/hearsay-audio-authentication/backend/artifacts/speaker-model/`
-directory, shared by all local workspaces. The first comparison downloads them
-automatically when absent. To prefetch and verify them before starting the app,
-run from the backend directory:
+directory, shared by all local workspaces. Runtime requests never download
+model files. Prepare and verify the pinned allowlist explicitly before starting
+the app by running this command from the backend directory:
 
 ```bash
-uv run python -c "from echotrace.speaker import DEFAULT_MODEL_CACHE, WavLMSpeakerEmbedder; WavLMSpeakerEmbedder(DEFAULT_MODEL_CACHE)._download()"
+uv run python -m echotrace.speaker
 ```
+
+The trusted reference is written only to a randomly named owner-readable
+`0600` temporary file inside an owner-only `0700` directory. The route removes
+the file in a `finally` block and never sends reference audio to a model host or
+claim-review provider.
 
 CPU inference is serialized. Recordings longer than ten seconds use four evenly
 spaced ten-second windows at most (40 seconds of model input), and their
