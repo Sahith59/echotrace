@@ -9,7 +9,7 @@ set -Eeuo pipefail
 : "${ECHOTRACE_ROOT:?}"
 export PATH="$ECHOTRACE_ROOT/envs/runtime/bin:/usr/bin:/bin"
 python="$ECHOTRACE_ROOT/envs/detector/bin/python"
-backend="$ECHOTRACE_ROOT/source/9903fac"
+backend="$ECHOTRACE_ROOT/source/9903fac/backend"
 sample=$(find "$ECHOTRACE_ROOT/data/asvspoof5-aa/audio" -type f -name '*.flac' -print -quit)
 [[ -n "$sample" ]]
 command -v ffprobe

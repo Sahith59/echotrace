@@ -19,7 +19,7 @@ archive_dir="$ECHOTRACE_ROOT/downloads/asvspoof5-eval-aa"
 archive="$archive_dir/flac_E_aa.tar"
 mkdir -p "$archive_dir"
 python="$ECHOTRACE_ROOT/envs/detector/bin/python"
-backend="$ECHOTRACE_ROOT/source/9903fac"
+backend="$ECHOTRACE_ROOT/source/9903fac/backend"
 smoke=$(find "$ECHOTRACE_ROOT/data/asvspoof5-aa/audio" -type f -name '*.flac' -print -quit)
 [[ -n "$smoke" ]]
 PYTHONPATH="$backend" "$python" - "$smoke" <<'PY'
