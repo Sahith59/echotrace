@@ -22,7 +22,7 @@ def write_run(root, kind, role, scores, *, prefix=None):
     with (folder / "scores.csv").open("w") as f:
         w = csv.writer(f)
         w.writerow(["file_id", "synthetic_score", "status"])
-        w.writerows((r["file_id"], s, "completed") for r, s in zip(records, scores))
+        w.writerows((r["file_id"], s, "scored") for r, s in zip(records, scores))
     data = {"role": role, "model_kind": kind, "checkpoint_sha256": ("a" if kind == "baseline" else "b") * 64,
             "config_sha256": "c" * 64, "complete": True, "aggregation": AGGREGATION,
             "records": records, "scores_sha256": hashlib.sha256((folder / "scores.csv").read_bytes()).hexdigest(),
