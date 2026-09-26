@@ -92,3 +92,18 @@ describe('mobile navigation', () => {
     expect(removeEventListener).toHaveBeenCalledWith('change', expect.any(Function))
   })
 })
+
+describe('initial connection state', () => {
+  it('does not report a server failure before the first health request finishes', async () => {
+    let resolveHealth!: (response: Response) => void
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      if (String(input) === '/api/health') return new Promise<Response>(resolve => { resolveHealth = resolve })
+      return Promise.resolve(jsonResponse([]))
+    }))
+    render(<App />)
+    expect(screen.getByText('Connecting to local server')).toBeInTheDocument()
+    expect(screen.queryByText('Server unavailable')).not.toBeInTheDocument()
+    resolveHealth(jsonResponse({ status: 'ok' }))
+    expect(await screen.findByText('Local processing available')).toBeInTheDocument()
+  })
+})
