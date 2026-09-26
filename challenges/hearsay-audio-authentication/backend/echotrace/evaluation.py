@@ -141,7 +141,8 @@ def grouped_split(records: list[dict], *, validation_fraction: float = 0.2,
     components: dict[int, list[int]] = defaultdict(list)
     for i in range(len(records)):
         components[find(i)].append(i)
-    groups = list(components.values())
+    groups = sorted(components.values(),
+                    key=lambda members: tuple(sorted(records[i]["file_id"] for i in members)))
     if len(groups) < 2:
         raise ValueError("No independent groups available for validation")
 
