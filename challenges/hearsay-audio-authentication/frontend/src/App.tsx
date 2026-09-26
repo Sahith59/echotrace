@@ -119,6 +119,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [checkedIds, setCheckedIds] = useState<string[]>([])
   const [health, setHealth] = useState<Health | null>(null)
+  const [healthChecked, setHealthChecked] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -199,7 +200,7 @@ export default function App() {
 
   useEffect(() => {
     loadJobs().catch(event => setError(event.message))
-    api<Health>('/api/health').then(setHealth).catch(() => setHealth(null))
+    api<Health>('/api/health').then(setHealth).catch(() => setHealth(null)).finally(() => setHealthChecked(true))
   }, [loadJobs])
 
   const activeCount = jobs.filter(job => job.status === 'queued' || job.status === 'running').length
@@ -315,7 +316,7 @@ export default function App() {
           </button>) : <p className="sidebar-empty">Your recordings will appear here.</p>}
         </div>
       </div>
-      <div className="sidebar-footer"><span className={`connection-dot ${health?.status === 'ok' ? 'online' : ''}`} /><div><strong>{health?.status === 'ok' ? 'Local processing available' : 'Server unavailable'}</strong><small>Files stay on this device</small></div></div>
+      <div className="sidebar-footer"><span className={`connection-dot ${health?.status === 'ok' ? 'online' : ''}`} /><div><strong>{!healthChecked ? 'Connecting to local server' : health?.status === 'ok' ? 'Local processing available' : 'Server unavailable'}</strong><small>Files stay on this device</small></div></div>
     </aside>
 
     {mobileNav && <button className="mobile-scrim" aria-hidden="true" tabIndex={-1} onClick={() => setMobileNav(false)} />}
