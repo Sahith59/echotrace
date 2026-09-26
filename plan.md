@@ -1,6 +1,8 @@
 # ECHOTRACE implementation plan
 
-Status: first local prototype implemented; sponsor-data evaluation and official submission remain blocked on missing artifacts. Updated: 2026-09-25.
+Status: usable prototype, detector reliability inadequate. Next priority is detector audit and bounded five-hour adaptation planning; sponsor evaluation/submission remain open. Updated: 2026-09-25.
+
+**Latest priority:** [Detector improvement plan](docs/detector-improvement-plan.md) supersedes historical training deferral below. Keep24 clips for demo; prepare separate fitting and locked validation data. No training job has started.
 
 ## Objective and scope
 
@@ -326,3 +328,20 @@ Ordered work:
 - [ ] Next: finish responsive/mobile and restart/recovery QA, then rehearse the fixed 24-sample demo and reporting.
 
 This completes the guided-example milestone, not the entire evaluation phase. Training and cluster use remain deferred. Sponsor-specific evaluation/submission gates stay open. See docs/tdd/pilot-demo.md.
+
+## Priority correction — detector usefulness first
+
+User explicitly reopened training with a five-hour cluster budget. Follow docs/detector-improvement-plan.md: Phase1 scoring parity/error audit → Phase3A independent data and training runner → Phase3B one-GPU timed adaptation → Phase3C measured acceptance → Phase2 evidence presentation → Phases4/5 demo and delivery. Mobile polish is no longer the immediate critical path. Gates and resource prerequisites are documented; no accuracy or completed-training claims.
+
+## Detector and AI review implementation milestone
+
+- [x] Parity checks for decoding, class polarity, padding and explicit first-crop versus whole-file aggregation difference.
+- [x] All24file error report and non-destructive diagnostics CLI.
+- [x] Experimental bounded AASIST-L training runner; label-map conversion, leakage/demo exclusion, weighted optimization, finite-loss/gradient checks and saved checkpoint/provenance. CPU optimizer smoke verified.
+- [x] User-selected Grok interpretation: root `.env`, on-demand backend/API, evidence-linked findings, cached JSON export and UI unavailable/retry states. Deterministic notes relabeled Measurement limitations.
+- [x] Backend102tests, frontend15tests, productionbuild; livebrowser missing-key/configrefresh.
+- [ ] Add userkey and run realGrok output review. Tests used explicit doubles, not generated text.
+- [ ] Next detectionphase: obtain separate dataset at cluster storage, lock train/selection/acceptance manifests; implement whole-file candidate-checkpoint scorer and bounded Slurm submission using confirmed allocation.
+- [ ] Run five-hour experiment and promote only on independent acceptance evidence. Current detector remains unchanged.
+
+Product feature priorities: reliable synthetic-speech triage; playable scored intervals; noise/compression comparisons; AI-written evidence brief; full error/validation report; exportable findings with model provenance. Speaker-reference comparison and external-source claim review remain later, separately validated extensions. No extra decorative features take priority over detection quality.

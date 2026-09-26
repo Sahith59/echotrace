@@ -126,3 +126,9 @@ Current app limit:50 MiB and120seconds. A low synthesis score does not prove ide
 On the intake page, expand **Try a known recording**, select a labeled MLAAD-tiny example, optionally preview it, then choose **Analyze this sample**. The app sends its audio through the normal upload and AASIST-L pipeline. It does not use the label for scoring or train the model. The catalog checks local audio against pinned provenance; unavailable or changed files are not served.
 
 The local sample consists of 12 genuine and 12 synthetic recordings. It is a small selected diagnostic set, not an independent accuracy benchmark. Custom uploads remain supported. Large-corpus downloads and cluster training are currently paused by user choice.
+
+## Grok review and experimental training
+
+Set `XAI_API_KEY` in the repository root.env; `ECHOTRACE_LLM_MODEL` defaults to `grok-4.7`. The backend reads configuration when requested. Use **Check configuration** then **Generate interpretation** on a completed recording. Only measured findings go to xAI; no audio/filenames/transcripts are sent. Reports are cached and included in JSON export. See [Grok integration](../../docs/ai-interpretation.md).
+
+The [experimental training runner](docs/training-runner.md) accepts frozen train/selection manifests and a bounded configuration. It does not start automatically or replace the web detector. The24demo clips are excluded; independent acceptance evaluation is required before promotion.

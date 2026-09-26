@@ -1,0 +1,14 @@
+{
+  "dataset_root": "/path/to/staged/audio",
+  "train_manifest": "/path/to/frozen/train.csv",
+  "validation_manifest": "/path/to/frozen/selection.csv",
+  "output_dir": "/path/to/new/experiment-output",
+  "max_wall_seconds": 10800,
+  "max_steps": 2000,
+  "max_epochs": 10,
+  "batch_size": 8,
+  "num_workers": 4,
+  "learning_rate": 0.00001,
+  "seed": 42,
+  "device": "cuda"
+}

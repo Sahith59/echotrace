@@ -61,3 +61,11 @@ The examples now exist locally (12 genuine, 12 synthetic); this supersedes the e
 5. Optional: upload your own permitted recording to test unfamiliar input. Uploading runs inference; it does not train the model, prove identity, or verify factual truth.
 
 Agent verified desktop selection, real inference, playback/seek and compression. Mobile/responsive and restart/recovery checks remain next. Training and large downloads are paused; no cluster needed for this demo.
+
+## Grok interpretation and training preparation handoff
+
+1. Add your xAI key to the root.env `XAI_API_KEY`; do not put it in frontend settings.
+2. Open a completed recording → AI interpretation → Check configuration → Generate interpretation. This sends measured findings only to xAI. Verify each cited measurement against the displayed value, and that the synthesis score stays unchanged.
+3. Reopen the result and download JSON: the same generated brief should persist with model, prompt version, evidence hash and generation time.
+4. If a key/model/request fails, expect a clear error rather than fabricated generated notes.
+5. Review the saved24file error report. Trainingrunner availability is not evidence of improved accuracy; the five-hour experiment has not run.

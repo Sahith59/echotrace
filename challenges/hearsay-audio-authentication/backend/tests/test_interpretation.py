@@ -1,5 +1,6 @@
 import copy
 import json
+import urllib.error
 
 import pytest
 from fastapi.testclient import TestClient
@@ -101,3 +102,41 @@ def test_unfinished_and_provider_failure_are_honest(tmp_path):
         assert client.post("/api/analyses/sample/interpretation").status_code == 503
         assert client.get("/api/analyses/sample/interpretation").json()["status"] == "not_generated"
 
+
+@pytest.mark.parametrize("code,expected", [(401, "authentication"), (403, "authentication"),
+                                          (429, "quota"), (500, "request failed")])
+def test_provider_errors_do_not_expose_key_or_remote_error_body(monkeypatch, code, expected):
+    class Opener:
+        def open(self, request, timeout):
+            assert request.full_url == "https://api.x.ai/v1/chat/completions"
+            assert timeout == 45
+            raise urllib.error.HTTPError(request.full_url, code, "secret-value", {}, None)
+    monkeypatch.setattr("echotrace.interpretation.urllib.request.build_opener", lambda *_: Opener())
+    with pytest.raises(InterpretationError, match=expected) as error:
+        Interpreter(api_key="secret-value").generate(analysis())
+    assert "secret-value" not in str(error.value)
+
+
+def test_http_boundary_sends_only_evidence_and_validates_response(monkeypatch):
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+        def read(self, maximum):
+            assert maximum == 262145
+            return json.dumps({"choices": [{"message": {"content": json.dumps(response())}}]}).encode()
+    class Opener:
+        def open(self, request, timeout):
+            body = json.loads(request.data)
+            assert request.headers["Authorization"] == "Bearer test-key"
+            assert "private" not in json.dumps(body)
+            assert body["response_format"]["json_schema"]["strict"] is True
+            return Response()
+    monkeypatch.setattr("echotrace.interpretation.urllib.request.build_opener", lambda *_: Opener())
+    assert Interpreter(api_key="test-key").generate(analysis())["report"] == response()
+
+
+def test_null_score_is_preserved_as_unavailable():
+    result = analysis()
+    result["synthetic_score"] = None
+    facts = {x["id"]: x["value"] for x in evidence_for(result)}
+    assert facts["score"] is None and facts["calibration"] == "unavailable"

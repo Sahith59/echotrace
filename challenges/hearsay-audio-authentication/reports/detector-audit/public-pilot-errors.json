@@ -1,0 +1,294 @@
+{
+  "manifest": "../reports/public-pilot/manifest.csv",
+  "scores": "../reports/public-pilot/scores.csv",
+  "score_direction": "synthetic_high",
+  "threshold": 0.5,
+  "metrics": {
+    "sample_count": 24,
+    "genuine_count": 12,
+    "synthetic_count": 12,
+    "threshold": 0.5,
+    "roc_auc": 0.7430555555555556,
+    "pr_auc": 0.7775867922926746,
+    "pr_auc_definition": "average_precision",
+    "brier": 0.2557696898453436,
+    "confusion": {
+      "tn": 9,
+      "fp": 3,
+      "fn": 6,
+      "tp": 6
+    },
+    "precision": 0.6666666666666666,
+    "recall": 0.5,
+    "specificity": 0.75,
+    "f1": 0.5714285714285714
+  },
+  "generators": [
+    {
+      "generator": "Chatterbox",
+      "count": 3,
+      "missed": 2,
+      "detected": 1
+    },
+    {
+      "generator": "Edge-TTS",
+      "count": 3,
+      "missed": 1,
+      "detected": 2
+    },
+    {
+      "generator": "FishTTS",
+      "count": 3,
+      "missed": 2,
+      "detected": 1
+    },
+    {
+      "generator": "MeloTTS",
+      "count": 3,
+      "missed": 1,
+      "detected": 2
+    }
+  ],
+  "files": [
+    {
+      "file_id": "2d374fc61bd89e32",
+      "path": "original/en/wives_and_daughters_17_f000049.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.004800217808,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "a16d964cbc834a93",
+      "path": "original/en/jane_eyre_19_f000009.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.08029161487,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "b2d4c3e0c6f5d9eb",
+      "path": "original/en/emerald_city_of_oz_04_f000005.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.02574664323,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "7ef232f361bef9b1",
+      "path": "original/en/northandsouth_30_f000045.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.220020739,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "53e37aaed490552c",
+      "path": "original/en/northandsouth_15_f000125.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.04621446552,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "5ff395f46501f6ac",
+      "path": "original/en/northandsouth_03_f000065.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.1040543547,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "023cbf402e2b5636",
+      "path": "original/en/jane_eyre_27_f000392.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.9057281017,
+      "predicted_label": 1,
+      "error": true,
+      "outcome": "fp"
+    },
+    {
+      "file_id": "c56efbc7f397ec81",
+      "path": "original/en/wives_and_daughters_59_f000126.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.5248041246,
+      "predicted_label": 1,
+      "error": true,
+      "outcome": "fp"
+    },
+    {
+      "file_id": "3e7432f9b03cce3b",
+      "path": "original/en/jane_eyre_16_f000189.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.524285296,
+      "predicted_label": 1,
+      "error": true,
+      "outcome": "fp"
+    },
+    {
+      "file_id": "4300be802c81cc6a",
+      "path": "original/en/wives_and_daughters_34_f000129.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.004449964035,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "49c38ce1e5863ad3",
+      "path": "original/en/wives_and_daughters_60_f000362.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.2906906903,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "c65b7c50abf8ead9",
+      "path": "original/en/the_master_key_03_f000099.wav",
+      "label": 0,
+      "generator": null,
+      "synthetic_score": 0.06541246921,
+      "predicted_label": 0,
+      "error": false,
+      "outcome": "tn"
+    },
+    {
+      "file_id": "b9bcdda92ac7de4e",
+      "path": "fake/en/Chatterbox/jane_eyre_21_f000371.wav",
+      "label": 1,
+      "generator": "Chatterbox",
+      "synthetic_score": 0.09214715551,
+      "predicted_label": 0,
+      "error": true,
+      "outcome": "fn"
+    },
+    {
+      "file_id": "49d0f145db1f0453",
+      "path": "fake/en/Chatterbox/wives_and_daughters_01_f000171.wav",
+      "label": 1,
+      "generator": "Chatterbox",
+      "synthetic_score": 0.2201657444,
+      "predicted_label": 0,
+      "error": true,
+      "outcome": "fn"
+    },
+    {
+      "file_id": "95e7eaa31009ce96",
+      "path": "fake/en/Chatterbox/piratesofersatz_05_leinster_64kb_f000020.wav",
+      "label": 1,
+      "generator": "Chatterbox",
+      "synthetic_score": 0.9398448467,
+      "predicted_label": 1,
+      "error": false,
+      "outcome": "tp"
+    },
+    {
+      "file_id": "6b33d493a5263124",
+      "path": "fake/en/Edge-TTS/hunters_space_13_f000101.wav",
+      "label": 1,
+      "generator": "Edge-TTS",
+      "synthetic_score": 0.5209797011,
+      "predicted_label": 1,
+      "error": false,
+      "outcome": "tp"
+    },
+    {
+      "file_id": "d2756c5a6f953b70",
+      "path": "fake/en/Edge-TTS/emerald_city_of_oz_23_f000060.wav",
+      "label": 1,
+      "generator": "Edge-TTS",
+      "synthetic_score": 0.9975249767,
+      "predicted_label": 1,
+      "error": false,
+      "outcome": "tp"
+    },
+    {
+      "file_id": "577d27957724325c",
+      "path": "fake/en/Edge-TTS/jane_eyre_15_f000218.wav",
+      "label": 1,
+      "generator": "Edge-TTS",
+      "synthetic_score": 0.1618704839,
+      "predicted_label": 0,
+      "error": true,
+      "outcome": "fn"
+    },
+    {
+      "file_id": "39793abf5ad6f0ff",
+      "path": "fake/en/FishTTS/northandsouth_20_f000133.wav",
+      "label": 1,
+      "generator": "FishTTS",
+      "synthetic_score": 0.1258518137,
+      "predicted_label": 0,
+      "error": true,
+      "outcome": "fn"
+    },
+    {
+      "file_id": "96a1777735a07add",
+      "path": "fake/en/FishTTS/northandsouth_26_f000036.wav",
+      "label": 1,
+      "generator": "FishTTS",
+      "synthetic_score": 0.8743628561,
+      "predicted_label": 1,
+      "error": false,
+      "outcome": "tp"
+    },
+    {
+      "file_id": "08e6d2c7c51f7be2",
+      "path": "fake/en/FishTTS/skyisland_15_baum_64kb_f000054.wav",
+      "label": 1,
+      "generator": "FishTTS",
+      "synthetic_score": 0.03906039428,
+      "predicted_label": 0,
+      "error": true,
+      "outcome": "fn"
+    },
+    {
+      "file_id": "36299fadd6fbb379",
+      "path": "fake/en/MeloTTS/the_sea_fairies_18_f000010.wav",
+      "label": 1,
+      "generator": "MeloTTS",
+      "synthetic_score": 0.9371784925,
+      "predicted_label": 1,
+      "error": false,
+      "outcome": "tp"
+    },
+    {
+      "file_id": "ab3c0b8742e058ad",
+      "path": "fake/en/MeloTTS/emerald_city_of_oz_05_f000071.wav",
+      "label": 1,
+      "generator": "MeloTTS",
+      "synthetic_score": 0.2687816322,
+      "predicted_label": 0,
+      "error": true,
+      "outcome": "fn"
+    },
+    {
+      "file_id": "0261252ea6a7d6b8",
+      "path": "fake/en/MeloTTS/skyisland_22_baum_64kb_f000004.wav",
+      "label": 1,
+      "generator": "MeloTTS",
+      "synthetic_score": 0.9736542702,
+      "predicted_label": 1,
+      "error": false,
+      "outcome": "tp"
+    }
+  ]
+}
