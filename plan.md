@@ -111,7 +111,7 @@ Training includes attacks A01–A08; selection/acceptance include A09–A16. Cod
 - [x] Complete run 01 four whole-file evaluations: baseline/candidate on selection/acceptance, zero file failures.
 - [x] Preserve run 01 acceptance report, full score ledgers and attack/codec slices.
 - [x] Evaluate a pinned frozen wav2vec2 candidate in run 02 on 457 new-speaker acceptance clips; no promotion.
-- [ ] Finish final predeclared native adaptation using 10,000 training files, the original 2,000 selection files, and a fresh locked ASVspoof 5 evaluation subset. CPU staging job 4503784 precedes any GPU submission.
+- [ ] Finish final predeclared native adaptation using 10,000 training files, the original 2,000 selection files, and a fresh locked ASVspoof 5 evaluation subset. CPU staging job 4503784 failed on missing ffprobe; recovery first checks the decoder on a CPU node and preserves verified archives. The successful retry and independence audit must precede GPU submission.
 
 One A100-SXM4-40GB, one node, 4 CPUs, 32 GB host RAM. Aggregate actual GPU allocation use through run 02 is 1h03m57 (including the smoke and a seven-second failed pre-inference path check). Final allocation is capped at 3h30, making maximum aggregate use 4h33m57, below the original five-hour budget. Fit is capped at 2h30 / 2,000 optimizer steps / three epochs, whichever comes first. No automatic requeue or duplicate allocation. CPU preparation and queue time are separate.
 
