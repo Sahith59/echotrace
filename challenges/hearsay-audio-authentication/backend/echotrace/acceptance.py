@@ -14,6 +14,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from .evaluation import _rows, _score, _unique_ids
 
 LINKS = ("file_id", "sha256", "group_id", "speaker_id", "source_id")
+SLICE_FIELDS = ("attack_id", "codec")
 GATES = {"max_false_positive_rate": .05, "min_recall": .8,
          "min_recall_gain": .1, "min_each_class": 100}
 
@@ -104,6 +105,8 @@ def _read(folder, kind, role):
             raise ValueError("Missing record label/content digest")
         if any(not isinstance(r.get(key, ""), str) for key in LINKS):
             raise ValueError("Invalid linkage metadata")
+        if any(key in r and not isinstance(r[key], str) for key in SLICE_FIELDS):
+            raise ValueError("Invalid slice metadata")
     ids = _unique_ids(records, "file_id")
     _, rows = _rows(folder / "scores.csv", {"file_id", "synthetic_score", "status"})
     if set(_unique_ids(rows, "file_id")) != set(ids) or any(r["status"] != "scored" for r in rows):
@@ -122,6 +125,56 @@ def _same_records(a, b):
         raise ValueError("Baseline and candidate were evaluated on different records")
 
 
+def _slice_value(record, field):
+    return record.get(field, "").strip() or "(missing)"
+
+
+def _same_slice_metadata(a, b):
+    right = {r["file_id"]: r for r in b}
+    if any(_slice_value(record, field) != _slice_value(right[record["file_id"]], field)
+           for record in a for field in SLICE_FIELDS):
+        raise ValueError("Baseline and candidate slice metadata differs")
+
+
+def _slice_summary(labels, scores, threshold):
+    """Descriptive errors at an already locked model threshold."""
+    genuine = labels.count(0)
+    synthetic = labels.count(1)
+    fp = sum(label == 0 and score >= threshold for label, score in zip(labels, scores))
+    tp = sum(label == 1 and score >= threshold for label, score in zip(labels, scores))
+    fn = synthetic - tp
+    return {"sample_count": len(labels), "genuine_count": genuine, "synthetic_count": synthetic,
+            "confusion": {"tn": genuine - fp, "fp": fp, "fn": fn, "tp": tp},
+            "error_count": fp + fn,
+            "recall": tp / synthetic if synthetic else None,
+            "false_positive_rate": fp / genuine if genuine else None,
+            "roc_auc": float(roc_auc_score(labels, scores)) if genuine and synthetic else None,
+            "average_precision": float(average_precision_score(labels, scores))
+            if genuine and synthetic else None}
+
+
+def _slice_breakdowns(baseline_run, baseline_scores, candidate_run, candidate_scores, thresholds):
+    baseline_records = baseline_run["records"]
+    baseline_by_id = dict(zip((r["file_id"] for r in baseline_records), baseline_scores))
+    candidate_by_id = dict(zip((r["file_id"] for r in candidate_run["records"]), candidate_scores))
+    result = {}
+    for field in SLICE_FIELDS:
+        values = sorted({_slice_value(record, field) for record in baseline_records})
+        result[field] = []
+        for value in values:
+            subset = [record for record in baseline_records if _slice_value(record, field) == value]
+            labels = [record["label"] for record in subset]
+            ids = [record["file_id"] for record in subset]
+            result[field].append({
+                "value": value, "sample_count": len(subset),
+                "baseline": _slice_summary(labels, [baseline_by_id[file_id] for file_id in ids],
+                                           thresholds["baseline"]),
+                "candidate": _slice_summary(labels, [candidate_by_id[file_id] for file_id in ids],
+                                            thresholds["candidate"]),
+            })
+    return result
+
+
 def compare_runs(baseline_selection, candidate_selection, baseline_acceptance, candidate_acceptance):
     runs = [_read(folder, kind, role) for folder, kind, role in (
         (baseline_selection, "baseline", "selection"), (candidate_selection, "candidate", "selection"),
@@ -134,6 +187,7 @@ def compare_runs(baseline_selection, candidate_selection, baseline_acceptance, c
         raise ValueError("Model checkpoint changed between selection and acceptance")
     _same_records(bs["records"], cs["records"])
     _same_records(ba["records"], ca["records"])
+    _same_slice_metadata(ba["records"], ca["records"])
     _disjoint(bs["records"], ba["records"])
     fitted = ca.get("training_provenance")
     if not isinstance(fitted, dict) or not isinstance(fitted.get("train"), list) or not fitted["train"] or not isinstance(fitted.get("validation"), list):
@@ -146,6 +200,7 @@ def compare_runs(baseline_selection, candidate_selection, baseline_acceptance, c
                   "candidate": select_threshold(runs[1][1], runs[1][2])}
     baseline = summarize(runs[2][1], runs[2][2], thresholds["baseline"])
     candidate = summarize(runs[3][1], runs[3][2], thresholds["candidate"])
+    slice_breakdowns = _slice_breakdowns(ba, runs[2][2], ca, runs[3][2], thresholds)
     checks = {
         "acceptance_sample_counts": min(candidate["genuine_count"], candidate["synthetic_count"]) >= GATES["min_each_class"],
         "selection_sample_counts": min(runs[1][1].count(0), runs[1][1].count(1)) >= GATES["min_each_class"],
@@ -156,6 +211,7 @@ def compare_runs(baseline_selection, candidate_selection, baseline_acceptance, c
     }
     return {"threshold_source": "selection_only", "thresholds": thresholds,
             "baseline": baseline, "candidate": candidate, "gates": GATES,
+            "slice_breakdowns": slice_breakdowns,
             "failed_gates": [name for name, passed in checks.items() if not passed],
             "eligible_for_review": all(checks.values()), "promoted": False,
             "model_hashes": {"baseline": bs["checkpoint_sha256"], "candidate": cs["checkpoint_sha256"]},
