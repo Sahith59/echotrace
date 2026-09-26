@@ -3,7 +3,7 @@ import { FileText, Mic, Search, Download, Play, LoaderCircle } from 'lucide-reac
 import './CaseReview.css'
 
 type Segment = { id: number; start_s: number; end_s: number; text: string }
-type Transcript = { status: string; version?: number; text?: string; source?: string; segments?: Segment[]; error?: string }
+type Transcript = { status: string; version?: number; text?: string; source?: string; segments?: Segment[]; error?: string; latest_attempt?: {status:string; version:number; error?:string} }
 type Source = { url: string; title?: string; publisher?: string; quote?: string }
 type Claim = { id: string; text: string; verdict: string; method: string; rationale: string; evidence: Source[]; stale_transcript?: boolean; error?: string }
 type Speaker = { similarity: { cosine: number; calibration: string }; reference: { label: string }; limitations: string[] }
@@ -97,6 +97,7 @@ function EvidenceWorkspace({ jobId, onSeek }: { jobId: string; onSeek: (seconds:
         <p className="detail-note">Transcribe locally, listen, and correct errors before reviewing claims. Transcription can mishear speech or invent words in noise.</p>
         {status?.transcription.reason && <p className="case-help">{status.transcription.reason}</p>}
         <button className="outline-button" disabled={disabled || !status?.transcription.available} onClick={() => act('Transcribing locally', async () => { const result = await request<Transcript>(`${base}/transcript`, { method: 'POST' }); if (live.current) { setTranscript(result); setCorrection(result.text || '') } })}>{transcript?.version ? 'Transcribe again' : 'Create transcript'}</button>
+        {transcript?.latest_attempt?.status === 'error' && <p className="case-error">Latest transcription attempt failed: {transcript.latest_attempt.error} Your previous transcript is preserved.</p>}
         {transcript?.error && <p className="case-error">{transcript.error}</p>}
         {transcript?.version && <><p className="case-help">Version {transcript.version} · {words(transcript.source || 'automatic')}</p><div className="transcript-segments">{transcript.segments?.map((segment, index) => <button key={index} onClick={() => onSeek(segment.start_s)}><span><Play size={12} /> {segment.start_s.toFixed(1)}–{segment.end_s.toFixed(1)}s</span>{segment.text}</button>)}</div><label className="case-field">Correct transcript<textarea rows={5} value={correction} maxLength={16000} onChange={e => setCorrection(e.target.value)} /></label><button className="outline-button" disabled={disabled || !correction.trim() || correction === transcript.text} onClick={() => act('Saving correction', async () => { const result = await request<Transcript>(`${base}/transcript`, json('PUT', { base_version: transcript.version, text: correction })); if (live.current) { setTranscript(result); setCorrection(result.text || '') }; const resultClaims = await request<{ claims: Claim[] }>(`${base}/claims`); if (live.current) setClaims(resultClaims.claims) })}>Save correction</button><p className="case-help">Corrections create a new version. Reviews of older wording remain visible and are marked stale.</p></>}
       </section>
