@@ -1,6 +1,6 @@
 # TReNDs experiment ledger
 
-Started 2026-09-25 America/New_York (cluster timestamps are UTC on 2026-09-26). **Current status: runs 01 and 02 completed and failed promotion; final adaptation preparation is active.** The first-run setup below is historical. Recheck live status before any action.
+Started 2026-09-25 America/New_York (cluster timestamps are UTC on 2026-09-26). **Current status: all three bounded experiments completed and failed promotion. No experiment job remains active.** The first-run setup below is historical. Recheck live status before any action.
 
 ## Completed results and current final run
 
@@ -10,14 +10,18 @@ Started 2026-09-25 America/New_York (cluster timestamps are UTC on 2026-09-26). 
 | AASIST adaptation 4503646 | 55m49 | 6,000 training steps; acceptance recall 44.47%, FPR 3.98%, AUROC 0.8448; not promoted |
 | Native frozen 4503743 | 7 seconds | Wrong dataset-root preflight; failed before inference |
 | Native frozen 4503749 | 7m48 | 457 fresh-speaker acceptance files; recall 49.10%, FPR 5.17%, AUROC 0.8470; not promoted |
+| Native adaptation setup 4504573 | 4 seconds | Missing output parent; failed before model loading or inference |
+| Native adaptation 4504574 | 40m52 | ASVspoof5 eval-aa acceptance recall 87.40%, FPR 24.40%, AUROC 0.9061; not promoted |
 
-Aggregate GPU allocation elapsed is **1h03m57**. Full aggregate reports are checked in under `challenges/hearsay-audio-authentication/reports/cluster-run-01/` and `reports/native-frozen-01/`. These contain the independently selected thresholds, confusion counts, confidence intervals and promotion decisions. They are public-data experiments, not sponsor results.
+Aggregate GPU allocation elapsed is **1h44m53s**, including both short preflight failures. Full aggregate reports are checked in under `challenges/hearsay-audio-authentication/reports/cluster-run-01/`, `reports/native-frozen-01/` and `reports/native-adapt-01/`. These contain the independently selected thresholds, confusion counts, confidence intervals and promotion decisions. They are public-data experiments, not sponsor results.
 
-The remaining unused development speakers supplied only 33 genuine and zero synthetic examples, so that proposed next holdout was rejected. CPU job **4503784** downloaded and checksum-verified the archive but failed its decoder audit because ffprobe was absent from PATH. Its initial cleanup discarded temporary files; no GPU allocation was consumed. The recovery exports the existing runtime tools, performs an actual CPU decoder smoke before network I/O, preserves verified archives/failed staging and uses four bounded HTTP ranges after confirming range support. The retry stages the official evaluation `flac_E_aa.tar` (8,449,781,760 bytes; MD5 `a8c800766f3d4ef87971e2b4f29663e2`). It must verify the archive, freeze a balanced 2,000-file holdout and audit decoding and exact content-hash independence against previous train/selection/acceptance files before any new GPU job. The official partition and content checks are separate evidence; different speaker-ID namespaces alone are not proof of independence.
+The remaining unused development speakers supplied only 33 genuine and zero synthetic examples, so that proposed next holdout was rejected. CPU job **4503784** downloaded and checksum-verified the archive but failed its decoder audit because ffprobe was absent from PATH. Its initial cleanup discarded temporary files; no GPU allocation was consumed. CPU decoder smoke **4504562** then passed on a real FLAC. Recovery job **4504563** completed in 20m27s after four bounded HTTP ranges, fixed full-archive checksum verification, and 2,000 successful decode/quality checks. Content audit **4504572** completed in 6s: all 2,000 acceptance original-file hashes were unique and had zero overlap with 14,458 hashes from the frozen train, selection and prior-evaluation ledgers. The official partition and content checks are separate evidence; different speaker-ID namespaces alone are not proof of independence.
 
 The final native adaptation is predeclared: pinned wav2vec2 checkpoint `c66306024a7ede0be291e9c4558b37634782dc4e`, frozen convolutional encoder, transformer/head training, seed 20260926, effective batch 16, AdamW learning rate 1e-5, at most 2,000 steps / three epochs / 2h30 fit. Checkpoint and threshold selection use only the original selection split. Final acceptance is evaluated after freezing them.
 
-One A100, one node, a hard **3h30 allocation including evaluation**, no requeue or duplicate jobs. Maximum total GPU use remains below the five-hour budget. A new GPU job ID and final result will be recorded when they exist. The web continues serving the original AASIST-L until a candidate passes the unchanged acceptance goals and serving checks.
+Final job **4504574** used one A100 for 40m52s within its hard 3h30 allocation. Epoch 1 was selected using only the original selection split (recall 95.91%, FPR 4.70%, AUROC 0.9937); epoch 2 regressed and triggered the predeclared patience stop. On untouched acceptance3, the selected checkpoint reached recall 87.40% but FPR 24.40%, so it failed the unchanged 80%/5% gates and was not promoted. The candidate checkpoint SHA-256 is `ec5b7388348b0f37dae0a7f74de6cfe61f9a9d815a035574ac6579458ca695ad`; the aggregate report SHA-256 is `52d3cbe4047d800dda4ecf6c1eb80fd37ac5e261c38690e94f9c83d4f2e92966`.
+
+Independence is established only against our frozen 10,000-file train, 2,000-file selection and prior evaluation ledgers. The Gary Stafford model card describes 1,866 author-collected YouTube/TTS clips, while its Gustking base card does not provide a complete upstream training inventory. This run therefore does not claim acceptance3 is independent of every upstream pretraining source. The web continues serving the original AASIST-L.
 
 ## Historical first-run setup (05:25 UTC checkpoint)
 
