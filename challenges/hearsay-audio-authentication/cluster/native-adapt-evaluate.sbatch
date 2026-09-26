@@ -41,6 +41,7 @@ for field in ('file_id','speaker_id','source_id'):
 print('Independent acceptance3 preflight passed')
 PY
 
+mkdir -p "$(dirname "$ECHOTRACE_OUTPUT")"
 mkdir "$ECHOTRACE_OUTPUT"
 started=$(date +%s)
 cd "$ECHOTRACE_BACKEND"
