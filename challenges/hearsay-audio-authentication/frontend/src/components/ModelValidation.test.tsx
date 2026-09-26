@@ -16,7 +16,7 @@ it('lets an analyst inspect codec failures with class counts and unavailable met
   const metrics = { recall: .874, false_positive_rate: .244, roc_auc: .906 }
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
     scope: 'Public data only.', serving_model: 'Baseline', experiments: [{
-      name: 'Codec experiment', promoted: false, reason: 'False-positive gate failed.', sample_count: 2000,
+      baseline_model: 'Frozen wav2vec2', candidate_model: 'Adapted wav2vec2', name: 'Codec experiment', promoted: false, reason: 'False-positive gate failed.', sample_count: 2000,
       baseline: metrics, candidate: metrics,
       codec_slices: [{value:'C07', sample_count:100,
         baseline:{...metrics,genuine_count:60,synthetic_count:40},
@@ -26,6 +26,7 @@ it('lets an analyst inspect codec failures with class counts and unavailable met
   render(<ModelValidation />)
   await user.click(screen.getByText('Detector validation · measured performance'))
   const select = await screen.findByRole('combobox', {name:'Recording condition — Codec experiment'})
+  expect(screen.getByText(/Baseline: Frozen wav2vec2/)).toBeInTheDocument()
   await user.selectOptions(select, 'C07')
   expect(screen.getByText('60.0%')).toBeInTheDocument()
   expect(screen.getByText('60 genuine · 40 synthetic')).toBeInTheDocument()
