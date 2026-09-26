@@ -1,6 +1,5 @@
 """Pin the interpretation of upstream AASIST-L inputs and pilot scores."""
 
-import csv
 import math
 import shutil
 from pathlib import Path
@@ -10,7 +9,7 @@ import pytest
 import soundfile as sf
 
 from echotrace.audio import decode_audio
-from echotrace.diagnostics import audit_predictions
+from echotrace.diagnostics import audit_predictions, main as audit_main
 from echotrace.model import WINDOW_SAMPLES, score_window
 from echotrace.pipeline import _windows
 
@@ -47,6 +46,8 @@ def test_web_windows_cover_long_input_with_end_anchored_tail():
     # Pinned upstream evaluation takes only samples[:64600]. The web mean
     # scores all three intervals; it is intentionally a different policy.
     assert not np.array_equal(windows[-1][2], samples[:WINDOW_SAMPLES])
+    window_scores = [float(window[0]) for _, _, window in windows]
+    assert float(np.mean(window_scores)) != float(samples[:WINDOW_SAMPLES][0])
 
 
 def test_spoof_is_class_zero(monkeypatch):
@@ -84,3 +85,42 @@ def test_audit_rejects_missing_prediction(tmp_path):
     scores.write_text("file_id,synthetic_score\na,0.1\n")
     with pytest.raises(ValueError, match="coverage"):
         audit_predictions(manifest, scores)
+
+
+@pytest.mark.parametrize("alias", ["existing", "manifest", "scores", "symlink", "hardlink"])
+def test_audit_cli_never_overwrites_existing_output_or_input(tmp_path, capsys, alias):
+    manifest = tmp_path / "manifest.csv"
+    scores = tmp_path / "scores.csv"
+    manifest.write_text("file_id,path,label\na,original/a.wav,0\nb,fake/en/G/b.wav,1\n")
+    scores.write_text("file_id,synthetic_score\na,0.1\nb,0.9\n")
+    output = tmp_path / "audit.json"
+    if alias == "existing":
+        output.write_text("previous report")
+    elif alias == "manifest":
+        output = manifest
+    elif alias == "scores":
+        output = scores
+    elif alias == "symlink":
+        output.symlink_to(scores)
+    else:
+        output.hardlink_to(scores)
+    before = {path: path.read_bytes() for path in (manifest, scores)}
+    if alias == "existing":
+        before[output] = output.read_bytes()
+    assert audit_main([str(manifest), str(scores), "--output", str(output)]) == 2
+    assert all(path.read_bytes() == contents for path, contents in before.items())
+    assert "Traceback" not in capsys.readouterr().err
+
+
+def test_audit_cli_creates_new_output_and_reports_invalid_input(tmp_path, capsys):
+    manifest = tmp_path / "manifest.csv"
+    scores = tmp_path / "scores.csv"
+    output = tmp_path / "audit.json"
+    manifest.write_text("file_id,path,label\na,original/a.wav,0\nb,fake/en/G/b.wav,1\n")
+    scores.write_text("file_id,synthetic_score\na,0.1\n")
+    assert audit_main([str(manifest), str(scores), "--output", str(output)]) == 2
+    assert not output.exists()
+    assert "Traceback" not in capsys.readouterr().err
+    scores.write_text("file_id,synthetic_score\na,0.1\nb,0.9\n")
+    assert audit_main([str(manifest), str(scores), "--output", str(output)]) == 0
+    assert '"sample_count": 2' in output.read_text()
