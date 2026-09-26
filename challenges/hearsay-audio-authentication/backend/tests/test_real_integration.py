@@ -17,7 +17,7 @@ import numpy as np
 import soundfile as sf
 
 from echotrace.api import Store, create_app
-from echotrace.model import WEIGHTS_PATH, WEIGHTS_SHA256, _sha256
+from echotrace.nii_candidate import WEIGHTS_PATH, WEIGHTS_SHA256, _valid_weights
 
 
 @pytest.mark.skipif(not Path("/usr/bin/say").exists() or not shutil.which("ffmpeg"),
@@ -64,7 +64,7 @@ def test_api_cli_parity_on_labeled_macos_tts(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(not shutil.which("ffmpeg") or not shutil.which("ffprobe"), reason="FFmpeg required")
 def test_real_report_export_and_interrupted_retry_survive_lifespan_restart(tmp_path: Path) -> None:
-    if not WEIGHTS_PATH.is_file() or _sha256(WEIGHTS_PATH) != WEIGHTS_SHA256:
+    if not _valid_weights(WEIGHTS_PATH):
         pytest.skip("Pinned detector weights required")
     source = tmp_path / "source.wav"
     t = np.arange(72_000, dtype=np.float32) / 16_000

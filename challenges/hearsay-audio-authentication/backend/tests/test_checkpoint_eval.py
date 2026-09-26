@@ -153,19 +153,21 @@ def test_window_score_uses_spoof_class_zero_and_tail_mean():
 
 
 @pytest.mark.skipif(not shutil.which("ffmpeg") or not shutil.which("ffprobe"), reason="FFmpeg required")
-def test_baseline_whole_file_matches_pipeline_and_score_polarity(tmp_path):
+def test_offline_aasist_baseline_remains_separate_from_promoted_primary(tmp_path):
     from echotrace.pipeline import analyze_file
     manifest, root = _fixture(tmp_path)
-    expected = {f"id{i}": analyze_file(root / f"audio{i}.wav")["synthetic_score"] for i in (0, 1)}
+    primary = {f"id{i}": analyze_file(root / f"audio{i}.wav")["synthetic_score"] for i in (0, 1)}
     result = checkpoint_eval.run(manifest, root, tmp_path / "out", device="cpu", role="selection")
     assert result["complete"] is True
     assert result["model_kind"] == "baseline"
+    assert result["checkpoint_sha256"] == WEIGHTS_SHA256
     assert result["aggregation"]["method"] == "mean_window_spoof_softmax"
     with (tmp_path / "out/scores.csv").open(newline="") as handle:
         rows = list(csv.DictReader(handle))
     assert len(rows) == 2
-    for row in rows:
-        assert float(row["synthetic_score"]) == pytest.approx(expected[row["file_id"]], abs=1e-7)
+    assert all(0 <= float(row["synthetic_score"]) <= 1 for row in rows)
+    assert any(float(row["synthetic_score"]) != pytest.approx(primary[row["file_id"]], abs=1e-7)
+               for row in rows)
     assert result["scores_sha256"] == hashlib.sha256((tmp_path / "out/scores.csv").read_bytes()).hexdigest()
 
 

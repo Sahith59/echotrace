@@ -31,7 +31,7 @@ def emit(value, target=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description="ECHOTRACE local audio analysis")
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("setup-model", help="Download and checksum the official AASIST-L checkpoint")
+    sub.add_parser("setup-model", help="Download and verify the pinned NII primary checkpoint")
     single = sub.add_parser("score", help="Analyze a file using the same pipeline as the web app")
     single.add_argument("file", type=Path)
     single.add_argument("--output", type=Path)
@@ -60,8 +60,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == "setup-model":
-            from .model import download_weights, model_status
-            path = download_weights()
+            from .primary_detector import model_status, setup_primary_weights
+            path = setup_primary_weights()
             emit({"path": str(path), **model_status()})
         elif args.command == "score":
             from .pipeline import analyze_file
