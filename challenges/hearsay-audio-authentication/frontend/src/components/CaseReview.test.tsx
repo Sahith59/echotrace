@@ -67,3 +67,10 @@ it('does not offer voice inference before pinned model setup is ready', async ()
   await userEvent.click(screen.getByRole('checkbox', {name:/permission to process/}))
   expect(screen.getByRole('button', {name:'Compare reference'})).toBeDisabled()
 })
+it('keeps successful words visible while disclosing a failed subsequent transcription attempt', async () => {
+  const original = fetchMock.getMockImplementation()!
+  fetchMock.mockImplementation((url: string, init?: RequestInit) => url.endsWith('/transcript') ? Promise.resolve(response({status:'generated',version:1,text:'Previously transcribed words.',segments:[],latest_attempt:{status:'error',version:2,error:'Local transcription failed.'}})) : original(url,init))
+  render(<CaseReview jobId="a" onSeek={() => {}} />)
+  expect(await screen.findByDisplayValue('Previously transcribed words.')).toBeInTheDocument()
+  expect(screen.getByText(/Local transcription failed/)).toBeInTheDocument()
+})
