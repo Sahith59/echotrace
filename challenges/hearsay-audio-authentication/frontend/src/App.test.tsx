@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import App from './App'
+import App, { intervalTime } from './App'
 
 function jsonResponse(data: unknown) {
   return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } })
@@ -20,6 +20,14 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+})
+
+describe('scored interval time labels', () => {
+  it('keeps overlapping windows distinguishable without changing the playback clock', () => {
+    expect(intervalTime(4.0375)).toBe('00:04.04')
+    expect(intervalTime(4.4625)).toBe('00:04.46')
+    expect(intervalTime(8.5)).toBe('00:08.50')
+  })
 })
 
 describe('mobile navigation', () => {
