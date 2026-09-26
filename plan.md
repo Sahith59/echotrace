@@ -22,7 +22,7 @@ The numerical score comes from the speech detector. Signal measurements describe
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
 | 3B — Adapt | Run 01 completed; final native adaptation preparing | Finish the final bounded run and preserve checkpoint/metrics |
 | 3C — Evaluate | Two completed experiments; neither promoted | Review final independent experiment, then serving/rollback checks if eligible |
-| 4 — Demonstrate | Comparison feature built; rehearsal pending | A complete honest demo with measured successes and failures |
+| 4 — Demonstrate | Local rehearsal and saved fallback complete | Venue/display rehearsal and live Grok remain external checks |
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
 | Extensions — Speaker and claims | Implemented and tested | Live Grok remains unverified without a key; similarity is not identity proof |
 
@@ -135,10 +135,10 @@ Calibration, fusion/ensembles, alternate speech encoders and EER reporting are c
 - [x] Provide real noise/compression comparisons and playable derived audio.
 - [x] Preserve example provenance/licenses and distinguish reference labels from predictions.
 - [x] Export investigation evidence and model provenance.
-- [ ] Rehearse genuine, synthetic, failed-detection, noisy and compressed cases.
-- [ ] Present independent before/after detector results once available.
-- [ ] Prepare a clearly labeled saved real run as a network fallback.
-- [ ] Validate all demo controls and readable layout on the presentation display.
+- [x] Exercise genuine, synthetic/missed-detection, corrupt, quiet, noisy and compressed cases through browser/API checks; preserve their actual results.
+- [x] Present independent before/after detector results in the live validation panel, including both failed promotion decisions; append the final run when complete.
+- [x] Save real genuine and missed-synthetic case JSON/HTML with SHA-256 manifest under ignored `artifacts/release-demo/`; explicitly label them prior runs.
+- [x] Verify the local desktop and responsive layouts, report/export/seek/claim controls and honest unavailable states. Unfamiliar-file browser chooser and live Grok remain the Phase 2 external checks; actual venue/display rehearsal is still needed.
 
 Demo sequence: suspicious recording → actual assessment → listen to a scored passage → compare a compressed/noisy copy → evidence-linked explanation when configured → export report → measured detector comparison. Do not claim precise edit localization, identity proof or factual truth from a synthesis score.
 

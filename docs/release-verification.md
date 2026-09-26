@@ -10,6 +10,8 @@ This report distinguishes real execution, automated test doubles and unverified 
 - A second public synthetic clip was transcribed in the production browser. “Review this passage” copied its words into claim review; the saved analyst review and case JSON preserved transcript version 1 and the exact 0.02–4.42-second span. It was explicitly uncheckable, with no invented source.
 - The printable case report showed the actual synthesis score, speaker reference, both transcript versions, an explicitly uncheckable analyst review and the stale warning. The JSON download event was observed through Chrome; backend export contents are independently integration-tested.
 - Production build on loopback port 4173 was used for stable browser checks. Desktop, 375×812 phone and 812×375 landscape views were inspected. Phone and landscape document widths matched their viewport widths. Temporary viewport override was reset.
+- The final printable view visibly displays the exact linked passage and an honest “No AI interpretation generated” state. The renderer additionally tests evidence-hash matching before displaying saved Grok notes. Browser transcript seeking changed the audio position and reported no captured console errors.
+- Saved genuine and missed-synthetic JSON/HTML reports plus a SHA-256 manifest are retained locally under ignored `artifacts/release-demo/` for an explicitly labeled offline fallback.
 - Previous browser checks covered playback, keyboard/waveform seeking, real MP3/noise derivatives, selected analyst CSV download, failed/scoreless selection rejection and mobile focus containment.
 
 ## Automated evidence
@@ -18,7 +20,7 @@ Backend suites cover media validation, uploads, queue/retry/persistence, real re
 
 Security checks include host allowlisting, cross-site mutation rejection, parameterized SQLite operations, local-only model loading, SafeTensors hashes, no arbitrary URL fetching, xAI requests that reject redirects (example setup separately permits one allowlisted HTTPS Hugging Face delivery hop), private reference-file permissions, explicit model setup, bounded record counts, and spreadsheet-safe analyst filenames. Tests involving hostile-shaped input run in isolated temporary test workspaces, not against user data.
 
-At the last completed feature verification: **29 frontend tests passed**; production build passed. The explicitly instrumented PilotExamples/AIInterpretation/CaseReview components measured **95.04% statement, 80.71% branch, 96.15% function and 98.64% line coverage**. These percentages do not describe the entire application. Backend counts change with the final release tests and are recorded in the closing checklist.
+At source checkpoint `34fb85e`: **240 backend and 30 frontend tests passed**; production build passed. The explicitly instrumented PilotExamples/AIInterpretation/CaseReview components measured **94.82% statement, 81.33% branch, 95% function and 98.01% line coverage**. These percentages do not describe the entire application. Backend counts change with the final release tests and are recorded in the closing checklist.
 
 `npm audit --omit=dev --audit-level=high` reported zero production dependency vulnerabilities. A heuristic scan of 264 historical Git blobs found no credential patterns or >10MB blobs; this is not a guarantee against every possible secret. `.env`, audio, databases, caches and weights are ignored and are not release artifacts.
 
@@ -36,3 +38,5 @@ Two workflow corrections are retained transparently: the first CaseReview test i
 - This is a loopback, single-user prototype. Multi-user authentication, deployment infrastructure, operational retention policy and independent forensic validation are not provided by this source release.
 - Local model input/concurrency is bounded, but native CPU inference has no safe hard wall-clock cancellation. Audio decode and network requests have explicit timeouts.
 - Passing software tests establishes workflow behavior, not deepfake detection accuracy. See the measured model reports and promotion decisions.
+
+Additional printable-report RED `2ff037e` → GREEN `4511ebe` verifies readable AI notes, escaped text, measurement-hash matching and claim passage/version references. Live AI remains unverified.
