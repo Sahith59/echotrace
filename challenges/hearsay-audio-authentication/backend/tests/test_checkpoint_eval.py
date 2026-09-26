@@ -79,13 +79,14 @@ def test_cli_accepts_max_wall_seconds_alias(tmp_path, monkeypatch):
     assert received["max_seconds"] == 42
 
 
-def test_candidate_selection_rejects_pilot_hash(tmp_path, monkeypatch):
+@pytest.mark.parametrize("role", ["selection", "acceptance"])
+def test_candidate_evaluation_rejects_pilot_hash(tmp_path, monkeypatch, role):
     manifest, root = _fixture(tmp_path)
     pilot_digest = hashlib.sha256((root / "audio0.wav").read_bytes()).hexdigest()
     monkeypatch.setattr(checkpoint_eval, "load_checkpoint", lambda *args: {"split_provenance": _valid_splits()})
     monkeypatch.setattr(checkpoint_eval, "_demo_hashes", lambda: {pilot_digest})
     with pytest.raises(ValueError, match="demonstration"):
-        checkpoint_eval.run(manifest, root, tmp_path / "out", device="cpu", role="selection",
+        checkpoint_eval.run(manifest, root, tmp_path / "out", device="cpu", role=role,
                             checkpoint=tmp_path / "candidate.pt", checkpoint_sha256="e" * 64)
     assert not (tmp_path / "out").exists()
 
@@ -96,16 +97,15 @@ def test_candidate_selection_rejects_pilot_hash(tmp_path, monkeypatch):
 def test_provenance_rejects_linked_files(role, split, key):
     candidate = _provenance(file_id="candidate", sha256="b" * 64,
                             group_id="other", speaker_id="other", source_id="other")
-    candidate[key] = _provenance()[key]
-    checkpoint = {"split_provenance": {"train": [], "validation": []}}
-    checkpoint["split_provenance"][split].append(_provenance())
+    checkpoint = {"split_provenance": _valid_splits()}
+    candidate[key] = checkpoint["split_provenance"][split][0][key]
     with pytest.raises(ValueError, match="overlap|leak"):
         checkpoint_eval.validate_provenance([candidate], checkpoint, role=role)
 
 
 def test_selection_allows_validation_link_but_acceptance_rejects():
-    candidate = _provenance()
-    checkpoint = {"split_provenance": {"train": [], "validation": [_provenance()]}}
+    checkpoint = {"split_provenance": _valid_splits()}
+    candidate = checkpoint["split_provenance"]["validation"][0].copy()
     checkpoint_eval.validate_provenance([candidate], checkpoint, role="selection")
     with pytest.raises(ValueError, match="overlap|leak"):
         checkpoint_eval.validate_provenance([candidate], checkpoint, role="acceptance")
@@ -122,7 +122,7 @@ def test_checkpoint_hash_required_and_wrong_hash_rejected(tmp_path):
     torch.save({"model_state_dict": {}, "pretrained_sha256": WEIGHTS_SHA256,
                 "model_config_sha256": hashlib.sha256(CONFIG_PATH.read_bytes()).hexdigest(),
                 "upstream_revision": UPSTREAM_REVISION,
-                "split_provenance": {"train": [], "validation": []}}, path)
+                "split_provenance": _valid_splits()}, path)
     with pytest.raises(ValueError, match="sha256|SHA"):
         checkpoint_eval.load_checkpoint(path, None)
     with pytest.raises(ValueError, match="sha256|SHA"):
@@ -133,7 +133,7 @@ def test_checkpoint_rejects_missing_config_hash(tmp_path):
     path = tmp_path / "checkpoint.pt"
     torch.save({"model_state_dict": {}, "pretrained_sha256": WEIGHTS_SHA256,
                 "upstream_revision": UPSTREAM_REVISION,
-                "split_provenance": {"train": [], "validation": []}}, path)
+                "split_provenance": _valid_splits()}, path)
     with pytest.raises(ValueError, match="config"):
         checkpoint_eval.load_checkpoint(path, hashlib.sha256(path.read_bytes()).hexdigest())
 

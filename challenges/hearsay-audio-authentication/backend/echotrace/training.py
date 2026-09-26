@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from .audio import decode_audio
 from .evaluation import load_manifest
-from .model import CONFIG_PATH, WEIGHTS_PATH, WEIGHTS_SHA256, WINDOW_SAMPLES, _sha256
+from .model import CONFIG_PATH, UPSTREAM_REVISION, WEIGHTS_PATH, WEIGHTS_SHA256, WINDOW_SAMPLES, _sha256
 from .pipeline import _windows
 from .vendor.AASIST import Model
 
@@ -182,6 +182,12 @@ def fit(model: torch.nn.Module, train: list[dict], valid: list[dict], config: di
     output.mkdir(parents=True, exist_ok=False)
     (output / "config.json").write_text(json.dumps(config, indent=2, allow_nan=False) + "\n")
     data_sha256 = _data_hash(train, valid)
+    fields = ("file_id", "sha256", "label", "group_id", "speaker_id", "source_id")
+    split_provenance = {
+        "train": [{key: record.get(key, "") for key in fields} for record in train],
+        "validation": [{key: record.get(key, "") for key in fields} for record in valid],
+    }
+    model_config_sha256 = _sha256(CONFIG_PATH)
     start = time.monotonic()
     deadline = start + config["max_wall_seconds"]
     steps = 0
@@ -226,7 +232,10 @@ def fit(model: torch.nn.Module, train: list[dict], valid: list[dict], config: di
                         "optimizer_state_dict": optimizer.state_dict(),
                         "epoch": completed_epochs, "steps": steps,
                         "validation": validation, "pretrained_sha256": pretrained_sha256,
-                        "data_sha256": data_sha256, "config": config}, output / "best.pt")
+                        "data_sha256": data_sha256, "config": config,
+                        "model_config_sha256": model_config_sha256,
+                        "upstream_revision": UPSTREAM_REVISION,
+                        "split_provenance": split_provenance}, output / "best.pt")
         if stop_reason == "max_steps":
             break
     result = {"steps": steps, "epochs": completed_epochs, "stop_reason": stop_reason,

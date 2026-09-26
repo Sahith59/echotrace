@@ -1,8 +1,22 @@
 # ECHOTRACE implementation plan
 
-Status: usable prototype, detector reliability inadequate. Next priority is detector audit and bounded five-hour adaptation planning; sponsor evaluation/submission remain open. Updated: 2026-09-25.
+Status: **Phase 3A — training/evaluation software verified; real-data and cluster preparation still open.** The web prototype is usable, but detector reliability remains inadequate. No cluster training or improved model has been delivered. Updated: 2026-09-25.
 
-**Latest priority:** [Detector improvement plan](docs/detector-improvement-plan.md) supersedes historical training deferral below. Keep24 clips for demo; prepare separate fitting and locked validation data. No training job has started.
+**Latest priority:** [Detector improvement plan](docs/detector-improvement-plan.md) supersedes historical training deferral below. Keep the 24 inspected clips for demos; use separate training, selection and locked acceptance data. Follow [data preparation](docs/data-preparation.md), [checkpoint evaluation](docs/checkpoint-evaluation.md), then the [cluster handoff](docs/cluster-handoff.md).
+
+### Current phase handoff
+
+| Phase | What happens | Current state |
+| --- | --- | --- |
+| 1 — Baseline | Decode recordings and run the existing learned detector | Software works; diagnostic errors documented; sponsor evaluation open |
+| 2 — Workbench | Upload, listen, inspect intervals, compare noise/compression, export and request AI interpretation | Implemented; live Grok output review awaits a configured key |
+| 3A — Prepare | Install independent speech data, freeze three splits, verify training and evaluation | Software verified; actual data, permitted storage and cluster connectivity pending |
+| 3B — Train | Fine-tune AASIST-L on one GPU within one five-hour Slurm job | Not started |
+| 3C — Evaluate | Compare baseline/candidate using thresholds chosen only on selection data | Reporting implemented; real acceptance results pending |
+| 4 — Demonstrate | Present measured successes, failures and a clear investigation workflow | Existing 24-file demo available; final rehearsal follows evaluation |
+| 5 — Deliver | Freeze model, verify sponsor CSV and complete submission artifacts | Official data, metric and schema still missing |
+
+Next sequence: restore `ssh trends` access → establish permitted personal data storage and authorized GPU partition → stage/audit data and dependencies → measure throughput and freeze split sizes → submit the bounded job → review acceptance and serving parity before any model replacement. Use Slurm account `trends517s113`; never the old course account. No personal `/data` location exists according to the user; do not substitute the 100 GB home quota for dataset storage.
 
 ## Objective and scope
 
@@ -341,7 +355,8 @@ User explicitly reopened training with a five-hour cluster budget. Follow docs/d
 - [x] User-selected Grok interpretation: root `.env`, on-demand backend/API, evidence-linked findings, cached JSON export and UI unavailable/retry states. Deterministic notes relabeled Measurement limitations.
 - [x] Backend102tests, frontend15tests, productionbuild; livebrowser missing-key/configrefresh.
 - [ ] Add userkey and run realGrok output review. Tests used explicit doubles, not generated text.
-- [ ] Next detectionphase: obtain separate dataset at cluster storage, lock train/selection/acceptance manifests; implement whole-file candidate-checkpoint scorer and bounded Slurm submission using confirmed allocation.
+- [x] Implement three-way data preparation, whole-file baseline/candidate checkpoint scoring, independent acceptance reporting and bounded Slurm submission package. Software checks passed; no real-data performance claim.
+- [ ] Next detection step: restore cluster connectivity, establish permitted data storage/partition, install independent audio, freeze train/selection/acceptance manifests and measure throughput before submission.
 - [ ] Run five-hour experiment and promote only on independent acceptance evidence. Current detector remains unchanged.
 
 Product feature priorities: reliable synthetic-speech triage; playable scored intervals; noise/compression comparisons; AI-written evidence brief; full error/validation report; exportable findings with model provenance. Speaker-reference comparison and external-source claim review remain later, separately validated extensions. No extra decorative features take priority over detection quality.

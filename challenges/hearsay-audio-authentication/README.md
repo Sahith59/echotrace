@@ -10,6 +10,8 @@ The first working prototype is implemented. It runs the official AASIST-L checkp
 
 The [problem validation](../../docs/problem-validation.md) links primary FBI/FTC evidence; the [product review](../../docs/product-validation.md) explains why recorded-audio triage fits this challenge. Evidence of voice-cloning harm does not prove our detector works.
 
+Current development is **Phase 3A**. The [training runner](docs/training-runner.md), [three-way data preparation](../../docs/data-preparation.md), [whole-file checkpoint evaluation and acceptance](../../docs/checkpoint-evaluation.md), and [one-GPU cluster package](../../docs/cluster-handoff.md) are implemented and locally tested. Independent speech audio, cluster storage/connectivity and actual GPU training remain pending. The [Grok interpretation integration](../../docs/ai-interpretation.md) is available after configuring a backend API key; it summarizes recorded evidence without altering the detector score.
+
 ## Run locally
 
 Prerequisites: Python 3.11 or 3.12, [uv](https://docs.astral.sh/uv/), FFmpeg/ffprobe on PATH, and Node/npm. Commands below start in this challenge directory. The app binds to loopback; do not expose it publicly without authentication and deployment hardening.

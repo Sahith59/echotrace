@@ -1,5 +1,6 @@
 """A bounded, reproducible ASVspoof5 preparation must fail closed."""
 import csv
+import hashlib
 import json
 from pathlib import Path
 
@@ -137,3 +138,37 @@ def test_cross_partition_speaker_rejected(tmp_path):
     write_manifest(dev, rows)
     with pytest.raises(ValueError, match='overlap'):
         prepare_experiment(train, dev, root, tmp_path / 'out', train_limit=8, dev_limit=12)
+
+
+def test_cross_partition_duplicate_audio_rejected(tmp_path):
+    train, dev, root = fixture_manifests(tmp_path)
+    (root / 'D_0000.flac').write_bytes((root / 'T_0000.flac').read_bytes())
+    with pytest.raises(ValueError, match='sha256 overlap'):
+        prepare_experiment(train, dev, root, tmp_path / 'out', train_limit=8, dev_limit=12)
+
+
+def test_pinned_audio_hash_excluded(tmp_path, monkeypatch):
+    train, dev, root = fixture_manifests(tmp_path)
+    from echotrace import prepare_experiment as module
+    digest = hashlib.sha256((root / 'T_0000.flac').read_bytes()).hexdigest()
+    provenance = tmp_path / 'pinned.json'
+    provenance.write_text(json.dumps({'dataset': 'mueller91/MLAAD-tiny',
+                                      'files': [{'file_id': f'pinned{i}', 'sha256': digest}
+                                                for i in range(24)]}))
+    monkeypatch.setattr(module, 'PILOT_PROVENANCE', provenance)
+    with pytest.raises(ValueError, match='Pinned 24-recording audio hashes'):
+        prepare_experiment(train, dev, root, tmp_path / 'out', train_limit=8, dev_limit=12)
+
+
+def test_transitive_dev_metadata_stays_in_one_output(tmp_path):
+    train, dev, root = fixture_manifests(tmp_path)
+    rows = read_rows(dev)
+    rows[2]['speaker_id'] = rows[1]['speaker_id']
+    rows[3]['source_id'] = rows[2]['source_id']
+    write_manifest(dev, rows)
+    output = tmp_path / 'prepared'
+    prepare_experiment(train, dev, root, output, dev_limit=12)
+    selection = {row['file_id'] for row in read_rows(output / 'selection.csv')}
+    acceptance = {row['file_id'] for row in read_rows(output / 'acceptance.csv')}
+    assert {'D_0000', 'D_0001', 'D_0002', 'D_0003'} <= selection or \
+        {'D_0000', 'D_0001', 'D_0002', 'D_0003'} <= acceptance

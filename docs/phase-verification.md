@@ -1,6 +1,6 @@
 # ECHOTRACE phase verification
 
-Status: 2026-09-25. The local prototype is usable; sponsor training/test data, official metric, and submission template are absent. Check a box only after **you** observe the behavior or review the named evidence. A working page is not evidence of detector accuracy. Start the app using the [challenge README](../challenges/hearsay-audio-authentication/README.md), then open <http://127.0.0.1:5173>. The local app accepts up to 50 MiB and 120 seconds per file.
+Status: 2026-09-25. Current work is Phase 3A: training/evaluation software is verified, but real-data and cluster staging remain open. The local prototype is usable; sponsor training/test data, official metric, and submission template are absent. Check a box only after **you** observe the behavior or review the named evidence. A working page is not evidence of detector accuracy. Start the app using the [challenge README](../challenges/hearsay-audio-authentication/README.md), then open <http://127.0.0.1:5173>. The local app accepts up to 50 MiB and 120 seconds per file.
 
 ## Phase 0 — Requirements and feasibility
 
@@ -24,6 +24,10 @@ Status: 2026-09-25. The local prototype is usable; sponsor training/test data, o
 
 ## Phase 3 — Measured performance
 
+- [x] Phase 3A software: three-way data preparation, whole-file checkpoint scoring, failure/coverage checks, frozen-threshold comparison and bounded Slurm package have passed local verification. These checks do not measure speech-detection quality.
+- [ ] Phase 3A data/cluster: working `ssh trends`, permitted personal data storage, verified allocation/partition, installed independent audio, frozen manifests and measured GPU throughput. User supplied account `trends517s113`; never use the old course account.
+- [ ] Phase 3B: complete one five-hour, one-node, one-GPU adaptation/evaluation job and retain the actual job ID, checkpoint, scores and report.
+- [ ] Phase 3C: review acceptance counts, recall, false positives, confidence intervals, slices and serving performance. An eligible report requires review; no automatic web-model replacement.
 - [ ] On the grouped sponsor validation set, compare the baseline with any second detector or adaptation. Record the official metric and relevant error/runtime breakdowns; keep a change only when its measured benefit warrants it.
 - [ ] If the data support it, fit calibration on separate development data and evaluate it on untouched validation data. Until then, the web label must remain “Uncalibrated model score.” No calibration, ensemble comparison, or sponsor-data performance report is complete.
 
@@ -69,3 +73,11 @@ Agent verified desktop selection, real inference, playback/seek and compression.
 3. Reopen the result and download JSON: the same generated brief should persist with model, prompt version, evidence hash and generation time.
 4. If a key/model/request fails, expect a clear error rather than fabricated generated notes.
 5. Review the saved24file error report. Trainingrunner availability is not evidence of improved accuracy; the five-hour experiment has not run.
+
+## Latest handoff — Phase 3A software
+
+The work in this milestone is behind the interface. Existing recording scores and the web model have not changed; there is no new accuracy claim to verify in the browser yet. The next web-visible detector milestone comes after Phase 3C accepts a trained candidate.
+
+For current app verification, choose a known recording, analyze it, play a scored interval, and export JSON. Once your xAI key is configured, generate an AI interpretation and confirm its cited findings match the measured evidence while the original score stays unchanged. An upload performs inference only, whether it comes from the dataset or is your own permitted recording.
+
+The current user-dependent action is restoring cluster access and obtaining permitted personal data storage. The last SSH attempt timed out before login. A 100 GB home quota is not permission to stage the large corpus there. After connectivity is available, verify account/partition/storage before following [cluster handoff](cluster-handoff.md). Review [checkpoint evaluation](checkpoint-evaluation.md) for the exact acceptance behavior.

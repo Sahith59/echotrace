@@ -162,6 +162,19 @@ else:
         self.assertIn("overlap", result.stderr)
         self.assertFalse(self.calls.exists())
 
+    def test_group_overlap_between_selection_and_acceptance_stops_before_training(self):
+        self.make_eligible_manifests()
+        root = Path(self.temp.name)
+        manifest = root / "acceptance.csv"
+        rows = manifest.read_text().splitlines()
+        rows[1] = rows[1].replace("acceptance_0_0,acceptance_0_0,acceptance_0_0",
+                                  "selection_0_0,acceptance_0_0,acceptance_0_0")
+        manifest.write_text("\n".join(rows) + "\n", encoding="utf-8")
+        result = self.run_job()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("selection/acceptance overlap", result.stderr)
+        self.assertFalse(self.calls.exists())
+
     def test_full_pipeline_order_and_checkpoint_hash(self):
         self.make_eligible_manifests()
         result = self.run_job()
