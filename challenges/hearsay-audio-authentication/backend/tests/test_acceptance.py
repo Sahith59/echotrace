@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from echotrace.acceptance import compare_runs, select_threshold, summarize
+from echotrace.acceptance import compare_runs, main, select_threshold, summarize
 
 
 AGGREGATION = {"method": "mean_window_spoof_softmax", "window_samples": 64600,
@@ -98,3 +98,29 @@ def test_invalid_experiment_refused(tmp_path, change):
         data["training_provenance"]["train"][0]["sha256"] = data["records"][0]["sha256"]
     (folder / "run.json").write_text(json.dumps(data))
     with pytest.raises(ValueError): compare_runs(*paths)
+
+
+def test_cli_writes_report_once_and_preserves_existing_output(tmp_path):
+    paths = four_runs(tmp_path)
+    output = tmp_path / "decision.json"
+    names = ["--baseline-selection", "--candidate-selection", "--baseline-acceptance", "--candidate-acceptance"]
+    args = [part for name, folder in zip(names, paths) for part in (name, str(folder))] + ["--output", str(output)]
+    assert main(args) == 0
+    saved = output.read_bytes()
+    assert json.loads(saved)["promoted"] is False
+    assert main(args) == 2 and output.read_bytes() == saved
+
+
+def test_malformed_record_is_rejected_cleanly(tmp_path):
+    paths = four_runs(tmp_path)
+    path = paths[0] / "run.json"
+    data = json.loads(path.read_text())
+    data["records"][0]["file_id"] = None
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError, match="record"):
+        compare_runs(*paths)
+
+
+@pytest.mark.parametrize("labels,scores", [([0], [.2]), ([0, 1], [.2, float('nan')]), ([0, 1], [.2, 1.1])])
+def test_invalid_scores_and_classes_refused(labels, scores):
+    with pytest.raises(ValueError): select_threshold(labels, scores)
