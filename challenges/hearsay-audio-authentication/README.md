@@ -83,6 +83,7 @@ The example is deliberately marked unofficial. For actual submission, adapt a re
 ```sh
 cd backend
 uv run echotrace setup-model
+uv run python -c 'from echotrace.model import download_weights; download_weights()'
 uv run pytest -q
 ```
 

@@ -34,6 +34,8 @@ jobs:
         run: uv sync --frozen --all-groups
       - name: Set up pinned primary NII checkpoint
         run: uv run echotrace setup-model
+      - name: Set up pinned historical AASIST checkpoint for reproducibility tests
+        run: uv run python -c 'from echotrace.model import download_weights; download_weights()'
       - name: Test backend
         run: uv run pytest -q
 
