@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from echotrace.api import create_app
+from echotrace.interpretation import evidence_for, evidence_hash
 
 
 def test_case_report_separates_evidence_and_escapes_html(tmp_path):
@@ -21,6 +22,9 @@ def test_case_report_separates_evidence_and_escapes_html(tmp_path):
         assert data['transcript']['status'] == 'not_generated'
         assert 'path' not in data
         assert data['overall_authenticity_probability'] is None
+        assert data['interpretation_status'] == 'not_generated'
+        assert len(data['current_evidence_sha256']) == 64
+        assert data['stress_comparisons'] == []
         page = client.get('/api/analyses/case/case-report.html')
         assert page.status_code == 200
         assert '<script>alert(1)</script>' not in page.text
@@ -34,6 +38,47 @@ def test_reports_reject_missing_and_incomplete_cases(tmp_path):
     with TestClient(app) as client:
         assert client.get('/api/analyses/missing/case-report').status_code == 404
         assert client.get('/api/analyses/pending/case-report').status_code == 409
+
+
+def test_case_report_marks_old_brief_outdated_and_includes_matched_stress(tmp_path):
+    app = create_app(root=tmp_path)
+    store = app.state.store
+    model = {'name': 'NII', 'weights_sha256': 'model-sha'}
+    base = {'synthetic_score': .2, 'score_kind': 'uncalibrated',
+            'input': {'sha256': 'source-sha'}, 'model': model}
+    original_facts = evidence_for(base)
+    base['interpretation'] = {
+        'status': 'generated', 'provider': 'groq', 'model': 'test-model',
+        'generated_at': '2026-09-26T12:00:00+00:00',
+        'evidence_sha256': evidence_hash(original_facts), 'evidence': original_facts,
+        'report': {'summary': 'Older measured summary.',
+                   'findings': [{'text': 'Original score.', 'evidence_ids': ['score']}],
+                   'next_steps': ['Review it.']},
+    }
+    store.create('case', 'private.wav', tmp_path / 'private.wav')
+    store.update('case', status='completed', result=base)
+    store.create('stress', 'must-not-appear.wav', tmp_path / 'derived.wav',
+                 parent_id='case', transform={'kind': 'noise', 'snr_db': 20})
+    store.update('stress', status='completed', result={
+        'synthetic_score': .35, 'model': model, 'parent_id': 'case',
+        'transform': {'kind': 'noise', 'snr_db': 20},
+        'input': {'sha256': 'derived-sha', 'filename': 'must-not-appear.wav'},
+    })
+    with TestClient(app) as client:
+        report = client.get('/api/analyses/case/case-report').json()
+        assert report['interpretation_status'] == 'outdated'
+        assert report['current_evidence_sha256'] != base['interpretation']['evidence_sha256']
+        assert report['synthesis']['interpretation']['report']['summary'] == 'Older measured summary.'
+        assert report['stress_comparisons'] == [{
+            'id': 'stress', 'kind': 'noise', 'synthetic_score': .35,
+            'score_difference': .15, 'input_sha256': 'derived-sha', 'model': model,
+        }]
+        assert 'must-not-appear' not in str(report['stress_comparisons'])
+        page = client.get('/api/analyses/case/case-report.html').text
+        assert 'New comparison evidence is available; regenerate interpretation.' in page
+        assert 'Older saved interpretation' in page
+        assert 'Older measured summary.' in page
+        assert 'Noise stress test' in page
 
 
 def test_model_evaluation_discloses_failed_promotion_and_linked_weights(tmp_path):
