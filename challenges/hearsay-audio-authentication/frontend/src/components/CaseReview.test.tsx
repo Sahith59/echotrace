@@ -58,3 +58,12 @@ it('saves analyst evidence with an explicit stance matching the verdict', async 
   const call = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!
   expect(JSON.parse(call[1].body).analyst_review.evidence[0].stance).toBe('supports')
 })
+it('does not offer voice inference before pinned model setup is ready', async () => {
+  const original = fetchMock.getMockImplementation()!
+  fetchMock.mockImplementation((url: string, init?: RequestInit) => url === '/api/speaker/status' ? Promise.resolve(response({available:true,ready:false,reason:'Prepare the speaker model.'})) : original(url,init))
+  render(<CaseReview jobId="a" onSeek={() => {}} />)
+  await screen.findByText('Prepare the speaker model.')
+  await userEvent.upload(screen.getByLabelText('Reference recording'), new File(['audio'], 'reference.wav', {type:'audio/wav'}))
+  await userEvent.click(screen.getByRole('checkbox', {name:/permission to process/}))
+  expect(screen.getByRole('button', {name:'Compare reference'})).toBeDisabled()
+})
