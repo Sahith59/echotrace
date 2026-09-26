@@ -93,6 +93,7 @@ def test_generates_separate_cached_report_without_changing_primary_score(tmp_pat
         assert case["detector_comparison"] == report
         printable = client.get("/api/analyses/job/case-report.html").text
         assert "Experimental detector comparison" in printable
+        assert "difference +50.00 score points (0–100 scale)" in printable
 
 
 def test_rejects_unavailable_model_and_changed_original(tmp_path):
