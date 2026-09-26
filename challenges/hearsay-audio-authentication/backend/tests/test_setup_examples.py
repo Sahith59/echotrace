@@ -7,12 +7,14 @@ import pytest
 from echotrace.setup_examples import (
     DATASET,
     REVISION,
+    _PinnedRedirect,
     SetupExamplesError,
     expected_url,
     load_catalog,
     main,
     setup_examples,
 )
+from urllib.request import Request
 
 
 class FakeResponse:
@@ -170,3 +172,19 @@ def test_cli_requires_source_review_without_claiming_legal_acceptance(tmp_path, 
     assert "--confirm-source-review" in output.err
     assert "does not accept or determine legal terms" in output.err
     assert "CC BY-NC 4.0" in output.err
+
+
+def test_redirects_are_limited_to_one_https_hugging_face_delivery_hop():
+    handler = _PinnedRedirect()
+    origin = Request(expected_url("original/en/example.wav"))
+    delivery = "https://us.aws.cdn.hf.co/xet-bridge-us/content?Signature=example"
+
+    redirected = handler.redirect_request(origin, None, 302, "Found", {}, delivery)
+    assert redirected.full_url == delivery
+    assert handler.redirect_request(
+        origin, None, 302, "Found", {}, "https://attacker.example/content"
+    ) is None
+    assert handler.redirect_request(
+        origin, None, 302, "Found", {}, "http://us.aws.cdn.hf.co/content"
+    ) is None
+    assert handler.redirect_request(redirected, None, 302, "Found", {}, delivery) is None
