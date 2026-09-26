@@ -63,3 +63,7 @@ Latest delivery authorization: finish the local prototype and verified source re
 Current plan governance: `plan.md` is the single current checklist; `plan-history-2026-09-25.md` is a superseded historical snapshot. Distinguish Phase 2 implementation from acceptance checks, Phase 3B running from completed, and completed training from a validated/promoted detector.
 
 Provider clarification 2026-09-26: Groq, not xAI. Default interpretation model is Groq-hosted openai/gpt-oss-120b; its name does not imply an OpenAI API key. Never route a Groq key to xAI. Hosted claim search is unavailable until source provenance is validated for the current Groq contract; manual source review remains functional. Preserve historical provider labels.
+
+## Current approved product direction (2026-09-26)
+
+Light, warm paper/glass workspace supersedes the earlier monochrome-dark preference. Keep text sharp and contrast readable; user reference texture is decorative only. Three investigation steps, contextual help and actual analyst workflow take priority over ornamental controls. New analyses use pinned NII <=30s native whole-file preprocessing; do not silently truncate or replace historical AASIST records. Analyst judgment is separate/versioned. Real Groq interpretation is verified after fixing the request User-Agent; no credential replacement is needed. See plan.md and docs/model-serving-decision.md for benchmark limits and pending official submission.

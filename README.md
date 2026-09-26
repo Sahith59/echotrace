@@ -18,7 +18,7 @@ The app separates three questions: **Does the recording resemble synthesized spe
 
 ## Architecture
 
-React + TypeScript + Vite provide the graphite workbench. FastAPI and SQLite manage local uploads and durable analyses. FFmpeg decodes supported media; PyTorch runs the pinned speech detector; WavLM compares consented voice references; faster-whisper transcribes locally. Optional Groq interpretation explains measured evidence. Analyst source reviews retain their own provenance; hosted claim search remains unavailable pending a validated Groq retrieval contract.
+React + TypeScript + Vite provide the light glass investigation workspace. FastAPI and SQLite manage local uploads and durable analyses. FFmpeg decodes supported media; PyTorch runs the pinned speech detector; WavLM compares consented voice references; faster-whisper transcribes locally. Optional Groq interpretation explains measured evidence. Analyst source reviews retain their own provenance; hosted claim search remains unavailable pending a validated Groq retrieval contract.
 
 Weights, datasets, recordings, workspaces, credentials and build outputs are intentionally excluded from this repository. Setup commands obtain pinned models. Keep the service on loopback until deployment authentication and operational controls are designed.
 
@@ -27,3 +27,5 @@ Weights, datasets, recordings, workspaces, credentials and build outputs are int
 Real GPU training and independent public-data evaluation have run. All three candidates failed at least one predeclared promotion goal. The final adapted native model caught 87.4% of synthetic clips but falsely flagged 24.4% of genuine clips on its balanced public holdout; compressed genuine speech remains a major weakness. The application shows actual measured results and retains the baseline unless a replacement passes review. Public-corpus results do not establish performance on the unavailable sponsor data.
 
 The project provides a strict configurable CSV export pipeline. The final official CSV cannot be produced until the sponsor supplies its held-out files and submission contract. No competition result is guaranteed.
+
+Current primary detector: pinned NII whole-file inference, maximum30seconds per recording. The user journey is Review recording → Check reliability → Case evidence, with a filtered review queue and separately versioned analyst judgments. See the [current guided-workflow verification](docs/light-workspace-verification.md) and [scoped serving decision](docs/model-serving-decision.md). Official submission is still gated on the sponsor schema/data.

@@ -4,13 +4,13 @@ A local audio-forensics workbench for **NSA HEARSAY, Challenge 1**. Review uploa
 
 ## Current status
 
-The first working prototype is implemented. It runs the official AASIST-L checkpoint on CPU and provides a React interface, durable local jobs, playback, interval scores, quality/spectral/temporal observations, JSON reports, analyst CSV export, and a shared command-line pipeline.
+The first working prototype is implemented. It runs the pinned NII wav2vec-small-anti-deepfake checkpoint on CPU and provides a React interface, durable local jobs, playback, interval scores, quality/spectral/temporal observations, JSON reports, analyst CSV export, and a shared command-line pipeline.
 
 **This is not a validated authentication system.** Scores are uncalibrated. In a local smoke test the baseline gave a known macOS-generated synthetic speech clip a low synthesis score. That observed failure is recorded in [model feasibility](../../docs/model-feasibility.md), not hidden as a successful accuracy demonstration. Sponsor dataset evaluation, a validated detector promotion, calibration, and official CSV verification remain outstanding. Completed public-data experiments do not substitute for sponsor testing.
 
 The [problem validation](../../docs/problem-validation.md) links primary FBI/FTC evidence; the [product review](../../docs/product-validation.md) explains why recorded-audio triage fits this challenge. Evidence of voice-cloning harm does not prove our detector works.
 
-Current development is **release integration and independent model evaluation**. The [training runner](docs/training-runner.md), [three-way data preparation](../../docs/data-preparation.md), [whole-file checkpoint evaluation and acceptance](../../docs/checkpoint-evaluation.md), and [one-GPU cluster package](../../docs/cluster-handoff.md) are implemented and locally tested. A real A100 run completed 6,000 training steps and independent evaluation. Its recall improved from 22.5% to 44.5% at about 4% false positives, but failed the predeclared 80% recall target and was not promoted. The final native adaptation completed 1,250 steps and reached 87.4% recall but 24.4% false positives on a separate balanced 2,000-file holdout. It also failed promotion. The app retains AASIST-L and displays all three measured experiments. Total GPU allocation was 1h44m53; no job remains active. The [Groq interpretation integration](../../docs/ai-interpretation.md) is available after configuring a backend API key; it summarizes recorded evidence without altering the detector score.
+Current development is **release integration and independent model evaluation**. The [training runner](docs/training-runner.md), [three-way data preparation](../../docs/data-preparation.md), [whole-file checkpoint evaluation and acceptance](../../docs/checkpoint-evaluation.md), and [one-GPU cluster package](../../docs/cluster-handoff.md) are implemented and locally tested. A real A100 run completed 6,000 training steps and independent evaluation. Its recall improved from 22.5% to 44.5% at about 4% false positives, but failed the predeclared 80% recall target and was not promoted. The final native adaptation completed 1,250 steps and reached 87.4% recall but 24.4% false positives on a separate balanced 2,000-file holdout. It also failed promotion. The app now serves pinned NII for new analyses after passing scoped public benchmark and reference-parity checks; historical AASIST results and all three failed training experiments remain visible. NII achieved 93.7% recall and 2.4% false positives on 2,000 In-The-Wild files at threshold0.5. This is benchmark replication, not sponsor validation. Total GPU allocation was1h44m53; baseline CPU4504670 completion is unverified because cluster SSH became unavailable. See [serving decision](../../docs/model-serving-decision.md). The [Groq interpretation integration](../../docs/ai-interpretation.md) is available after configuring a backend API key; it summarizes recorded evidence without altering the detector score.
 
 ## Run locally
 
@@ -33,9 +33,9 @@ npm ci
 npm run dev -- --port 5173
 ```
 
-Open **http://127.0.0.1:5173**. Upload a WAV, MP3 or M4A, or select multiple recordings. Current limits: 50 MiB and 120 seconds per file, one inference job at a time. Uploaded audio stays on the local server. Dependencies and model weights require network access at setup; typography has local fallback fonts.
+Open **http://127.0.0.1:5173**. Upload a WAV, MP3 or M4A, or select multiple recordings. Current limits: 50 MiB and 30 seconds per file, one inference job at a time. Uploaded audio stays on the local server. Dependencies and model weights require network access at setup; typography has local fallback fonts.
 
-`setup-model` downloads the pinned official 426 KB AASIST-L checkpoint and verifies its SHA-256. No model download occurs during inference. Missing weights yield measured signal observations with no synthetic score. Vendor code/license/provenance are in `backend/echotrace/vendor/`; upstream attribution remains intact.
+`setup-model` downloads the pinned approximately380 MB NII checkpoint and verifies its SHA-256 and packaged reference-parity proof. No model download occurs during inference. Missing/corrupt weights, failed parity, quiet audio and recordings beyond30seconds fail explicitly; audio is never silently truncated. See [NII provenance and license](../../docs/nii-candidate.md). Historical AASIST vendor attribution remains intact.
 
 Jobs and source audio persist in `artifacts/workspace/`. Model weights are cached in `backend/artifacts/`. These paths are ignored by Git. `ECHOTRACE_WORKSPACE` can set a different local job directory. Interrupted jobs are marked failed on restart and can be retried. Core local analysis needs no cloud credentials. Optional Groq interpretation requires your own Groq key and may incur provider charges. Hosted claim search is unavailable until its source-provenance contract is validated.
 
@@ -126,11 +126,11 @@ This comparison runner is deliberately limited to 256 files and CPU while checki
 - **To check the workflow:** upload your own short recording, use playback/seek and export. A custom recording without known provenance cannot establish detector correctness.
 - **To train:** do neither through the web upload. Training is a separate offline process using designated labeled training data. Uploading audio does not teach or change the model.
 
-Current app limit: 50 MiB and 120 seconds. A low synthesis score does not prove identity or truth. Public pilot audio is under `backend/artifacts/public-pilot/original/en/` (genuine) and `backend/artifacts/public-pilot/fake/en/` (synthetic); these directories are ignored by Git. Do not publish clips without their required terms/attribution.
+Current app limit: 50 MiB and 30 seconds. A low synthesis score does not prove identity or truth. Public pilot audio is under `backend/artifacts/public-pilot/original/en/` (genuine) and `backend/artifacts/public-pilot/fake/en/` (synthetic); these directories are ignored by Git. Do not publish clips without their required terms/attribution.
 
 ## Try the fixed 24-recording demo
 
-On the intake page, expand **Try a known recording**, select a labeled MLAAD-tiny example, optionally preview it, then choose **Analyze this sample**. The app sends its audio through the normal upload and AASIST-L pipeline. It does not use the label for scoring or train the model. The catalog checks local audio against pinned provenance; unavailable or changed files are not served.
+On the intake page, expand **Try a known recording**, select a labeled MLAAD-tiny example, optionally preview it, then choose **Analyze this sample**. The app sends its audio through the normal upload and primary NII pipeline. It does not use the label for scoring or train the model. The catalog checks local audio against pinned provenance; unavailable or changed files are not served.
 
 The local sample consists of 12 genuine and 12 synthetic recordings. It is a small selected diagnostic set, not an independent accuracy benchmark. Custom uploads remain supported. These 24 clips are for interface diagnostics; training and independent evaluation use a separate ASVspoof 5 subset.
 
@@ -162,3 +162,13 @@ npm run build
 ```
 
 See [release verification](../../docs/release-verification.md), [the phase checklist](../../plan.md), and [the demonstration guide](../../docs/demo-guide.md). This iteration ends with a private source repository. Deployment, multi-user authentication and official sponsor submission require the subsequent deployment/submission configuration.
+
+## Guided light workspace
+
+The light glass design uses locally bundled IBM Plex Sans, serif section headings and a generated subtle woven background inspired by the user reference. The supplied glass calendar was adapted into a real local-date filter with controlled selection; no event-management actions are implied. UI primitives live in `src/components/ui`, with the existing `@` alias, Tailwind and TypeScript setup. Native date formatting avoids an unnecessary calendar dependency; animations use the installed `motion/react` package.
+
+A completed recording has three steps: **Review recording**, **Check reliability**, **Case evidence**. Info buttons explain score, audio, quality, intervals, reliability, speaker, transcript and claim boundaries. The queue filters name, analysis status, analyst status and local date, and sorts by date or score. Failed/unscored records remain accessible.
+
+Analyst statuses and notes are versioned separately from detector output and included in case JSON/HTML and analyst CSV. Concurrent edits return a conflict without overwriting the draft. Browser-tab drafts survive navigation. Analyst CSV has six columns: file_id, filename, synthetic_score, analyst_review_status, analyst_review_notes, analyst_review_version; same-model provenance is required across selected scored rows. This is not the official sponsor schema.
+
+Legacy original results offer **Analyze original with NII**, which creates a new source-verified analysis and preserves the old record. NII scores one whole waveform <=30seconds; its interval is not manipulation localization. Speaker reference inputs retain their separate120second limit.

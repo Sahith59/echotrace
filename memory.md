@@ -2,6 +2,18 @@
 
 Last updated: 2026-09-26, release-integration iteration. **This opening state supersedes all dated historical notes below.**
 
+## Latest approved UI/workflow iteration — 2026-09-26
+
+This section supersedes older continuation notes below. User approved the workflow and requested light theme from woven reference + pasted glass calendar. Implemented light surfaces, IBM Plex Sans body/serif headings, local generated woven texture, contextual info and reduced-motion transitions. Calendar adapted into working local-date queue filter under existing src/components/ui/Tailwind/TS/motion setup.
+
+New primary is pinned NII whole-file <=30seconds, same API/CLI, no truncation; historical AASIST remains. Serving decision is a scoped prototype choice, not passed old training acceptance contract. Baseline4504670 result retrieval blocked at cluster login banner; do not duplicate training. No extraGPUused.
+
+Guided steps, queue filters/sort, analyst review API/UI (versioned optimistic concurrency, local drafts), six-column analyst CSV and case export complete. Mixed model stress/export guarded by full identity. Reanalysis creates a new immutable original copy. Evidence-linked Groq brief includes matched stress/research measurements and invalidates cache when evidence changes.
+
+IMPORTANT: Groq key is valid. Initial unstructured403 was edge rejection of request User-Agent, corrected. Actual Groq generation succeeded through browser on NII case14e3396e7c554e1bb4c64036ac6310b7 (public synthetic example), score0.99996829, runtime1.2s. Original0f1bc5d6a66e46b981a896713f4c3fd4 unchanged. MP3derived comparison completed; analyst demonstration note/status corroboration_requested savedversion1 and caseJSONverified. A new comparison correctly invalidated the old brief. Never print.env orkey.
+
+Latest verification: frontend51passed/build; backend288passed before final interpretation-scope refinement. Real NII genuine sample upload completed (case prefixd55cea14, displayed2%,1.1s). Mobile375px queue/calendar, help stacking, same-model CSV download and evidence-reference navigation passed. Wheel contains required code/parity metadata and no secrets/audio/weights. Source release still pending final interpretation test/restart and push; consult docs/light-workspace-verification.md. Official sponsor submission and deployment remain blocked on actualcontract/userdeploymentdirection.
+
 ## Latest continuation — 2026-09-26
 
 User confirmed **Groq**. Integration, UI/provider labels and source-review migration are complete. Private root `.env` has empty `GROQ_API_KEY` and `ECHOTRACE_LLM_MODEL=openai/gpt-oss-120b`, mode0600 and Git-ignored. Key remains absent, so authenticated generation is unverified. Hosted claim search is explicitly unavailable until URL-level provenance is validated; manual analyst source reviews work.
