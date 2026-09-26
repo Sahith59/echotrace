@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from echotrace.api import Store
+from echotrace.claims import SEARCH_UNAVAILABLE_REASON
 from echotrace.claims_router import create_claims_router, load_claim_artifacts
 from echotrace.transcription import TranscriptionError
 
@@ -33,9 +34,9 @@ class UnavailableReviewer:
     def status(self):
         return {
             "available": False,
-            "provider": "xai",
-            "model": "grok-test",
-            "reason": "Grok is not configured.",
+            "provider": "groq",
+            "model": "openai/gpt-oss-20b",
+            "reason": SEARCH_UNAVAILABLE_REASON,
             "connection_verified": False,
         }
 
@@ -134,7 +135,9 @@ def test_claim_validation_and_explicit_provider_unavailability(tmp_path):
         assert unavailable.status_code == 503
         saved = client.get("/api/analyses/job/claims").json()["claims"]
         assert saved[0]["status"] == "error"
-        assert saved[0]["error"] == "Grok is not configured."
+        assert saved[0]["error"] == SEARCH_UNAVAILABLE_REASON
+        assert saved[0]["provider"] == "groq"
+        assert saved[0]["external_disclosure"] == "none"
 
         assert client.post("/api/analyses/job/claims", json={
             "text": "Claim",
@@ -156,6 +159,8 @@ def test_status_and_missing_or_incomplete_jobs_fail_closed(tmp_path):
     with TestClient(app) as client:
         status = client.get("/api/claims/status").json()
         assert status["provider"]["available"] is False
+        assert status["provider"]["provider"] == "groq"
+        assert "disabled" in status["external_disclosure"]
         assert status["transcription"]["provider"] == "faster-whisper"
         assert status["limits"]["max_claim_chars"] == 2000
         assert client.get("/api/analyses/missing/transcript").status_code == 404

@@ -9,7 +9,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   fetchMock.mockImplementation(async (url: string) => {
     if (url === '/api/speaker/status') return response({ available: true, ready: true })
-    if (url === '/api/claims/status') return response({ provider: { available: false, reason: 'Configure xAI locally.' }, transcription: { available: true, ready: true } })
+    if (url === '/api/claims/status') return response({ provider: { available: false, provider: 'groq', reason: 'Hosted Groq claim search is disabled; record an analyst review instead.' }, transcription: { available: true, ready: true } })
     if (url.endsWith('/speaker-comparison')) return response({ detail: 'Not found' }, 404)
     if (url.endsWith('/transcript')) return response({ status: 'not_generated', versions: [] })
     return response({ claims: [] })
@@ -25,8 +25,9 @@ it('keeps independent evidence separate and requires reference consent', async (
 })
 it('discloses unavailable AI while allowing a sourced analyst review', async () => {
   render(<CaseReview jobId="a" onSeek={() => {}} />)
-  expect(await screen.findByText('Configure xAI locally.')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Review with Grok' })).toBeDisabled()
+  expect(await screen.findByText(/Hosted Groq claim search is disabled/)).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { hidden: true }).find(button => button.textContent?.includes('Review with Groq'))).toBeDisabled()
+  expect(screen.getByRole('checkbox', { name: 'Allow this claim to be sent to Groq.' })).toBeDisabled()
   expect(screen.getByRole('button', { name: 'Save analyst review' })).toBeDisabled()
 })
 it('loads a transcript with seekable segments and preserves correction version', async () => {
@@ -48,7 +49,7 @@ it('shows a server failure and permits retry without fabricating evidence', asyn
 })
 it('saves analyst evidence with an explicit stance matching the verdict', async () => {
   render(<CaseReview jobId="a" onSeek={() => {}} />)
-  await screen.findByText('Configure xAI locally.')
+  await screen.findByText(/Hosted Groq claim search is disabled/)
   await userEvent.click(screen.getByText('Record an analyst review'))
   await userEvent.type(screen.getByLabelText('Claim to review'), 'A verifiable statement.')
   await userEvent.selectOptions(screen.getByLabelText('Assessment'), 'supported')
@@ -82,7 +83,7 @@ it('compares a consented reference and removes saved metadata', async () => {
     return original(url,init)
   })
   render(<CaseReview jobId="a" onSeek={() => {}} />)
-  await screen.findByText('Configure xAI locally.')
+  await screen.findByText(/Hosted Groq claim search is disabled/)
   await userEvent.upload(screen.getByLabelText('Reference recording'),new File(['audio'],'ref.wav',{type:'audio/wav'}))
   await userEvent.type(screen.getByLabelText('Reference label'),'Interview')
   await userEvent.click(screen.getByRole('checkbox',{name:/permission to process/}))
@@ -108,9 +109,10 @@ it('creates a local transcript and displays a source-cited AI review only after 
   await userEvent.click(screen.getByRole('button',{name:'Create transcript'}))
   expect(await screen.findByDisplayValue('Check this statement.')).toBeInTheDocument()
   await userEvent.type(screen.getByLabelText('Claim to review'),'Check this statement.')
-  expect(screen.getByRole('button',{name:'Review with Grok'})).toBeDisabled()
-  await userEvent.click(screen.getByRole('checkbox',{name:'Allow this claim to be sent to xAI.'}))
-  await userEvent.click(screen.getByRole('button',{name:'Review with Grok'}))
+  const groqButton = screen.getByRole('button', { name: /Review with Groq/, hidden: true })
+  expect(groqButton).toBeDisabled()
+  await userEvent.click(screen.getByRole('checkbox',{name:'Allow this claim to be sent to Groq.'}))
+  await userEvent.click(groqButton)
   expect(await screen.findByRole('link',{name:'Fixture source'})).toHaveAttribute('href','https://example.org/source')
   expect(screen.getByText(/Transcript changed/)).toBeInTheDocument()
   const post = fetchMock.mock.calls.find(([url,init])=>url.endsWith('/claims') && init?.method==='POST')!

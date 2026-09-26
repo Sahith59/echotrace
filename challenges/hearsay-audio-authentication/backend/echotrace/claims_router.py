@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .claims import ClaimReviewError, GrokClaimReviewer, VERDICTS, validate_public_url
+from .claims import ClaimReviewError, GroqClaimReviewer, VERDICTS, validate_public_url
 from .transcription import MAX_DURATION_S, MAX_SEGMENTS, MAX_TRANSCRIPT_CHARS, Transcriber, TranscriptionError
 
 MAX_CLAIM_CHARS = 2000
@@ -170,7 +170,7 @@ class ClaimInput(BaseModel):
 def create_claims_router(store, transcriber=None, reviewer=None):
     router = APIRouter()
     transcription = transcriber or Transcriber.configured(store.root / "models" / "faster-whisper")
-    claims = reviewer or GrokClaimReviewer()
+    claims = reviewer or GroqClaimReviewer()
     transcription_lock = threading.Lock()
     review_lock = threading.Lock()
 
@@ -235,7 +235,11 @@ def create_claims_router(store, transcriber=None, reviewer=None):
                 "max_transcript_versions": MAX_TRANSCRIPT_VERSIONS,
                 "max_claims_per_job": MAX_CLAIMS_PER_JOB,
             },
-            "external_disclosure": "With consent, only claim text is sent to xAI web search; audio and the full transcript stay local.",
+            "external_disclosure": (
+                "This integration has not validated URL-level source provenance for hosted Groq claim search, "
+                "so the hosted search is disabled. "
+                "Analyst source review remains local."
+            ),
         }
 
     @router.get("/api/analyses/{job_id}/transcript")
@@ -387,10 +391,12 @@ def create_claims_router(store, transcriber=None, reviewer=None):
         else:
             provider_status = claims.status()
             if not provider_status["available"]:
-                error = provider_status["reason"] or "Grok is unavailable."
+                error = provider_status["reason"] or "Groq claim search is unavailable."
                 failed = dict(base, status="error", verdict="uncheckable", rationale=error,
-                              evidence=[], method="ai_web_search", provider="xai",
-                              model=provider_status["model"], prompt_version=None, error=error)
+                              evidence=[], method="ai_web_search",
+                              provider=provider_status.get("provider", "groq"),
+                              model=provider_status["model"], prompt_version=None, error=error,
+                              external_disclosure="none")
                 save_claim(job_id, failed)
                 raise HTTPException(503, error)
             try:
@@ -398,7 +404,8 @@ def create_claims_router(store, transcriber=None, reviewer=None):
             except ClaimReviewError as exc:
                 error = str(exc)
                 failed = dict(base, status="error", verdict="uncheckable", rationale=error,
-                              evidence=[], method="ai_web_search", provider="xai",
+                              evidence=[], method="ai_web_search",
+                              provider=provider_status.get("provider", "groq"),
                               model=provider_status["model"], prompt_version=None, error=error)
                 save_claim(job_id, failed)
                 raise HTTPException(503, error) from None
