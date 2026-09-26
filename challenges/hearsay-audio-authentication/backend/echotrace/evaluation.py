@@ -233,7 +233,9 @@ def export_submission(predictions_csv: Path, expected_ids_csv: Path, config_json
     expected = _unique_ids(expected_rows, config["expected_id_column"])
     if not expected:
         raise ValueError("Expected ID list is empty")
-    _, prediction_rows = _rows(Path(predictions_csv), {"file_id", "synthetic_score"})
+    prediction_headers, prediction_rows = _rows(Path(predictions_csv), {"file_id", "synthetic_score"})
+    if "status" in prediction_headers and any(row["status"] != "completed" for row in prediction_rows):
+        raise ValueError("Every prediction must have completed status before export")
     ids = _unique_ids(prediction_rows, "file_id")
     if set(ids) != set(expected):
         raise ValueError(f"Prediction coverage mismatch: missing={sorted(set(expected)-set(ids))}, extra={sorted(set(ids)-set(expected))}")
