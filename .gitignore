@@ -14,3 +14,22 @@ __pycache__/
 **/.ruff_cache/
 .coverage
 htmlcov/
+
+# Keep recordings, model weights and local databases out of source control.
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.opus
+*.aac
+*.aiff
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
