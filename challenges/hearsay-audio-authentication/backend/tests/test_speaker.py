@@ -7,7 +7,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from echotrace.api import Store
+from echotrace.api import Store, create_app
 from echotrace.speaker import (
     MAX_REFERENCE_BYTES,
     SpeakerComparisonError,
@@ -196,3 +196,10 @@ def test_audio_quality_gate_boundaries():
     result = audio_quality(np.ones(32_000, dtype=np.float32) * 0.05)
     assert result["duration_s"] == 2.0
     assert result["rms_dbfs"] == pytest.approx(-26.02, abs=0.01)
+
+
+def test_main_app_registers_speaker_routes(tmp_path):
+    with TestClient(create_app(tmp_path, lambda path, progress=None: {})) as client:
+        response = client.get("/api/speaker/status")
+    assert response.status_code == 200
+    assert response.json()["model"]["id"] == "microsoft/wavlm-base-plus-sv"

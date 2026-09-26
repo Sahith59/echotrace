@@ -24,6 +24,7 @@ MODEL_REVISION = "1bfd64eca136543feb28c5ffaf05381c6af33121"
 MODEL_WEIGHTS_SHA256 = "94c3defe08248d81c7b2bd0a058ea9985269cefed13076434669c47fade41182"
 MODEL_WEIGHTS_BYTES = 404_479_908
 MODEL_FILES = ("config.json", "preprocessor_config.json", "model.safetensors")
+DEFAULT_MODEL_CACHE = Path(__file__).resolve().parents[1] / "artifacts" / "speaker-model"
 MAX_REFERENCE_BYTES = 20 * 1024 * 1024
 MIN_AUDIO_SECONDS = 2.0
 EMBEDDING_WINDOW_SECONDS = 10.0
@@ -181,7 +182,7 @@ class SpeakerComparisonService:
     def __init__(self, store, *, embedder=None, decoder: Callable = decode_audio):
         self.store = store
         self.decoder = decoder
-        self.embedder = embedder or WavLMSpeakerEmbedder(store.root / "speaker-models")
+        self.embedder = embedder or WavLMSpeakerEmbedder(DEFAULT_MODEL_CACHE)
         self.operation_lock = threading.Lock()
         with store.connect() as db:
             db.execute("""CREATE TABLE IF NOT EXISTS speaker_comparisons (

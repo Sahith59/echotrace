@@ -46,6 +46,15 @@ The 404,479,908-byte SafeTensors file must match SHA-256
 `94c3defe08248d81c7b2bd0a058ea9985269cefed13076434669c47fade41182`.
 Loading is local-only after download, forces `use_safetensors=True`, and disables
 remote code. The repository's pickle checkpoint is never downloaded or loaded.
+Verified files persist in the gitignored
+`challenges/hearsay-audio-authentication/backend/artifacts/speaker-model/`
+directory, shared by all local workspaces. The first comparison downloads them
+automatically when absent. To prefetch and verify them before starting the app,
+run from the backend directory:
+
+```bash
+uv run python -c "from echotrace.speaker import DEFAULT_MODEL_CACHE, WavLMSpeakerEmbedder; WavLMSpeakerEmbedder(DEFAULT_MODEL_CACHE)._download()"
+```
 
 CPU inference is serialized. Recordings longer than ten seconds use four evenly
 spaced ten-second windows at most (40 seconds of model input), and their
@@ -78,6 +87,15 @@ consent, missing and incomplete jobs, invalid media, short and quiet audio,
 oversized upload cleanup, local reference deletion, separate persistence,
 synthetic-score preservation, status/error contracts, pinned downloads,
 SafeTensors-only loading, and bounded long-audio windows.
+
+GREEN command: `uv run pytest -q tests/test_speaker.py
+tests/test_speaker_model.py` reports 11 passed. Focused coverage with
+`uv run --with coverage coverage run
+--source=echotrace.speaker,echotrace.speaker_router -m pytest -q
+tests/test_speaker.py tests/test_speaker_model.py` is 81% overall (speaker
+service 76%, router 94%). The remaining service lines are primarily the real
+network/model failure branches; the genuine-model smoke below exercised the
+successful download and inference path separately.
 
 The pretrained-model smoke check downloaded the pinned artifact, verified its
 size and SHA-256, loaded it on CPU, and produced a finite 512-dimensional
