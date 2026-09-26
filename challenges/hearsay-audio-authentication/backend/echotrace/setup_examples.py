@@ -10,7 +10,7 @@ import sys
 import urllib.request
 from pathlib import Path, PurePosixPath
 from typing import Callable
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 
 DATASET = "mueller91/MLAAD-tiny"
@@ -117,12 +117,40 @@ def load_catalog(provenance: Path | str = DEFAULT_PROVENANCE) -> list[dict]:
     return validated
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
+DELIVERY_HOSTS = frozenset({
+    "us.aws.cdn.hf.co",
+    "eu.aws.cdn.hf.co",
+    "cdn-lfs.hf.co",
+    "cdn-lfs-us-1.hf.co",
+    "cdn-lfs-eu-1.hf.co",
+    "cas-bridge.xethub.hf.co",
+})
+
+
+class _PinnedRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
-        return None
+        source = urlsplit(req.full_url)
+        target = urlsplit(newurl)
+        source_path = f"/datasets/{DATASET}/resolve/{REVISION}/"
+        permitted = (
+            code == 302
+            and source.scheme == "https"
+            and source.hostname == "huggingface.co"
+            and source.port is None
+            and source.path.startswith(source_path)
+            and target.scheme == "https"
+            and target.hostname in DELIVERY_HOSTS
+            and target.port is None
+            and target.username is None
+            and target.password is None
+            and not target.fragment
+        )
+        if not permitted:
+            return None
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-_OPENER = urllib.request.build_opener(_NoRedirect)
+_OPENER = urllib.request.build_opener(_PinnedRedirect)
 
 
 def _open_fixed_url(url: str, timeout: int):

@@ -17,11 +17,13 @@ uv run python -m echotrace.setup_examples --confirm-source-review
 
 The default output is `artifacts/public-pilot/`. Use `--output PATH` to select a
 different directory. The downloader accepts only the 24 URLs derived from the
-checked-in dataset revision, refuses redirects, limits each file and the total
-catalog size, streams with a 30-second request timeout, and verifies both the
-declared byte count and SHA-256 before publishing a file. A rerun skips files
-that still match. It refuses to overwrite a changed file or follow an output
-symlink; remove or relocate a changed file yourself before retrying.
+checked-in dataset revision. It permits only the single HTTPS redirect that
+Hugging Face uses from that pinned URL to a fixed allowlist of its delivery
+hosts. It limits each file and the total catalog size, streams with a 30-second
+request timeout, and verifies both the declared byte count and SHA-256 before
+publishing a file. A rerun skips files that still match. It refuses to overwrite
+a changed file or follow an output symlink; remove or relocate a changed file
+yourself before retrying.
 
 Review the upstream materials before downloading:
 
@@ -44,4 +46,3 @@ attribution. The MLAAD card requests citation of:
 > Gölge, Eren; Müller, Thorsten; Syga, Piotr; Sperl, Philip; Böttinger,
 > Konstantin. “MLAAD: The Multi-Language Audio Anti-Spoofing Dataset.” 2024.
 > arXiv:2401.09512.
-
