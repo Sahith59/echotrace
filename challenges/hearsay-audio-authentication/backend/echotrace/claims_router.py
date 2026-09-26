@@ -16,6 +16,8 @@ from .transcription import MAX_DURATION_S, MAX_SEGMENTS, MAX_TRANSCRIPT_CHARS, T
 MAX_CLAIM_CHARS = 2000
 MAX_RATIONALE_CHARS = 1500
 MAX_EVIDENCE = 12
+MAX_TRANSCRIPT_VERSIONS = 50
+MAX_CLAIMS_PER_JOB = 200
 
 
 def _now() -> str:
@@ -40,6 +42,24 @@ def load_claim_records(store, job_id: str) -> list[dict]:
     return [json.loads(row["payload"]) for row in rows]
 
 
+def _transcript_envelope(versions: list[dict]) -> dict:
+    if not versions:
+        return {"status": "not_generated", "versions": []}
+    latest_attempt = versions[-1]
+    latest_success = next(
+        (row for row in reversed(versions) if row["status"] == "generated"), None
+    )
+    selected = latest_success or latest_attempt
+    envelope = dict(selected, versions=versions)
+    if latest_attempt["version"] != selected["version"]:
+        envelope["latest_attempt"] = {
+            "status": latest_attempt["status"],
+            "version": latest_attempt["version"],
+            "error": latest_attempt.get("error"),
+        }
+    return envelope
+
+
 def load_claim_artifacts(store, job_id: str) -> dict:
     """Stable export shape with transcript staleness computed from local versions."""
     versions = load_transcript_versions(store, job_id)
@@ -50,9 +70,7 @@ def load_claim_artifacts(store, job_id: str) -> dict:
         version = item.get("transcript_version")
         item["stale_transcript"] = bool(version and latest and version != latest["version"])
         records.append(item)
-    transcript = {"status": "not_generated", "versions": []} if not versions else dict(
-        versions[-1], versions=versions
-    )
+    transcript = _transcript_envelope(versions)
     return {"transcript": transcript, "claims": records}
 
 
@@ -214,6 +232,8 @@ def create_claims_router(store, transcriber=None, reviewer=None):
                 "max_segments": MAX_SEGMENTS,
                 "max_claim_chars": MAX_CLAIM_CHARS,
                 "max_evidence": MAX_EVIDENCE,
+                "max_transcript_versions": MAX_TRANSCRIPT_VERSIONS,
+                "max_claims_per_job": MAX_CLAIMS_PER_JOB,
             },
             "external_disclosure": "With consent, only claim text is sent to xAI web search; audio and the full transcript stay local.",
         }
@@ -222,9 +242,7 @@ def create_claims_router(store, transcriber=None, reviewer=None):
     def get_transcript(job_id: str):
         job_for(job_id)
         rows = transcript_rows(job_id)
-        if not rows:
-            return {"status": "not_generated", "versions": []}
-        return dict(rows[-1], versions=rows)
+        return _transcript_envelope(rows)
 
     @router.post("/api/analyses/{job_id}/transcript", status_code=201)
     def generate_transcript(job_id: str):
@@ -232,6 +250,8 @@ def create_claims_router(store, transcriber=None, reviewer=None):
         if not transcription_lock.acquire(blocking=False):
             raise HTTPException(409, "Another transcription is running. Retry shortly.")
         try:
+            if len(transcript_rows(job_id)) >= MAX_TRANSCRIPT_VERSIONS:
+                raise HTTPException(429, "Transcript version limit reached for this recording.")
             version = next_version(job_id)
             created_at = _now()
             try:
@@ -271,6 +291,8 @@ def create_claims_router(store, transcriber=None, reviewer=None):
         if not transcription_lock.acquire(blocking=False):
             raise HTTPException(409, "Another transcription update is running. Retry shortly.")
         try:
+            if len(transcript_rows(job_id)) >= MAX_TRANSCRIPT_VERSIONS:
+                raise HTTPException(429, "Transcript version limit reached for this recording.")
             base = latest_success(job_id)
             if base is None or base["version"] != correction.base_version:
                 raise HTTPException(409, "Transcript changed or does not exist; reload before correcting it.")
@@ -305,7 +327,7 @@ def create_claims_router(store, transcriber=None, reviewer=None):
     @router.get("/api/analyses/{job_id}/claims")
     def get_claims(job_id: str):
         job_for(job_id)
-        return {"claims": [with_stale(job_id, item) for item in load_claim_records(store, job_id)]}
+        return {"claims": load_claim_artifacts(store, job_id)["claims"]}
 
     def save_claim(job_id: str, payload: dict) -> None:
         with store.connect() as db:
@@ -317,6 +339,16 @@ def create_claims_router(store, transcriber=None, reviewer=None):
     @router.post("/api/analyses/{job_id}/claims", status_code=201)
     def create_claim(job_id: str, request: ClaimInput):
         job_for(job_id)
+        if not review_lock.acquire(blocking=False):
+            raise HTTPException(409, "Another claim review is running. Retry shortly.")
+        try:
+            return create_claim_locked(job_id, request)
+        finally:
+            review_lock.release()
+
+    def create_claim_locked(job_id: str, request: ClaimInput):
+        if len(load_claim_records(store, job_id)) >= MAX_CLAIMS_PER_JOB:
+            raise HTTPException(429, "Claim limit reached for this recording.")
         associated = None
         if request.transcript_version is not None:
             associated = next(
@@ -353,29 +385,24 @@ def create_claims_router(store, transcriber=None, reviewer=None):
                            rationale="No source-backed review has been completed. Add analyst evidence or consent to external search.",
                            evidence=[], method="manual_pending", provider=None, model=None, prompt_version=None)
         else:
-            if not review_lock.acquire(blocking=False):
-                raise HTTPException(409, "Another claim review is running. Retry shortly.")
+            provider_status = claims.status()
+            if not provider_status["available"]:
+                error = provider_status["reason"] or "Grok is unavailable."
+                failed = dict(base, status="error", verdict="uncheckable", rationale=error,
+                              evidence=[], method="ai_web_search", provider="xai",
+                              model=provider_status["model"], prompt_version=None, error=error)
+                save_claim(job_id, failed)
+                raise HTTPException(503, error)
             try:
-                provider_status = claims.status()
-                if not provider_status["available"]:
-                    error = provider_status["reason"] or "Grok is unavailable."
-                    failed = dict(base, status="error", verdict="uncheckable", rationale=error,
-                                  evidence=[], method="ai_web_search", provider="xai",
-                                  model=provider_status["model"], prompt_version=None, error=error)
-                    save_claim(job_id, failed)
-                    raise HTTPException(503, error)
-                try:
-                    review = claims.review(request.text)
-                except ClaimReviewError as exc:
-                    error = str(exc)
-                    failed = dict(base, status="error", verdict="uncheckable", rationale=error,
-                                  evidence=[], method="ai_web_search", provider="xai",
-                                  model=provider_status["model"], prompt_version=None, error=error)
-                    save_claim(job_id, failed)
-                    raise HTTPException(503, error) from None
-                payload = dict(base, **review)
-            finally:
-                review_lock.release()
+                review = claims.review(request.text)
+            except ClaimReviewError as exc:
+                error = str(exc)
+                failed = dict(base, status="error", verdict="uncheckable", rationale=error,
+                              evidence=[], method="ai_web_search", provider="xai",
+                              model=provider_status["model"], prompt_version=None, error=error)
+                save_claim(job_id, failed)
+                raise HTTPException(503, error) from None
+            payload = dict(base, **review)
         save_claim(job_id, payload)
         return with_stale(job_id, payload)
 
