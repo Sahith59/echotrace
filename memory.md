@@ -1,6 +1,11 @@
 # ECHOTRACE persistent memory
 
-Last updated: 2026-09-26, release-integration iteration. **This opening state supersedes all dated historical notes below.**
+Last updated: 2026-09-26, atmospheric-glass design iteration. **This opening state supersedes all dated historical notes below.**
+
+## Current visual implementation — 2026-09-26
+
+User supplied `/Users/sahithreddythummala/Desktop/Screenshot 2026-09-26 at 11.56.24 AM.png` as the exact visual reference. A calendar-free, inpainted derivative is now `frontend/public/textures/soft-atmosphere.png`; `frontend/src/reference-glass.css` supersedes the earlier warm woven-paper styling. The application uses teal/light-blue/lilac atmosphere, rose texture at the lower edge, slate translucent glass with decorative background refraction, white-on-glass content and near-white selected controls. Real calendar filter and analyst semantics remain. Chrome desktop intake/NII recording/batch/calendar screenshots and a 375×812 calendar screenshot were reviewed; mobile popover fits viewport without document horizontal overflow. Do not claim byte-for-byte reuse of the screenshot image or validated detection from visual work.
+The 375px recording view also revealed unspaced evidence IDs in a Groq brief overflowing the page; CSS now wraps long interpretation text. The mobile recording header matches the slate glass. Browser document width returned to 375px. Final frontend check: 51/51 tests passed; TypeScript/Vite production build passed; git diff whitespace check passed. Source release is the next step.
 
 ## Latest approved UI/workflow iteration — 2026-09-26
 

@@ -22,9 +22,9 @@ export function GlassFilter() {
   return <svg className="glass-filter-defs" aria-hidden="true" focusable="false">
     <defs>
       <filter id="glass-distortion" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.025" numOctaves="1" seed="17" result="texture" />
-        <feGaussianBlur in="texture" stdDeviation="2" result="softMap" />
-        <feDisplacementMap in="SourceGraphic" in2="softMap" scale="8" xChannelSelector="R" yChannelSelector="G" />
+        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.018" numOctaves="1" seed="17" result="texture" />
+        <feGaussianBlur in="texture" stdDeviation="3" result="softMap" />
+        <feDisplacementMap in="SourceGraphic" in2="softMap" scale="16" xChannelSelector="R" yChannelSelector="G" />
       </filter>
     </defs>
   </svg>

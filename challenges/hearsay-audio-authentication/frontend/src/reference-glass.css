@@ -1,0 +1,339 @@
+/* ECHOTRACE / atmospheric slate glass. The image is a clean background made
+   from the supplied calendar reference; only decorative pixels are displaced. */
+:root {
+  --bg: #afcbd8;
+  --ivory: #f9fcfe;
+  --muted: #dae5ec;
+  --soft: #e0e9ee;
+  --line: #ffffff35;
+  --cyan: #c9f3ff;
+  --coral: #ffd2c3;
+  --amber: #ffe4b6;
+  --glass-fill: linear-gradient(145deg, #344d60a8 0%, #485c70a1 53%, #645a718f 100%);
+  --glass-edge: #ffffff66;
+  --glass-ink: #fafcff;
+  --glass-secondary: #e0e9ee;
+  --glass-shadow: 0 22px 48px #23354c2b, 0 5px 14px #2c48621b, inset 0 1px #ffffff69;
+  --glass-control: 0 8px 17px #21344a36, inset 0 1px #ffffff65, inset 0 -1px #1a334342;
+}
+
+body { background: var(--bg); color: #1b3944; }
+.ambient-scene { background: #afcbd8; }
+.ambient-scene::before {
+  inset: 0;
+  opacity: 1;
+  filter: none;
+  background: url('/textures/soft-atmosphere.png') center center / cover no-repeat;
+}
+.ambient-scene::after {
+  background: linear-gradient(180deg, #d9eaf00d 0%, #eef3fa08 54%, #e8d0e916 100%);
+}
+
+/* The base material is translucent. A viewport-aligned duplicate of the
+   atmosphere is softly displaced above it, leaving all text perfectly sharp. */
+.liquid-glass, .case-panel, .ai-interpretation, .sidebar, .glass-calendar,
+.batch-stats, .export-bar, .case-guidance, .case-next, .pilot-examples {
+  color: var(--glass-ink);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+.glass-refraction {
+  background: url('/textures/soft-atmosphere.png') center center / cover fixed no-repeat;
+  opacity: .24;
+  filter: url(#glass-distortion) blur(.8px);
+  mix-blend-mode: screen;
+}
+.glass-specular {
+  box-shadow: inset 0 1px #ffffffa8, inset 1px 0 #ffffff35,
+    inset -1px -1px #182f403e, inset 0 18px 28px #ffffff16;
+}
+
+/* Navigation is part of the same material system, with inset selection. */
+.sidebar {
+  background: linear-gradient(160deg, #3f596ab7, #455870a8 54%, #665a73a0);
+  border-radius: 25px;
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+}
+.brand { border-bottom-color: #ffffff3c; }
+.brand strong, .brand small, .sidebar-section-label, .sidebar-list-heading,
+.sidebar-footer strong, .sidebar-footer small { color: var(--glass-ink); }
+.brand small, .sidebar-section-label, .sidebar-list-heading, .sidebar-footer small { opacity: .8; }
+.brand-mark { background: #f3f8fabd; color: #284954; box-shadow: var(--glass-control); }
+.nav-item, .job-row { color: var(--glass-ink); }
+.nav-item:hover, .job-row:hover { background: #ffffff23; }
+.nav-item.nav-active, .job-row.selected {
+  color: #183744;
+  background: linear-gradient(145deg, #f9feffdc, #deebf3bd);
+  border: 1px solid #ffffffac;
+  box-shadow: inset 2px 3px 7px #4a667122, inset -1px -1px #fff9;
+}
+.nav-item.nav-active svg, .nav-item.nav-active span, .job-row.selected .job-row-text strong,
+.job-row.selected .job-row-text small { color: #23434f; }
+.nav-item span { color: #284b56; background: #ffffffae; }
+.sidebar-divider { background: #ffffff3e; }
+.job-row-text strong { color: #fff; font-weight: 720; }
+.job-row-text small, .sidebar-empty { color: #e0e9ee; }
+.job-icon, .job-row.selected .job-icon {
+  color: #effaff;
+  background: #ffffff22;
+  border-color: #ffffff66;
+  box-shadow: inset 0 1px #ffffff67, 0 4px 9px #1d38402a;
+}
+.job-row.selected .job-icon { color: #244550; background: #ffffff86; }
+.job-icon.failed { color: #ffe1d7; background: #a9515357; }
+.sidebar-footer { background: #ffffff0d; border-top-color: #ffffff3a; }
+.connection-dot.online { background: #c3f0df; }
+
+/* One control grammar: smoky frosted surfaces, thin edges, quick press response. */
+.topbar-add, .outline-button, .glass-button, .icon-button, .info-button,
+.queue-toolbar input, .queue-toolbar select, .case-field input, .case-field textarea,
+.case-field select, .validation-condition select, .pilot-examples select,
+.date-filter summary, .calendar-heading button, .calendar-grid button,
+.ai-interpretation-refs button, .claim-result-meta span {
+  color: #f7fbfe;
+  background: linear-gradient(145deg, #2b455b8a, #5a668074);
+  border: 1px solid #ffffff70;
+  box-shadow: var(--glass-control);
+  backdrop-filter: blur(12px) saturate(1.22);
+  -webkit-backdrop-filter: blur(12px) saturate(1.22);
+}
+.topbar-add:hover, .outline-button:hover, .glass-button:hover,
+.icon-button:hover, .info-button:hover, .date-filter summary:hover,
+.calendar-heading button:hover, .calendar-grid button:hover {
+  color: #fff;
+  background: #ffffff38;
+  border-color: #ffffffb2;
+  box-shadow: 0 10px 20px #24384a36, inset 0 1px #ffffff8c;
+}
+.topbar-add:active, .outline-button:active, .glass-button:active,
+.icon-button:active, .info-button:active {
+  transform: translateY(1px) scale(.985);
+  box-shadow: inset 2px 3px 8px #2239498c, inset -1px -1px #ffffff57;
+}
+.primary-button, .pilot-examples-action, .pilot-examples-status button, .play-button {
+  color: #fff;
+  background: linear-gradient(145deg, #3c5d75df, #34435cc9);
+  border: 1px solid #ffffff7d;
+  box-shadow: 0 12px 20px #25354a40, inset 0 1px #ffffff78;
+  backdrop-filter: blur(14px);
+}
+.primary-button:hover:not(:disabled), .pilot-examples-action:hover:not(:disabled),
+.play-button:hover { background: #35536ac9; border-color: #ffffffc0; }
+.text-button, .breadcrumb button { color: #204e64; }
+.liquid-glass .text-button, .case-panel .text-button { color: #f3fbff; }
+.queue-toolbar input::placeholder, .case-field input::placeholder,
+.case-field textarea::placeholder { color: #dce8efbd; }
+.queue-toolbar select, .case-field select, .validation-condition select { color-scheme: dark; }
+input[type=checkbox], .case-check input { accent-color: #a9dbe6; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible,
+select:focus-visible, summary:focus-visible, [role=slider]:focus-visible {
+  outline: 3px solid #fcfdff;
+  outline-offset: 3px;
+}
+
+/* Editorial content outside glass retains dark ink for the pale background. */
+.topbar-eyebrow, .breadcrumb, .eyebrow, .workspace-footnote,
+.recent-heading h2, .recent-recording, .recent-recording strong,
+.recent-recording small, .recent-status, .page-intro p,
+.page-intro h1, .page-intro .case-file-name, .page-intro .case-record-meta {
+  color: #1f3b4a;
+}
+.page-intro h1, .section-heading h2, .case-intro h2, .drop-zone h2,
+.calendar-heading h3, .recent-heading h2 { font-family: var(--body); font-weight: 740; letter-spacing: -.045em; }
+.page-intro h1 { font-size: clamp(34px, 4vw, 57px); }
+.result-intro h1 { font-size: clamp(27px, 2.5vw, 36px); }
+.page-intro p { font-weight: 540; }
+.recent-recording { border-color: #2f506246; }
+.recent-recording:hover { color: #173e52; background: #ffffff45; }
+.recent-recording strong { font-weight: 720; }
+.recent-recording small, .workspace-footnote { color: #355563; }
+
+/* Content panels use bright typography on dark translucent glass. */
+.liquid-glass :is(h2, h3, strong), .case-panel :is(h2, h3, strong),
+.ai-interpretation :is(h2, h3, strong), .batch-stats strong,
+.export-bar strong, .case-guidance strong, .case-next strong,
+.pilot-examples strong { color: #fff; }
+.liquid-glass :is(p, small, label, dt, dd, th, td, summary),
+.case-panel :is(p, small, label, dt, dd, th, td, summary),
+.ai-interpretation :is(p, small, label, dt, dd, th, td, summary) {
+  color: var(--glass-secondary);
+}
+.liquid-glass .eyebrow, .case-panel .eyebrow,
+.liquid-glass .section-aside, .liquid-glass .panel-header,
+.case-panel .case-help, .case-panel .case-field,
+.case-panel .case-progress, .case-panel .case-check,
+.liquid-glass .context-note, .liquid-glass .detail-note,
+.liquid-glass .no-data, .liquid-glass .compare-caveat,
+.liquid-glass .comparison-source small, .liquid-glass .comparison-numbers small,
+.ai-interpretation .ai-interpretation-caveat,
+.ai-interpretation .ai-interpretation-meta,
+.ai-interpretation .ai-interpretation-refs {
+  color: var(--glass-secondary);
+}
+.liquid-glass .section-heading h2, .liquid-glass .case-intro h2,
+.liquid-glass .drop-zone h2, .liquid-glass .score-caption,
+.liquid-glass .context-line strong, .liquid-glass .evidence-copy strong,
+.liquid-glass .evidence-value, .liquid-glass .table-score,
+.liquid-glass .table-name, .liquid-glass .comparison-source > strong,
+.liquid-glass .comparison-numbers strong { color: #fff; }
+.liquid-glass .context-line > span, .liquid-glass .evidence-copy small,
+.liquid-glass .evidence-value span, .liquid-glass .limitations p,
+.liquid-glass .technical-details dt, .liquid-glass .technical-details dd,
+.liquid-glass .interval-row, .liquid-glass .comparison-row,
+.liquid-glass .player-meta, .liquid-glass .player-meta span:first-child,
+.liquid-glass .waveform-label, .liquid-glass .waveform-ticks {
+  color: #e2ebf0;
+}
+.liquid-glass .context-line, .liquid-glass .evidence-row,
+.liquid-glass .interval-row, .liquid-glass .comparison-list,
+.liquid-glass .comparison-row, .liquid-glass .limitations p,
+.liquid-glass .technical-details, .liquid-glass .transcript-segments button,
+.liquid-glass .claim-results article, .liquid-glass .transcript-passage,
+.liquid-glass .ai-interpretation-evidence dl div, th, td {
+  border-color: #ffffff35;
+}
+.score-panel, .state-panel, .glass-calendar {
+  background: linear-gradient(150deg, #344d60ad, #52637a9e 60%, #675c789c);
+}
+.score-panel { background: linear-gradient(150deg, #344d60d6, #52637ac9 60%, #675c78c5); }
+.score-number.cyan, .score-summary.cyan { color: #c3effa; }
+.score-number.coral, .score-summary.coral { color: #ffd2c5; }
+.score-number.amber, .score-summary.amber { color: #ffe2ac; }
+.score-number.neutral, .score-summary.neutral { color: #fff; }
+.score-scale, .score-caption svg { color: #d5e5ee; }
+.score-rule { background: #ffffff3c; }
+.score-rule span.cyan { background: #c3effa; }
+.score-rule span.coral { background: #ffd2c5; }
+.score-rule span.amber { background: #ffe2ac; }
+.status-pill.completed { background: #7eae9b57; color: #e1ffeb; }
+.status-pill.failed { background: #b36d6a65; color: #fff0e9; }
+.status-pill.running { background: #b29d6c65; color: #fff3d4; }
+.status-pill { background: #ffffff2c; color: #edf5f8; }
+.error-banner, .legacy-notice { background: #704e58b3; border-color: #ffe4c275; color: #fff3e9; }
+.error-banner button, .legacy-notice p { color: #fff3e9; }
+.case-guidance { background: linear-gradient(120deg, #324d62b8, #5a6179a8); }
+.case-guidance p, .case-guidance strong, .case-guidance svg,
+.case-next p { color: #f4f9fc; }
+.case-tabs { background: #39546ca6; border-color: #ffffff61; box-shadow: var(--glass-shadow); }
+.case-tabs button { color: #e0eaf0; }
+.case-tabs button:hover { color: #fff; background: #ffffff22; }
+.case-tabs button[aria-current=page] {
+  color: #1d3b49;
+  background: #f7fbfbe8;
+  box-shadow: inset 0 1px #fff, 0 5px 11px #1c354a3b;
+}
+.case-tabs button span { color: inherit; }
+.drop-zone { background: #152e4238; border-color: #ffffff9b; }
+.drop-zone p, .drop-zone small, .intake-guide p,
+.intake-guide .intake-boundary, .intake-guide > div > span { color: #e1eaf0; }
+.drop-icon, .evidence-symbol, .processing-orbit {
+  color: #f7fcff;
+  background: #ffffff2c;
+  border-color: #ffffff71;
+  box-shadow: var(--glass-control);
+}
+.waveform { background: #19364a36; border-color: #ffffff32; }
+.waveform-grid { background: repeating-linear-gradient(90deg, transparent 0, transparent calc(25% - 1px), #ffffff2d 25%); }
+.waveform-bar { background: linear-gradient(#c5f1f8, #80b6c6); }
+.interval-zone { background: #b8d9e02e; border-color: #b4e8f365; }
+.waveform-playhead { background: #ffd8bc; }
+.interval-row:hover, .transcript-segments button:hover { background: #ffffff1f; color: #fff; }
+.transcript-segments button, .claim-result-meta span,
+.detector-scorecards > div, .speaker-result {
+  color: #f2f9fc;
+  background: #ffffff1b;
+  border-color: #ffffff59;
+}
+.speaker-result > span, .speaker-result small,
+.claim-results p, .claim-results li, .claim-result-meta small,
+.ai-interpretation-summary, .ai-interpretation-report ul,
+.ai-interpretation-evidence dt, .ai-interpretation-evidence dd,
+.detector-scorecards span, .pilot-examples-intro,
+.pilot-examples-source, .pilot-examples-status, .pilot-examples-reference {
+  color: #e4edf1;
+}
+.claim-results a { color: #d4f5ff; text-decoration: underline; }
+.ai-interpretation-report h3, .ai-interpretation-evidence summary,
+.ai-interpretation-refs button, .pilot-examples summary,
+.pilot-examples-reference strong { color: #fff; }
+.ai-interpretation-report, .ai-interpretation-report li { overflow-wrap: anywhere; }
+.model-validation th, .model-validation td { color: #e2ebf0; border-color: #ffffff36; }
+.measurement-highlight { background: #9fc5dc48; outline-color: #d9f8ff86; }
+
+/* The queue, exports and date filter retain the reference card's smoky tone. */
+.queue-toolbar label { color: #1e3f4b; font-weight: 690; }
+.queue-toolbar input, .queue-toolbar select { font-size: 14px; }
+.batch-stats > div, th, td, .export-bar { border-color: #ffffff39; }
+.batch-stats span, th, .table-name small, .queue-model,
+.review-status, .muted, .export-bar span, .batch-empty { color: #e2ecf1; }
+.batch-stats strong, .table-score, .table-name, .batch-panel h2 { color: #fff; }
+.table-name svg { color: #d9e7ef; }
+.glass-calendar { padding: 22px; }
+.glass-calendar, .glass-calendar :is(h3, span, button, summary) { color: #fff; }
+.calendar-heading h3 { font-size: 30px; font-weight: 760; }
+.calendar-caption, .calendar-week span { color: #e1e9ee; }
+.calendar-heading button, .calendar-grid button {
+  color: #fff;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.calendar-heading button:hover, .calendar-grid button:hover {
+  color: #fff;
+  background: #ffffff25;
+  box-shadow: none;
+}
+.calendar-grid button[aria-pressed=true] { color: #213d4b; background: #fff; box-shadow: 0 4px 10px #203a5140; }
+.calendar-clear { color: #fff; border-top-color: #ffffff50; }
+.info-popover {
+  color: #f7fbfd;
+  background: #354d61e8;
+  border-color: #ffffff6c;
+  box-shadow: 0 20px 34px #20364b56;
+  backdrop-filter: blur(22px);
+}
+.info-popover strong { color: #fff; }
+.pilot-examples { background: linear-gradient(145deg, #344d60ad, #5c6379a3); }
+.pilot-examples-body { border-color: #ffffff39; }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .liquid-glass, .case-panel, .ai-interpretation, .sidebar, .glass-calendar,
+  .batch-stats, .export-bar, .case-guidance, .case-next, .pilot-examples {
+    background: #415569ec;
+  }
+}
+@media (max-width: 800px) {
+  .sidebar.sidebar-open { background: #41576ae8; }
+  .mobile-scrim { background: #172d4185; }
+}
+@media (max-width: 650px) {
+  .calendar-popover {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%);
+    width: min(338px, calc(100vw - 32px));
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    z-index: 100;
+  }
+  .page-intro h1 { font-size: 36px; }
+  .result-intro {
+    color: #f9fcfe;
+    background: var(--glass-fill);
+    border-color: var(--glass-edge);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(18px) saturate(1.2);
+  }
+  .result-intro h1 { font-size: 26px; }
+  .result-intro :is(h1, .case-file-name) { color: #fff; }
+  .result-intro .case-record-meta { color: #e0e9ee; }
+  .case-tabs button { font-size: 12px; }
+}
