@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. **Groq interpretation is implemented; an authenticated request awaits the user's key. Three earlier adapted detectors failed promotion. The pinned NII detector has now passed reference parity and a frozen 2,000-file In-The-Wild benchmark at threshold 0.5: 93.7% recall, 2.4% false positives, AUROC 0.9925. It is integrated as an optional research comparison. Original AASIST-L remains the primary API/CLI/CSV detector; primary promotion requires the separate integration steps below. No new GPU time was used.**
+Updated 2026-09-26. **The approved light workspace and guided investigation are implemented. New API/CLI analyses use pinned NII whole-file scoring (<=30seconds); legacy AASIST results remain immutable. A real browser NII analysis and real Groq interpretation succeeded. Guided steps, queue/date filters, analyst reviews and provenance-safe comparisons/exports are implemented. Phase5 local verification is being completed; official sponsor data/schema/submission and deployment remain external gates. NII serving is an explicit prototype decision using absolute benchmark gates and parity, not a claim that the old training-candidate comparative contract passed.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 
@@ -18,13 +18,13 @@ The numerical score comes from the speech detector. Signal measurements describe
 | --- | --- | --- |
 | 0 — Requirements | Internal requirements documented; sponsor details missing | Official data, metric, CSV template, full rules and NSA cutoff confirmed |
 | 1 — Baseline | Working pipeline and public diagnostic evaluation | Sponsor-specific baseline evaluation and schema validation remain open |
-| 2 — Workbench | Implemented; local checks complete with stated exceptions | Manual unfamiliar-file upload and live Groq verification remain |
+| 2 — Workbench | Implemented; built-in public-sample multipart upload and live Groq generation passed in the browser | Manual native unfamiliar-file chooser check remains |
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
 | 3B — Adapt | Completed: adaptation and frozen-candidate experiments | Final job 4504574 finished; artifacts retained |
-| 3C — Evaluate | Earlier adaptations failed; NII external benchmark passed absolute gates | Complete baseline comparison and primary-pipeline migration checks; public benchmark replication is not sponsor validation |
-| 4 — Demonstrate | Local rehearsal and saved fallback complete | Venue/display rehearsal and live Groq remain external checks |
+| 3C — Evaluate | Earlier adaptations failed; NII passed parity and frozen absolute gates and is the scoped prototype primary | Retrieve paired baseline job 4504670; public benchmark replication is not sponsor validation or a superiority claim |
+| 4 — Demonstrate | Light guided workspace, queue/review flow, real Groq generation and saved fallback complete | Venue/display rehearsal remains external |
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
-| Extensions — Speaker and claims | Implemented and tested | Live Groq remains unverified without a key; similarity is not identity proof |
+| Extensions — Speaker and claims | Implemented and tested, including live Groq interpretation | Similarity is not identity proof; generated interpretation can be wrong |
 
 ## Phase 0 — Requirements
 
@@ -79,9 +79,9 @@ Known diagnostic: the original detector caught 6/12 synthetic recordings and fal
 - [x] Failed and scoreless QA recordings are disabled in the live batch selection UI.
 - [x] Real detector/FFmpeg integration verifies completed JSON/CSV persist byte-identically across application lifespan restart; interrupted work becomes failed and retries successfully.
 - [x] Repair the reproduced mobile keyboard focus escape and verify focus entry, Tab containment and Escape restoration in Chrome. Automated tests also cover desktop resize and cleanup.
-- [ ] Complete unfamiliar-file browser upload journey. Automated browser file selection is blocked by the Chrome extension's file-URL permission; backend format tests pass.
+- [ ] Complete the native unfamiliar-file chooser journey manually. Built-in public-sample normal multipart upload passed in the browser; automated local-file selection remains blocked by the Chrome extension's file-URL permission.
 - [x] Inspect desktop, 375×812 phone and 812×375 landscape layouts; verify no page overflow and visible input focus. Mobile focus containment/reduced-motion implementation are tested. This is not a formal screen-reader/WCAG certification or pixel-regression suite.
-- [ ] Verify live Groq interpretation output, evidence references, persistence and unchanged score after the user saves `GROQ_API_KEY` in root `.env`. Key is absent at last status check.
+- [x] Verify live Groq interpretation output, evidence references, persistence and unchanged score. The initial edge `403` was fixed with the required user-agent; authenticated browser generation succeeded with the working key.
 - [x] Present measured validation summaries with checkpoint hashes and explicit failed/not-promoted status; never label an experimental model as serving.
 
 Evidence: [restart verification](docs/phase2-restart-verification.md), [phase verification](docs/phase-verification.md), [feature inventory](docs/product-capabilities.md). Analyst CSV is implemented; official sponsor-format export remains a Phase 5 gate.
@@ -120,14 +120,14 @@ One A100-SXM4-40GB, one node, 4 CPUs, 32 GB host RAM. Aggregate actual GPU alloc
 
 See [run ledger](docs/cluster-run-2026-09-25.md) for exact paths, job IDs and live-status commands. A running job or checkpoint file is not proof of improved accuracy.
 
-## Phase 3C — Evaluate before replacing the web model
+## Phase 3C — Historical candidate evaluation and current serving decision
 
 - [x] Verify all three completed experiments, finite predictions, failures, checkpoint provenance and selection-only thresholds.
 - [x] Review recall, false-positive rate, AUROC, counts, confidence intervals and available attack/codec slices.
 - [x] Evaluate the predeclared promotion goals: at least 80% recall, at most 5% false positives, at least 10 percentage-point recall gain, no AUROC regression. **The final candidate failed the false-positive goal.**
-- [x] Retain the original serving model and preserve failed candidates as experimental evidence. No checkpoint is promoted automatically.
+- [x] Historical decision: retain the original serving model after the three training candidates failed and preserve those candidates as experimental evidence. No checkpoint was promoted automatically.
 - [ ] Meet the detector quality goals on a new representative independent benchmark. This is an unresolved product-quality requirement, not a completed feature.
-- [ ] If a future candidate passes, verify local CPU/evaluator parity, latency/memory, model-version comparison guards and rollback before activating it.
+- [x] Separately evaluate pinned NII: official-reference parity and frozen absolute benchmark gates passed; activate it as the explicitly reviewed prototype primary with local CPU/runtime, provenance, failure and rollback checks.
 
 Final native candidate: **87.4% recall, 24.4% false-positive rate, AUROC 0.90609** on 1,000 genuine and 1,000 synthetic recordings. Baseline on those same files: 53.7% recall, 24.0% false positives, AUROC 0.70538. Thresholds were fixed using the original selection set. These are different records from earlier experiments and must not be pooled as directly comparable tests.
 
@@ -141,7 +141,7 @@ Post-hoc diagnosis finds much higher false positives on several compressed genui
 - [x] Exercise genuine, synthetic/missed-detection, corrupt, quiet, noisy and compressed cases through browser/API checks; preserve their actual results.
 - [x] Present independent before/after detector results in the live validation panel, including failed promotion decisions; the final run is included in the release summary.
 - [x] Save real genuine and missed-synthetic case JSON/HTML with SHA-256 manifest under ignored `artifacts/release-demo/`; explicitly label them prior runs.
-- [x] Verify the local desktop and responsive layouts, report/export/seek/claim controls and honest unavailable states. Unfamiliar-file browser chooser and live Groq remain the Phase 2 external checks; actual venue/display rehearsal is still needed.
+- [x] Verify the local light desktop and responsive layouts, guided steps, queue filters, report/export/seek/claim controls, live Groq generation and honest unavailable states. The native unfamiliar-file chooser and actual venue/display rehearsal remain manual checks.
 
 Demo sequence: suspicious recording → actual assessment → listen to a scored passage → compare a compressed/noisy copy → evidence-linked explanation when configured → export report → measured detector comparison. Do not claim precise edit localization, identity proof or factual truth from a synthesis score.
 
@@ -151,9 +151,10 @@ Demo sequence: suspicious recording → actual assessment → listen to a scored
 - [ ] Freeze detector/configuration and any independently validated calibration.
 - [ ] Run held-out inference without label-driven tuning.
 - [ ] Validate all IDs exactly once, columns/order/scale/polarity and finite values; resolve failures.
-- [ ] Finish restart, responsive, export and live-provider acceptance checks.
+- [x] Finish restart, responsive, export and live-provider acceptance checks for the local prototype.
 - [x] Document reproducible setup/inference/export commands and known limitations.
-- [x] Publish verified runnable source, tests, documentation and evaluation reports to [Sahith59/echotrace](https://github.com/Sahith59/echotrace), private. Application commit `eb14365` passed [GitHub CI](https://github.com/Sahith59/echotrace/actions/runs/36230750860): 249 backend passed / one macOS-only test skipped; 32 frontend passed and production build passed. Local macOS suite passed all250 backend tests.
+- [x] Verify the release wheel contains `primary_detector`, `analyst_review`, `nii_parity` and `validation_summary`, and excludes environment files, uploaded audio and model weights.
+- [x] Historical release: publish verified runnable source, tests, documentation and evaluation reports to [Sahith59/echotrace](https://github.com/Sahith59/echotrace), private. Application commit `eb14365` passed [GitHub CI](https://github.com/Sahith59/echotrace/actions/runs/36230750860): 249 backend passed / one macOS-only test skipped; 32 frontend passed and production build passed. Local macOS suite passed all 250 backend tests. The current NII/light-workspace source update has not yet been pushed.
 - [ ] Produce the official CSV and any remaining required event artifacts after the sponsor contract is supplied.
 - [ ] Rehearse and submit through the authorized destination once supplied.
 
@@ -169,7 +170,7 @@ The earlier source release is published. The user reopened detector improvement 
 
 Remaining gates:
 
-1. Save the Groq key locally and verify real interpretation output; manually exercise the unfamiliar-file browser chooser.
+1. Manually exercise the native unfamiliar-file browser chooser; built-in public-sample multipart upload and live Groq interpretation already passed.
 2. Obtain official NSA held-out files, CSV schema, metric, cutoff and submission instructions; use the strict export pipeline and resolve every failed row.
 3. Address compressed-genuine false positives using representative training/selection data and a fresh benchmark before claiming a strong detector or promoting a candidate. Do not retune the inspected acceptance sets.
 4. Plan deployment authentication, storage/retention and hosting in the next user-directed iteration. No deployment or official competition entry was performed here.
@@ -182,17 +183,30 @@ Remaining gates:
 - [x] Freeze and audit In-The-Wild external manifest (successful CPU4504655): 2,000 rows balanced1,000/class, all<=30s, onequiet retained; zeroexact-byte overlaps against16,458project hashes. Source IDs absent, upstream pretraining independence not established.
 - [x] Finish clean cluster parity record for pinned NII adapter (CPU4504660, completed). Corrected five-input CPUcomparison passes declared1e-3logit/1e-4probability limits; earlier setup failures preserved.
 - [x] Run frozen external benchmark at predeclared threshold0.5: CPU4504662 completed, all2,000 model-scored, recall93.7%, FPR2.4%, AUROC0.9925. One quiet genuine row is retained in these model-only results; app-eligible comparison must use the common1,999 rows. No threshold tuning on this benchmark; no ASVspoof5 independence claim for NII.
-- [ ] Promote only if measured gates, reference parity, runtime and provenance checks justify it. Otherwise retain truthful experimental status.
-- [ ] Refresh complete tests/browser/provider status and publish source update; no deployment.
+- [x] Make the reviewed prototype serving decision after measured absolute gates, reference parity, runtime and provenance checks; do not describe it as scientific superiority or passage of the older training-specific acceptance contract.
+- [ ] Publish the current source update; no deployment. Local verification is complete: 288 backend tests, 51 frontend tests and production build passed.
 
 - [x] Integrate and browser-test an on-demand, research-only NII second-detector comparison. Keep primary score unchanged, preserve both model identities, and never average uncalibrated scores. Frontend seven journeys pass; real genuine/synthetic comparisons, quiet rejection, saved reports, and 375px layout verified in Chrome.
 
-### Next implementation milestone: promote the validated detector deliberately
+### Completed primary migration and open paired evaluation
 
 - [ ] Finish same-file AASIST baseline comparison and common app-eligible denominator audit. NII result is public benchmark replication; the authors have previously evaluated this dataset.
-- [ ] Route the shared primary API/CLI pipeline through pinned NII with its verified whole-file <=30-second preprocessing; do not silently truncate or extend validation to two-minute aggregation.
-- [ ] Preserve existing AASIST reports and their model IDs; prevent mixed-model robustness comparisons and ambiguous CSV exports.
-- [ ] Verify primary inference parity, runtime, missing-model/quiet/long-file failures and rollback; update upload limits and model status consistently.
-- [ ] Keep historical experiments and separate speaker/claim evidence. Groq explanations must refer to the actual primary model's evidence.
+- [x] Route the shared primary API/CLI pipeline through pinned NII with its verified whole-file <=30-second preprocessing; reject rather than silently truncate longer inputs.
+- [x] Preserve existing AASIST reports and their model IDs; prevent mixed-model robustness comparisons and ambiguous CSV exports.
+- [x] Verify primary inference parity, runtime, missing-model/quiet/long-file failures and rollback; update model status consistently.
+- [x] Keep historical experiments and separate speaker/claim evidence. Groq explanations refer to the actual primary model's evidence.
 
-Current Groq activation step: enter `GROQ_API_KEY` in the ignored root `.env`, then **Check configuration → Generate interpretation**. Never paste the key into chat. Configuration and transport tests are complete; live authenticated generation is pending.
+Groq activation is complete. The ignored root `.env` remains backend-only; never paste the key into chat. Live authenticated generation passed after the client supplied the required user-agent. Do not repeat a billable call solely for verification.
+
+## Approved continuation: UI and phases3C–5
+
+- [x] Replace dark monochrome styling with light textured glass, readable text hierarchy, semantic button/status colors and reduced-motion transitions.
+- [x] Adapt supplied calendar into real queue date filtering; add keyboard-usable contextual info buttons.
+- [x] Phase3C prototype primary migration: pinned NII shared API/CLI, parity/runtime checks,30second limit, fail-closed input/model handling, preserved historical AASIST reports. See serving-decision document for measured and unmeasured boundaries.
+- [x] Phase4A: Review recording / Check reliability / Case evidence navigation; durable analyst status and notes with optimistic concurrency and local draft retention.
+- [x] Phase4B: queue search/status/review/date filters, score/date sort, actual compression/noise comparison, full-provenance mixed-model guards and original reanalysis.
+- [x] Phase4C: real Groq generation; allowlisted current comparison measurements invalidate stale briefs; clickable evidence references; versioned analyst findings in case report and CSV.
+- [ ] Phase5 official submission: still needs sponsor inputs/schema/metric and authorized destination. No official submission or deployment is claimed.
+- [ ] Retrieve completed same-file baseline CPU4504670 when cluster login returns. Latest attempts timed out at the jump-host banner; no duplicate jobs launched.
+
+User verification: open a known sample, run NII (or use legacy reanalysis), inspect help, switch investigation steps, save notes, filter the queue, run one transformation and export a same-model case/CSV. The key previously appeared rejected; bounded diagnosis showed an unstructured edge403 fixed by an explicit User-Agent. Real Groq generation subsequently succeeded—do not ask the user to replace the working key.
