@@ -46,9 +46,9 @@ def manifest(path, partition, prefix):
     return rows
 
 
-def fixture(tmp_path, monkeypatch, *, unsafe=None):
+def fixture(tmp_path, monkeypatch, *, unsafe=None, extra_dev=False):
     archives = {'flac_T_aa.tar': archive('flac_T', ['T_0001', 'T_0002'], unsafe=unsafe),
-                'flac_D_aa.tar': archive('flac_D', ['D_0001', 'D_0002'])}
+                'flac_D_aa.tar': archive('flac_D', ['D_0001', 'D_0002'] + (['D_9999'] if extra_dev else []))}
     pins = {name: (len(data), hashlib.md5(data).hexdigest()) for name, data in archives.items()}
     monkeypatch.setattr(staging, 'PINS', pins)
     inventory = tmp_path / 'inventory.json'
@@ -131,4 +131,20 @@ def test_rejects_wrong_official_partition(tmp_path, monkeypatch):
         writer.writeheader()
         writer.writerows(rows)
     with pytest.raises(ValueError, match='partition'):
+        staging.stage_data(inventory, train, dev, tmp_path / 'staged', opener=opener)
+
+
+def test_reports_dev_archive_members_outside_track1_manifest(tmp_path, monkeypatch):
+    inventory, train, dev, opener = fixture(tmp_path, monkeypatch, extra_dev=True)
+    report = staging.stage_data(inventory, train, dev, tmp_path / 'staged', opener=opener)
+    assert report['unmatched_archive_members']['dev'] == 1
+    assert report['staged_manifest_rows']['dev'] == 2
+
+
+def test_rejects_inventory_url_changed_from_fixed_zenodo_record(tmp_path, monkeypatch):
+    inventory, train, dev, opener = fixture(tmp_path, monkeypatch)
+    data = json.loads(inventory.read_text())
+    data['audio_files'][0]['url'] = 'https://example.com/other.tar'
+    inventory.write_text(json.dumps(data))
+    with pytest.raises(ValueError, match='Pinned inventory mismatch'):
         staging.stage_data(inventory, train, dev, tmp_path / 'staged', opener=opener)
