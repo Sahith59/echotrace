@@ -1,5 +1,6 @@
+import { InfoButton } from './ui/info-button'
 import { useEffect, useRef, useState } from 'react'
-import { FileText, Mic, Search, Download, Play, LoaderCircle } from 'lucide-react'
+import { Download, Play, LoaderCircle } from 'lucide-react'
 import './CaseReview.css'
 
 type Segment = { id: number; start_s: number; end_s: number; text: string }
@@ -84,7 +85,7 @@ function EvidenceWorkspace({ jobId, onSeek }: { jobId: string; onSeek: (seconds:
     {error && <div role="alert" className="case-error">{error}<button className="text-button" onClick={load} disabled={!!busy}>Reload evidence</button></div>}
     <div className="case-columns">
       <section className="detail-section case-panel" aria-labelledby="speaker-title">
-        <div className="section-heading"><div><span className="eyebrow">08 / VOICE COMPARISON</span><h2 id="speaker-title">Speaker reference</h2></div><Mic size={18} /></div>
+        <div className="section-heading"><div><span className="eyebrow">08 / VOICE COMPARISON</span><h2 id="speaker-title">Speaker reference</h2></div><InfoButton label="Speaker reference">Compare a consented reference recording with this voice. The result is embedding similarity, not verified identity: a clone or replay can also match. Reference audio is removed after processing.</InfoButton></div>
         <p className="detail-note">Compare this recording with a trusted voice sample. Similarity is not an identity verdict; a clone or replay can also sound similar.</p>
         {speaker && <div className="speaker-result"><span>Cosine similarity · uncalibrated</span><strong>{speaker.similarity.cosine.toFixed(3)}</strong><p>Reference: {speaker.reference.label}</p><small>Scale −1 to 1. This is not a confidence percentage.</small><button className="text-button" disabled={disabled} onClick={() => act('Removing comparison', async () => { await request(`${base}/speaker-comparison`, { method: 'DELETE' }); if (live.current) setSpeaker(null) })}>Remove saved comparison</button></div>}
         <label className="case-field">Reference recording<input type="file" accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg,.opus" onChange={e => setReference(e.target.files?.[0] || null)} /></label>
@@ -95,7 +96,7 @@ function EvidenceWorkspace({ jobId, onSeek }: { jobId: string; onSeek: (seconds:
         <button className="outline-button" disabled={disabled || !reference || !consent || !speakerStatus?.available || !speakerStatus?.ready} onClick={() => act('Comparing voices', async () => { const form = new FormData(); form.append('file', reference!); form.append('consent', 'true'); if (label.trim()) form.append('reference_label', label.trim()); const result = await request<Speaker>(`${base}/speaker-comparison`, { method: 'POST', body: form }); if (live.current) setSpeaker(result) })}>Compare reference</button>
       </section>
       <section className="detail-section case-panel" aria-labelledby="transcript-title">
-        <div className="section-heading"><div><span className="eyebrow">09 / WORDS SPOKEN</span><h2 id="transcript-title">Transcript</h2></div><FileText size={18} /></div>
+        <div className="section-heading"><div><span className="eyebrow">09 / WORDS SPOKEN</span><h2 id="transcript-title">Transcript</h2></div><InfoButton label="Transcript">Speech is transcribed locally. Listen before accepting words, especially in noise. Corrections create a new version and mark linked older claims stale.</InfoButton></div>
         <p className="detail-note">Transcribe locally, listen, and correct errors before reviewing claims. Transcription can mishear speech or invent words in noise.</p>
         {status?.transcription.reason && <p className="case-help">{status.transcription.reason}</p>}
         <button className="outline-button" disabled={disabled || !status?.transcription.available} onClick={() => act('Transcribing locally', async () => { const result = await request<Transcript>(`${base}/transcript`, { method: 'POST' }); if (live.current) { setTranscript(result); setCorrection(result.text || ''); setClaimSpan(null) } })}>{transcript?.version ? 'Transcribe again' : 'Create transcript'}</button>
@@ -105,7 +106,7 @@ function EvidenceWorkspace({ jobId, onSeek }: { jobId: string; onSeek: (seconds:
       </section>
     </div>
     <section className="detail-section case-panel" aria-labelledby="claims-title">
-      <div className="section-heading"><div><span className="eyebrow">10 / SOURCE REVIEW</span><h2 id="claims-title">Check a factual claim</h2></div><Search size={18} /></div>
+      <div className="section-heading"><div><span className="eyebrow">10 / SOURCE REVIEW</span><h2 id="claims-title">Check a factual claim</h2></div><InfoButton label="Factual claim review">Record a specific claim and the sources you checked. Analyst reviews are not AI fact checks. Hosted source search remains unavailable until source provenance is supported; this does not detect lies.</InfoButton></div>
       <p className="detail-note">Review a specific, checkable statement against external evidence. This does not detect lies or establish a speaker’s intent. Private or subjective statements may remain unresolved.</p>
       <label className="case-field">Claim to review<textarea ref={claimField} rows={2} maxLength={2000} value={claim} onChange={e => setClaim(e.target.value)} placeholder="Enter one factual statement from the recording." /></label>
       {claimSpan && <p className="case-help">Linked passage: {claimSpan.start_s.toFixed(1)}–{claimSpan.end_s.toFixed(1)} seconds. Review the wording before searching. <button className="text-button" onClick={() => setClaimSpan(null)}>Remove time link</button></p>}
