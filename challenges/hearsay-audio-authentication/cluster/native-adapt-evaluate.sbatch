@@ -12,19 +12,22 @@ root="$ECHOTRACE_ROOT"; python="$root/envs/detector/bin/python"
 train="$root/runs/aasist-aa-01/manifests/train.csv"
 selection="$root/runs/aasist-aa-01/manifests/selection.csv"
 acceptance="$root/data/asvspoof5-eval-aa/acceptance3.csv"
+independence_audit="$root/data/asvspoof5-eval-aa/independence-audit.json"
 train_audio="$root/data/asvspoof5-aa/audio"
 accept_audio="$root/data/asvspoof5-eval-aa/audio"
 base_selection="$root/runs/aasist-aa-01/evaluation/selection-baseline"
 cache="$root/models/garystafford-c663060"
-[[ -x "$python" && -f "$acceptance" && -f "$root/data/asvspoof5-eval-aa/provenance.json" \
+[[ -x "$python" && -f "$acceptance" && -f "$root/data/asvspoof5-eval-aa/provenance.json" && -f "$independence_audit" \
    && -f "$base_selection/run.json" && ! -e "$ECHOTRACE_OUTPUT" ]]
 
-"$python" - "$train" "$selection" "$acceptance" <<'PY'
-import csv,sys
+"$python" - "$train" "$selection" "$acceptance" "$independence_audit" <<'PY'
+import csv,json,sys
 from collections import Counter
 def rows(p):
  with open(p,encoding='utf-8',newline='') as f:return list(csv.DictReader(f))
 t,s,a=map(rows,sys.argv[1:])
+audit=json.load(open(sys.argv[4],encoding='utf-8'))
+if audit.get('ready') is not True:raise SystemExit('Acceptance content independence audit did not pass')
 if (len(t),len(s),len(a))!=(10000,2000,2000) or Counter(r['label'] for r in a)!={'0':1000,'1':1000}:
  raise SystemExit('Frozen split counts changed')
 for field in ('file_id','speaker_id','source_id'):

@@ -44,6 +44,14 @@ def batches(items,size,shuffle,rng):
     if shuffle:rng.shuffle(order)
     for i in range(0,len(order),size): yield [items[j] for j in order[i:i+size]]
 
+def _optimizer_update(scaler,optimizer,scheduler,params):
+    scaler.unscale_(optimizer)
+    clip_grad_norm_(params,CONFIG["gradient_clip_norm"],error_if_nonfinite=True)
+    scaler.step(optimizer)
+    scaler.update()
+    optimizer.zero_grad(set_to_none=True)
+    scheduler.step()
+
 def evaluate(items,extractor,model,device):
     labels=[];scores=[]
     model.eval()
@@ -94,10 +102,14 @@ def run(train_manifest,selection_manifest,dataset_root,output,cache=DEFAULT_CACH
             inputs={k:v.to("cuda") for k,v in inputs.items()}
             with torch.autocast("cuda",dtype=torch.float16):
                 loss=model(**inputs,labels=labels).loss/CONFIG["gradient_accumulation"]
+            if not torch.isfinite(loss):
+                raise RuntimeError(f"Non-finite loss at epoch {epoch}, microbatch {micro}")
             scaler.scale(loss).backward()
             if micro%CONFIG["gradient_accumulation"]==0 or micro==math.ceil(len(train_data)/CONFIG["batch_size"]):
-                scaler.unscale_(optimizer);clip_grad_norm_(params,CONFIG["gradient_clip_norm"])
-                scaler.step(optimizer);scaler.update();optimizer.zero_grad(set_to_none=True);scheduler.step();step+=1
+                _optimizer_update(scaler,optimizer,scheduler,params);step+=1
+                if step == 1 or step % 100 == 0:
+                    print(json.dumps({"event":"optimizer_step","epoch":epoch,"optimizer_step":step,
+                                      "finite_loss":True,"scaled_microbatch_loss":float(loss.detach().cpu())}),flush=True)
             if step>=CONFIG["max_optimizer_steps"] or time.monotonic()>=deadline:break
         metrics=evaluate(selection_data,extractor,model,"cuda");metrics.update(epoch=epoch,optimizer_step=step)
         history.append(metrics);print(json.dumps(metrics),flush=True)
@@ -106,6 +118,8 @@ def run(train_manifest,selection_manifest,dataset_root,output,cache=DEFAULT_CACH
             best=(rank[0],rank[1],epoch);bad=0
             model.save_pretrained(output/"best",safe_serialization=True)
             extractor.save_pretrained(output/"best")
+            print(json.dumps({"event":"checkpoint_saved","epoch":epoch,
+                              "weights_sha256":sha(output/"best/model.safetensors")}),flush=True)
         else: bad+=1
         if bad>=CONFIG["early_stopping_patience"] or step>=CONFIG["max_optimizer_steps"] or time.monotonic()>=deadline:break
     weights=output/"best/model.safetensors"
