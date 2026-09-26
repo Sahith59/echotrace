@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from echotrace.transcription import TranscriptionError, Transcriber
+from echotrace.transcription import MAX_SEGMENTS, TranscriptionError, Transcriber
 
 
 class FakeWhisperModel:
@@ -96,4 +96,36 @@ def test_transcriber_rejects_model_output_beyond_audio_contract(tmp_path):
 
     service = Transcriber(model_factory=lambda **kwargs: BadModel(), cache_dir=tmp_path / "models")
     with pytest.raises(TranscriptionError, match="duration limit"):
+        service.transcribe(audio)
+
+
+def test_transcriber_stops_consuming_unbounded_segment_generator(tmp_path):
+    audio = tmp_path / "recording.wav"
+    audio.write_bytes(b"audio fixture")
+
+    class RunawayModel:
+        def transcribe(self, path, **options):
+            def segments():
+                for index in range(MAX_SEGMENTS + 2):
+                    if index > MAX_SEGMENTS:
+                        pytest.fail("transcriber consumed beyond its declared segment cap")
+                    yield SimpleNamespace(id=index, start=0.0, end=1.0, text="word")
+            return segments(), SimpleNamespace(language="en", language_probability=1.0, duration=1)
+
+    service = Transcriber(model_factory=lambda **kwargs: RunawayModel(), cache_dir=tmp_path / "models")
+    with pytest.raises(TranscriptionError, match="too many"):
+        service.transcribe(audio)
+
+
+def test_transcriber_rejects_oversized_segment_text_before_aggregation(tmp_path):
+    audio = tmp_path / "recording.wav"
+    audio.write_bytes(b"audio fixture")
+
+    class OversizedTextModel:
+        def transcribe(self, path, **options):
+            segment = SimpleNamespace(id=0, start=0.0, end=1.0, text="x" * 100_001)
+            return iter([segment]), SimpleNamespace(language="en", language_probability=1.0, duration=1)
+
+    service = Transcriber(model_factory=lambda **kwargs: OversizedTextModel(), cache_dir=tmp_path / "models")
+    with pytest.raises(TranscriptionError, match="character limit"):
         service.transcribe(audio)
