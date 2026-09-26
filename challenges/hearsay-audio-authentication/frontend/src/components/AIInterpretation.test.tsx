@@ -146,3 +146,14 @@ it('opens the exact measured evidence from a finding reference', async () => {
  expect(screen.getByText('energy · Spectral energy').closest('details')).toHaveAttribute('open')
  expect(screen.getByText('0.82 ratio')).toBeVisible()
 })
+
+it('refreshes its saved brief when comparison evidence changes', async () => {
+ let current=generated as unknown
+ fetchMock.mockImplementation((url:string)=>Promise.resolve(response(url.endsWith('/status')?status:current)))
+ const view=render(<AIInterpretation jobId="job-a" evidenceRevision="before" />)
+ expect(await screen.findByText('Review the uncertain acoustic pattern.')).toBeInTheDocument()
+ current={status:'not_generated'}
+ view.rerender(<AIInterpretation jobId="job-a" evidenceRevision="after-stress" />)
+ expect(await screen.findByRole('button',{name:/generate interpretation/i})).toBeInTheDocument()
+ expect(screen.queryByText('Review the uncertain acoustic pattern.')).not.toBeInTheDocument()
+})
