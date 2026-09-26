@@ -7,6 +7,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from echotrace.api import create_app
 from echotrace.pilot import create_pilot_router
 
 
@@ -67,6 +68,16 @@ def test_missing_catalog_has_reason_and_no_examples(tmp_path):
     assert client.get(f"/api/examples/{GENUINE_ID}/audio").status_code == 404
 
 
+def test_unpinned_revision_does_not_create_catalog(sample):
+    root, provenance, _, _ = sample
+    data = json.loads(provenance.read_text())
+    data["revision"] = "unreviewed"
+    provenance.write_text(json.dumps(data))
+    client = client_for(root, provenance)
+    assert client.get("/api/examples").json()["examples"] == []
+    assert client.get(f"/api/examples/{GENUINE_ID}/audio").status_code == 404
+
+
 def test_missing_or_tampered_audio_is_unavailable(sample):
     root, provenance, genuine, synthetic = sample
     genuine.unlink()
@@ -100,3 +111,11 @@ def test_provenance_cannot_redirect_to_an_outside_path(sample, tmp_path):
     client = client_for(root, provenance)
     assert client.get("/api/examples").json()["examples"][0]["available"] is False
     assert client.get(f"/api/examples/{GENUINE_ID}/audio").status_code == 404
+
+
+def test_app_mounts_catalog_with_independent_audio_root(sample, tmp_path):
+    root, provenance, genuine, _ = sample
+    with TestClient(create_app(root=tmp_path / "workspace", pilot_root=root,
+                               pilot_provenance=provenance)) as client:
+        assert len(client.get("/api/examples").json()["examples"]) == 2
+        assert client.get(f"/api/examples/{GENUINE_ID}/audio").content == genuine.read_bytes()
