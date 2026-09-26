@@ -138,3 +138,11 @@ describe('AIInterpretation', () => {
     await waitFor(() => expect(screen.queryByText('Review the uncertain acoustic pattern.')).not.toBeInTheDocument())
   })
 })
+
+it('opens the exact measured evidence from a finding reference', async () => {
+ fetchMock.mockImplementation((url:string)=>Promise.resolve(response(url.endsWith('/status')?status:generated)))
+ render(<AIInterpretation jobId="job-a" />)
+ await userEvent.setup().click(await screen.findByRole('button',{name:'Show measurement energy'}))
+ expect(screen.getByText('energy · Spectral energy').closest('details')).toHaveAttribute('open')
+ expect(screen.getByText('0.82 ratio')).toBeVisible()
+})
