@@ -1,0 +1,4 @@
+# Preserve upstream source/config bytes: their exact hashes are part of provenance.
+challenges/hearsay-audio-authentication/backend/echotrace/vendor/** -text -whitespace
+# CSV ledgers retain their original RFC-compatible CRLF and file hashes.
+*.csv -text whitespace=cr-at-eol

@@ -1,0 +1,9 @@
+{
+  "expected_id_column": "file_id",
+  "output_id_column": "file_id",
+  "output_score_column": "synthetic_score",
+  "score_scale": "0-1",
+  "score_direction": "synthetic_high",
+  "columns": ["file_id", "synthetic_score"],
+  "official_schema_confirmed": false
+}

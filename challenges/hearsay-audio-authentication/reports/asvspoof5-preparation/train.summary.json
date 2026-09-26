@@ -1,0 +1,24 @@
+{
+  "dataset": "ASVspoof5",
+  "partition": "train",
+  "sample_count": 182357,
+  "label_counts": {
+    "spoof": 163560,
+    "bonafide": 18797
+  },
+  "speaker_count": 400,
+  "attack_counts": {
+    "A05": 20445,
+    "A07": 20445,
+    "A04": 20445,
+    "A08": 20445,
+    "A02": 20445,
+    "A03": 20445,
+    "A06": 20445,
+    "bonafide": 18797,
+    "A01": 20445
+  },
+  "protocol_sha256": "5d66be5e63ad671c1788464397d6b7caaab816e0ceeab27935dd43f6d055fa94",
+  "audio_verified": false,
+  "note": "Official partition preserved. Run dataset audit after installing audio; no performance result."
+}

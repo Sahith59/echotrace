@@ -1,0 +1,21 @@
+{
+  "sample_count": 24,
+  "genuine_count": 12,
+  "synthetic_count": 12,
+  "threshold": 0.5,
+  "roc_auc": 0.7430555555555556,
+  "pr_auc": 0.7775867922926746,
+  "pr_auc_definition": "average_precision",
+  "brier": 0.2557696898453436,
+  "confusion": {
+    "tn": 9,
+    "fp": 3,
+    "fn": 6,
+    "tp": 6
+  },
+  "precision": 0.6666666666666666,
+  "recall": 0.5,
+  "specificity": 0.75,
+  "f1": 0.5714285714285714,
+  "note": "Metrics describe only this supplied labeled set; not proof of field accuracy or calibration."
+}

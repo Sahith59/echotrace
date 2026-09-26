@@ -1,0 +1,15 @@
+{
+  "manifest_sha256": "930d6f68fbf1c47b92cca4385d4713edb6cb160bcd4bd675310f90d664376a67",
+  "count": 24,
+  "failures": 0,
+  "model": {
+    "name": "AASIST-L",
+    "version": "a04c9863f63d",
+    "upstream_revision": "a04c9863f63d44471dde8a6abcb3b082b07cd1d1",
+    "weights_sha256": "814331d088032bb4c3fa61cc014789eadeed464209dd094ab3a2dd6ffbdce27a",
+    "config_sha256": "9e2e2610b2260b421bf2083646dde4747a6a5cdd138015066d83bc61b6b214cf",
+    "device": "cpu"
+  },
+  "configuration": null,
+  "sum_reported_runtime_s": 4.846
+}

@@ -6,11 +6,11 @@ A local audio-forensics workbench for **NSA HEARSAY, Challenge 1**. Review uploa
 
 The first working prototype is implemented. It runs the official AASIST-L checkpoint on CPU and provides a React interface, durable local jobs, playback, interval scores, quality/spectral/temporal observations, JSON reports, analyst CSV export, and a shared command-line pipeline.
 
-**This is not a validated authentication system.** Scores are uncalibrated. In a local smoke test the baseline gave a known macOS-generated synthetic speech clip a low synthesis score. That observed failure is recorded in [model feasibility](../../docs/model-feasibility.md), not hidden as a successful accuracy demonstration. Sponsor dataset evaluation, model selection/adaptation, calibration, and official CSV verification remain outstanding.
+**This is not a validated authentication system.** Scores are uncalibrated. In a local smoke test the baseline gave a known macOS-generated synthetic speech clip a low synthesis score. That observed failure is recorded in [model feasibility](../../docs/model-feasibility.md), not hidden as a successful accuracy demonstration. Sponsor dataset evaluation, a validated detector promotion, calibration, and official CSV verification remain outstanding. Completed public-data experiments do not substitute for sponsor testing.
 
 The [problem validation](../../docs/problem-validation.md) links primary FBI/FTC evidence; the [product review](../../docs/product-validation.md) explains why recorded-audio triage fits this challenge. Evidence of voice-cloning harm does not prove our detector works.
 
-Current development is **Phase 3A**. The [training runner](docs/training-runner.md), [three-way data preparation](../../docs/data-preparation.md), [whole-file checkpoint evaluation and acceptance](../../docs/checkpoint-evaluation.md), and [one-GPU cluster package](../../docs/cluster-handoff.md) are implemented and locally tested. Independent speech audio, cluster storage/connectivity and actual GPU training remain pending. The [Grok interpretation integration](../../docs/ai-interpretation.md) is available after configuring a backend API key; it summarizes recorded evidence without altering the detector score.
+Current development is **release integration and independent model evaluation**. The [training runner](docs/training-runner.md), [three-way data preparation](../../docs/data-preparation.md), [whole-file checkpoint evaluation and acceptance](../../docs/checkpoint-evaluation.md), and [one-GPU cluster package](../../docs/cluster-handoff.md) are implemented and locally tested. A real A100 run completed 6,000 training steps and independent evaluation. Its recall improved from 22.5% to 44.5% at about 4% false positives, but failed the predeclared 80% recall target and was not promoted. See the current plan and validation summary for subsequent experiments. The [Grok interpretation integration](../../docs/ai-interpretation.md) is available after configuring a backend API key; it summarizes recorded evidence without altering the detector score.
 
 ## Run locally
 
@@ -37,7 +37,7 @@ Open **http://127.0.0.1:5173**. Upload a WAV, MP3 or M4A, or select multiple rec
 
 `setup-model` downloads the pinned official 426 KB AASIST-L checkpoint and verifies its SHA-256. No model download occurs during inference. Missing weights yield measured signal observations with no synthetic score. Vendor code/license/provenance are in `backend/echotrace/vendor/`; upstream attribution remains intact.
 
-Jobs and source audio persist in `artifacts/workspace/`. Model weights are cached in `backend/artifacts/`. These paths are ignored by Git. `ECHOTRACE_WORKSPACE` can set a different local job directory. Interrupted jobs are marked failed on restart and can be retried. No cloud credentials or paid resources are needed.
+Jobs and source audio persist in `artifacts/workspace/`. Model weights are cached in `backend/artifacts/`. These paths are ignored by Git. `ECHOTRACE_WORKSPACE` can set a different local job directory. Interrupted jobs are marked failed on restart and can be retried. Core local analysis needs no cloud credentials. Optional Grok interpretation and web search require your own xAI key and may incur provider charges.
 
 ## What the UI does
 
@@ -45,6 +45,11 @@ Jobs and source audio persist in `artifacts/workspace/`. Model weights are cache
 - Investigation: 0–100 uncalibrated model score, player and seekable waveform, scored windows, measured evidence, limitations, provenance and downloadable JSON.
 - Comparison: MP3 at 64 kbps or seeded noise at 20 dB SNR, with new real inference, original preservation and score deltas. Stability is not correctness.
 - Batch: select completed scored files and download an **analyst** CSV. It is explicitly not the sponsor's confirmed schema.
+- Speaker reference: consent-gated, local Microsoft WavLM embeddings and uncalibrated cosine similarity. Temporary reference audio is deleted after processing; comparison metadata can be removed.
+- Transcript: local faster-whisper speech recognition, timestamp seeking, immutable corrections and explicit errors.
+- Claims: source-backed analyst reviews, or optional Grok web search with claim-only disclosure and explicit consent. Previous claims are marked stale when the transcript changes.
+- Case report: downloadable JSON and printable HTML keep the four evidence types separate, with provenance and no combined authenticity probability.
+- Detector validation: actual independent before/after metrics, including failed promotion gates.
 
 Spectral and temporal measurements do not determine the learned model's score. Window aggregation is an unvalidated mean of full-coverage windows, including an overlapping final window when needed. The model does not identify speaker, intent, specific generator or manipulation subtype. Quiet audio yields no assessment. Speech presence is not independently verified, so non-speech scores must not be interpreted as valid speech-authenticity evidence.
 
@@ -104,7 +109,7 @@ uv run python -m echotrace.asvspoof5 ASVspoof5.dev.track_1.tsv --partition dev -
 uv run python -m echotrace.asvspoof5 ASVspoof5.eval.track_1.tsv --partition eval --output eval.csv
 ```
 
-Outputs must not already exist. Conversion validates protocol labels/IDs, preserves speaker/source/attack/codec metadata, and records the protocol hash. It does not imply audio availability, train a model, or compute performance. The audio root must contain `flac_T/`, `flac_D/`, or `flac_E_eval/`. Only training and development audio is needed initially. Exact official archive sizes, URLs and checksums are in `configs/asvspoof5-downloads.json`. The initial eight audio archives total 57,561,937,920 bytes; budget additional extraction space. Cluster allocation/storage is not yet configured.
+Outputs must not already exist. Conversion validates protocol labels/IDs, preserves speaker/source/attack/codec metadata, and records the protocol hash. It does not imply audio availability, train a model, or compute performance. The audio root must contain `flac_T/`, `flac_D/`, or `flac_E_eval/`. Only training and development audio is needed initially. Exact official archive sizes, URLs and checksums are in `configs/asvspoof5-downloads.json`. The initial eight audio archives total 57,561,937,920 bytes; budget additional extraction space. Cluster allocation and personal data storage have been verified; see the dated run ledger.
 
 An isolated full-AASIST candidate can be compared without changing the web detector:
 
@@ -127,10 +132,33 @@ Current app limit:50 MiB and120seconds. A low synthesis score does not prove ide
 
 On the intake page, expand **Try a known recording**, select a labeled MLAAD-tiny example, optionally preview it, then choose **Analyze this sample**. The app sends its audio through the normal upload and AASIST-L pipeline. It does not use the label for scoring or train the model. The catalog checks local audio against pinned provenance; unavailable or changed files are not served.
 
-The local sample consists of 12 genuine and 12 synthetic recordings. It is a small selected diagnostic set, not an independent accuracy benchmark. Custom uploads remain supported. Large-corpus downloads and cluster training are currently paused by user choice.
+The local sample consists of 12 genuine and 12 synthetic recordings. It is a small selected diagnostic set, not an independent accuracy benchmark. Custom uploads remain supported. These 24 clips are for interface diagnostics; training and independent evaluation use a separate ASVspoof 5 subset.
 
 ## Grok review and experimental training
 
 Set `XAI_API_KEY` in the repository root.env; `ECHOTRACE_LLM_MODEL` defaults to `grok-4.7`. The backend reads configuration when requested. Use **Check configuration** then **Generate interpretation** on a completed recording. Only measured findings go to xAI; no audio/filenames/transcripts are sent. Reports are cached and included in JSON export. See [Grok integration](../../docs/ai-interpretation.md).
 
 The [experimental training runner](docs/training-runner.md) accepts frozen train/selection manifests and a bounded configuration. It does not start automatically or replace the web detector. The24demo clips are excluded; independent acceptance evaluation is required before promotion.
+
+## Prepare optional local models
+
+From `backend/`, run the explicit setup commands in [speaker comparison](../../docs/speaker-comparison.md) and [transcription](../../docs/claim-review.md). Both runtime routes fail clearly if model files are missing; they never substitute a fake result. Model downloads and caches are excluded from Git.
+
+```sh
+uv run python -m echotrace.speaker
+uv run python -m echotrace.transcription --model base --cache-dir ../artifacts/workspace/models/faster-whisper
+```
+
+Create root `.env` from `.env.example` if it does not exist, then edit `XAI_API_KEY` locally. Never put it in a `VITE_` variable, a screenshot, or Git. Without a key, local detection, speaker comparison, transcription, analyst review and exports remain usable; live Grok is unavailable.
+
+## Verification
+
+```sh
+# In backend/
+uv run pytest -q
+# In frontend/
+npm test
+npm run build
+```
+
+See [release verification](../../docs/release-verification.md), [the phase checklist](../../plan.md), and [the demonstration guide](../../docs/demo-guide.md). This iteration ends with a private source repository. Deployment, multi-user authentication and official sponsor submission require the subsequent deployment/submission configuration.

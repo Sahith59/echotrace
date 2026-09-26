@@ -1,0 +1,77 @@
+{
+  "record": "https://zenodo.org/records/14498691",
+  "stage": "train_and_dev",
+  "audio_bytes": 57561937920,
+  "audio_files": [
+    {
+      "name": "flac_D_aa.tar",
+      "bytes": 6647265280,
+      "checksum": "md5:df0be44957623991028cce59792beb17",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_D_aa.tar/content"
+    },
+    {
+      "name": "flac_D_ab.tar",
+      "bytes": 6641459200,
+      "checksum": "md5:1e8cd685d89b64502692f1bcf1a13db3",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_D_ab.tar/content"
+    },
+    {
+      "name": "flac_D_ac.tar",
+      "bytes": 6771660800,
+      "checksum": "md5:5e0031f08c30e4bdbf0c59f91b2d662b",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_D_ac.tar/content"
+    },
+    {
+      "name": "flac_T_aa.tar",
+      "bytes": 7522498560,
+      "checksum": "md5:b0cc86b14826a7701b52aad4f53daf9c",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_T_aa.tar/content"
+    },
+    {
+      "name": "flac_T_ab.tar",
+      "bytes": 7489587200,
+      "checksum": "md5:d05be3f4be7a343fdbdd0ed29fdff2e1",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_T_ab.tar/content"
+    },
+    {
+      "name": "flac_T_ac.tar",
+      "bytes": 7497256960,
+      "checksum": "md5:70d1ba4ad75a20aef3dae541fbd321e3",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_T_ac.tar/content"
+    },
+    {
+      "name": "flac_T_ad.tar",
+      "bytes": 7509688320,
+      "checksum": "md5:c9bb56af2cc410d98338d74babcb95c9",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_T_ad.tar/content"
+    },
+    {
+      "name": "flac_T_ae.tar",
+      "bytes": 7482521600,
+      "checksum": "md5:a3969816982f3e52300d6147ad796df7",
+      "url": "https://zenodo.org/api/records/14498691/files/flac_T_ae.tar/content"
+    }
+  ],
+  "metadata_files": [
+    {
+      "name": "README.txt",
+      "bytes": 12131,
+      "checksum": "md5:784002b8449ba1eeecc042bfad285de7",
+      "url": "https://zenodo.org/api/records/14498691/files/README.txt/content"
+    },
+    {
+      "name": "LICENSE.txt",
+      "bytes": 19940,
+      "checksum": "md5:9cbefc63251e8cbc8eb22e62cd6fe584",
+      "url": "https://zenodo.org/api/records/14498691/files/LICENSE.txt/content"
+    },
+    {
+      "name": "ASVspoof5_protocols.tar.gz",
+      "bytes": 20669392,
+      "checksum": "md5:865d0e894ea9f686f0f37e5ae3ae3616",
+      "url": "https://zenodo.org/api/records/14498691/files/ASVspoof5_protocols.tar.gz/content"
+    }
+  ],
+  "evaluation_audio": "Deferred; official eval is reserved for frozen-model testing.",
+  "status": "Audio not downloaded; storage destination pending."
+}
