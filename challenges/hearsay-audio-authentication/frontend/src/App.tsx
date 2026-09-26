@@ -1,6 +1,7 @@
 import PilotExamples from './components/PilotExamples'
 import AIInterpretation from './components/AIInterpretation'
 import CaseReview from './components/CaseReview'
+import ModelValidation from './components/ModelValidation'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { GlassEffect, GlassFilter, GlassButton } from '@/components/ui/liquid-glass'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -350,6 +351,7 @@ export default function App() {
               <GlassEffect as="section" className="detail-section"><div className="section-heading"><div><span className="eyebrow">06 / COMPARISON</span><h2>Stress comparison</h2></div><SlidersHorizontal size={18} className="subtle-icon" /></div><p className="detail-note">Analyze a derived copy to see how this assessment changes under a named transformation.</p><div className="compare-actions"><button className="outline-button" disabled={!!deriving || !!selected.parent_id} onClick={() => createDerivative('mp3')}>{deriving === 'mp3' ? <LoaderCircle className="spin" size={15} /> : <AudioLines size={15} />} MP3 compression</button><button className="outline-button" disabled={!!deriving || !!selected.parent_id} onClick={() => createDerivative('noise')}>{deriving === 'noise' ? <LoaderCircle className="spin" size={15} /> : <Activity size={15} />} Add noise</button></div>{selected.parent_id && <button className="text-button" onClick={() => setSelectedId(selected.parent_id!)}><ArrowRight size={14} /> Open original analysis</button>}{children.length > 0 && <div className="comparison-list">{children.map(child => <div className="comparison-row" key={child.id}><div className="comparison-source"><strong>{transformLabel(child)}</strong><small>{child.status === 'completed' ? `Original ${scoreLabel(result.synthetic_score)} → derived ${scoreLabel(child.result?.synthetic_score)}` : stageLabel(child.stage)}</small>{child.status === 'completed' && <audio controls preload="none" aria-label={`Play ${transformLabel(child)} recording`} src={`/api/analyses/${child.id}/audio`} />}</div><div className="comparison-numbers"><strong className={scoreTone(child.result?.synthetic_score)}>{child.status === 'completed' ? scoreLabel(child.result?.synthetic_score) : '—'}</strong>{child.status === 'completed' && result.synthetic_score != null && child.result?.synthetic_score != null && <small>{`${(child.result.synthetic_score - result.synthetic_score) >= 0 ? '+' : ''}${Math.round((child.result.synthetic_score - result.synthetic_score) * 100)} pts`}</small>}</div><button className="icon-button" aria-label={`Open ${transformLabel(child)} result`} onClick={() => setSelectedId(child.id)}><ArrowRight size={16} /></button></div>)}</div>}<p className="compare-caveat">A stable score does not prove a recording is genuine.</p></GlassEffect></div>
             <AIInterpretation jobId={selected.id} />
             <CaseReview jobId={selected.id} onSeek={seek} />
+            <ModelValidation />
           </>}
         </> : <div className="empty-layout">
           <div className="page-intro"><div><span className="eyebrow">HEARSAY · Audio authentication</span><h1>Review a recording.</h1><p>Examine synthetic speech indicators and the evidence behind them.</p></div></div>
@@ -363,7 +365,7 @@ export default function App() {
             <div className="intake-guide"><span className="eyebrow">What the review includes</span>
               <div><span>01</span><section><h3>Synthetic speech assessment</h3><p>A model score with its calibration status and limitations.</p></section></div>
               <div><span>02</span><section><h3>Recording evidence</h3><p>Playback, scored intervals and measured signal characteristics.</p></section></div>
-              <div><span>03</span><section><h3>Comparison & reporting</h3><p>Test the effect of noise or compression. Export the results.</p></section></div>
+              <div><span>03</span><section><h3>Comparison & reporting</h3><p>Compare a trusted voice, transcribe speech, review claims, and export evidence.</p></section></div>
               <p className="intake-boundary">Speaker identity and factual claims require separate evidence. They are not determined by the synthesis score.</p>
             </div>
           </GlassEffect>
