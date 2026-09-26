@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from echotrace.api import Store, create_app
-from echotrace.interpretation import Interpreter, InterpretationError, evidence_for
+from echotrace.interpretation import Interpreter, InterpretationError, evidence_for, evidence_for_job
 
 
 def analysis():
@@ -92,6 +92,67 @@ def test_api_generated_notes_persist_without_changing_detector(tmp_path):
         assert client.get("/api/analyses/sample/interpretation").json()["status"] == "generated"
 
 
+def test_store_evidence_adds_only_current_matched_stress_and_second_model(tmp_path):
+    store = Store(tmp_path)
+    primary = analysis()
+    primary["model"] = {"name": "primary", "weights_sha256": "primary-sha"}
+    primary["input"]["sha256"] = "input-sha"
+    store.create("sample", "private.wav", tmp_path / "source.wav")
+    store.update("sample", status="completed", result=primary)
+
+    for job_id, kind, model, score in (
+        ("matched", "noise", primary["model"], .19),
+        ("wrong-model", "mp3", {"name": "other", "weights_sha256": "other-sha"}, .8),
+    ):
+        store.create(job_id, f"private-{kind}.wav", tmp_path / f"{job_id}.wav",
+                     parent_id="sample", transform={"kind": kind})
+        store.update(job_id, status="completed", result={
+            "synthetic_score": score, "model": model, "parent_id": "sample",
+            "transform": {"kind": kind}, "input": {"filename": "must-not-leak.wav"},
+        })
+    with store.connect() as db:
+        db.execute("""CREATE TABLE detector_comparisons
+                    (job_id TEXT PRIMARY KEY, report TEXT NOT NULL, input_sha TEXT NOT NULL)""")
+        db.execute("INSERT INTO detector_comparisons VALUES (?,?,?)", ("sample", json.dumps({
+            "status": "generated", "primary_score": .09, "candidate_score": .61,
+            "score_difference": .52, "primary_model": primary["model"],
+            "model": {"name": "second", "weights_sha256": "second-sha"},
+            "input_sha256": "input-sha", "limitation": "must-not-be-forwarded",
+        }), "input-sha"))
+
+    facts = evidence_for_job(store, store.get("sample"))
+    values = {item["id"]: item["value"] for item in facts}
+    assert values["stress.noise.score"] == .19
+    assert values["stress.noise.score_difference"] == .1
+    assert values["detector_comparison.candidate_score"] == .61
+    assert values["detector_comparison.score_difference"] == .52
+    assert "stress.mp3.score" not in values
+    encoded = json.dumps(facts)
+    assert "must-not-leak" not in encoded and "must-not-be-forwarded" not in encoded
+
+
+def test_optional_store_evidence_invalidates_interpretation_cache(tmp_path):
+    store = Store(tmp_path)
+    primary = analysis()
+    primary["model"] = {"name": "primary", "weights_sha256": "primary-sha"}
+    store.create("sample", "private.wav", tmp_path / "source.wav")
+    store.update("sample", status="completed", result=primary)
+    service = Interpreter(model="test-model", transport=lambda _: {
+        "choices": [{"message": {"content": json.dumps(response())}}]})
+    with TestClient(create_app(tmp_path, interpreter=service)) as client:
+        generated = client.post("/api/analyses/sample/interpretation")
+        assert generated.status_code == 200
+        before_score = store.get("sample")["result"]["synthetic_score"]
+        store.create("stress", "derived.wav", tmp_path / "derived.wav", parent_id="sample",
+                     transform={"kind": "noise", "snr_db": 20})
+        store.update("stress", status="completed", result={
+            "synthetic_score": .12, "model": primary["model"], "parent_id": "sample",
+            "transform": {"kind": "noise", "snr_db": 20},
+        })
+        assert client.get("/api/analyses/sample/interpretation").json() == {"status": "not_generated"}
+        assert store.get("sample")["result"]["synthetic_score"] == before_score
+
+
 def test_unfinished_and_provider_failure_are_honest(tmp_path):
     store = Store(tmp_path)
     store.create("sample", "recording.wav", tmp_path / "source.wav")
@@ -115,6 +176,22 @@ def test_provider_errors_do_not_expose_key_or_remote_error_body(monkeypatch, cod
     with pytest.raises(InterpretationError, match=expected) as error:
         Interpreter(api_key="secret-value").generate(analysis())
     assert "secret-value" not in str(error.value)
+
+
+def test_provider_error_captures_only_bounded_status_and_error_type(monkeypatch):
+    class Body:
+        def read(self, maximum):
+            assert maximum == 16385
+            return json.dumps({"error": {"type": "model_permission_denied", "message": "secret remote detail"}}).encode()
+    class Opener:
+        def open(self, request, timeout):
+            raise urllib.error.HTTPError(request.full_url, 403, "secret reason", {}, Body())
+    monkeypatch.setattr("echotrace.interpretation.urllib.request.build_opener", lambda *_: Opener())
+    with pytest.raises(InterpretationError) as raised:
+        Interpreter(api_key="secret-value").generate(analysis())
+    assert raised.value.http_status == 403
+    assert raised.value.error_code == "model_permission_denied"
+    assert "secret" not in str(raised.value)
 
 
 def test_http_boundary_sends_only_evidence_and_validates_response(monkeypatch):
