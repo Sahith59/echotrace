@@ -25,6 +25,7 @@ from .pilot import create_pilot_router
 from .interpretation import create_interpretation_router
 from .speaker_router import create_speaker_router
 from .claims_router import create_claims_router
+from .detector_comparison import create_detector_comparison_router
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2] / "artifacts" / "workspace"
 MAX_BYTES = 50 * 1024 * 1024
@@ -112,7 +113,8 @@ class StressRequest(BaseModel):
 
 
 def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | None = None,
-               pilot_provenance: Path | None = None, interpreter=None) -> FastAPI:
+               pilot_provenance: Path | None = None, interpreter=None,
+               detector_comparison_scorer=None, detector_comparison_status=None) -> FastAPI:
     root = root or Path(os.environ.get("ECHOTRACE_WORKSPACE", DEFAULT_ROOT))
     store = Store(root)
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="echotrace")
@@ -147,6 +149,8 @@ def create_app(root: Path | None = None, analyzer=None, *, pilot_root: Path | No
     app.include_router(create_speaker_router(store))
     app.include_router(create_claims_router(store))
     app.include_router(create_case_router(store))
+    app.include_router(create_detector_comparison_router(
+        store, detector_comparison_scorer, detector_comparison_status))
 
     def get_job(job_id):
         try:

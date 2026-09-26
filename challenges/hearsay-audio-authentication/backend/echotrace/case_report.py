@@ -26,11 +26,13 @@ def case_report(store, job_id):
         raise HTTPException(409, 'Complete analysis before exporting a case report.')
     with store.connect() as db:
         row = db.execute('SELECT report FROM speaker_comparisons WHERE job_id=?', (job_id,)).fetchone()
+        detector = db.execute('SELECT report FROM detector_comparisons WHERE job_id=?', (job_id,)).fetchone()
     return {
         'schema_version': 'echotrace.case.v1', 'job_id': job_id,
         'filename': job['filename'], 'created_at': job['created_at'],
         'synthesis': job['result'],
         'speaker_comparison': json.loads(row['report']) if row else None,
+        'detector_comparison': json.loads(detector['report']) if detector else None,
         **load_claim_artifacts(store, job_id),
         'overall_authenticity_probability': None, 'interpretation_boundary': BOUNDARY,
     }
@@ -44,6 +46,11 @@ def printable(report):
     speaker = report['speaker_comparison']
     speaker_text = (f"Cosine similarity {speaker['similarity']['cosine']:.4f} · uncalibrated · "
                     f"reference: {speaker['reference']['label']}" if speaker else 'No reference comparison performed.')
+    detector = report.get('detector_comparison')
+    detector_text = ('Primary ' + esc(f"{detector['primary_score'] * 100:.2f}") + ' / 100 · experimental NII ' +
+                     esc(f"{detector['candidate_score'] * 100:.2f}") + ' / 100 · difference ' +
+                     esc(f"{detector['score_difference']:+.4f}") + '. ' + esc(detector['limitation'])
+                     if detector else 'No experimental detector comparison generated.')
     interpretation = synthesis.get('interpretation')
     provider_label = {'groq': 'Groq', 'xai': 'Grok'}.get((interpretation or {}).get('provider'), 'Unknown provider')
     ai_title = '<h3>AI interpretation (' + provider_label + ')</h3>'
@@ -82,6 +89,7 @@ def printable(report):
         '<h2>1. Synthesis assessment</h2><p><b>' + esc(score_text) + '</b> · ' +
         esc(synthesis.get('score_kind', 'uncalibrated model score')) + '</p><p>A low score does not establish authenticity.</p>'
         + ai_html + '<h2>2. Speaker reference</h2><p>' + esc(speaker_text) + '</p><p>Similarity is not an identity verdict.</p>'
+        '<h2>Experimental detector comparison</h2><p>' + detector_text + '</p>'
         '<h2>3. Transcript</h2><p>' + esc(transcript.get('text') or 'No transcript generated.') + '</p>'
         '<small>Version ' + esc(transcript.get('version', '—')) + ' · ' + esc(transcript.get('source', 'unavailable')) + '</small>'
         '<h2>4. Claim reviews</h2>' + (claims or '<p>No claims reviewed.</p>') +
