@@ -11,7 +11,7 @@ import pytest
 
 from echotrace.audio import AudioError, decode_audio
 from echotrace.model import WINDOW_SAMPLES, model_status, score_window
-from echotrace.pipeline import analyze_file
+from echotrace.pipeline import PrimaryDetectorError, analyze_file
 
 
 def make_wave(path: Path, seconds: float, silent: bool = False) -> None:
@@ -44,6 +44,10 @@ def test_real_decoding_and_analysis(tmp_path: Path, extension: str) -> None:
     assert result["synthetic_score"] is not None
     assert 0 <= result["synthetic_score"] <= 1
     assert result["score_kind"] == "uncalibrated"
+    assert result["model"]["name"] == "NII wav2vec-small-anti-deepfake"
+    assert result["model"]["role"] == "primary"
+    assert result["aggregation"]["method"] == "whole_file_layer_norm_mean_pool"
+    assert result["aggregation"]["truncation"] == "rejected"
     assert len(result["intervals"]) == 1
     assert result["intervals"][0]["end_s"] == pytest.approx(result["input"]["duration_s"], abs=.001)
     assert 0 < len(result["waveform"]) <= 256
@@ -52,25 +56,42 @@ def test_real_decoding_and_analysis(tmp_path: Path, extension: str) -> None:
     json.dumps(result, allow_nan=False)
 
 
-def test_silent_audio_has_no_synthetic_score(tmp_path: Path) -> None:
+def test_silent_audio_fails_closed(tmp_path: Path) -> None:
     source = tmp_path / "silent.wav"
     make_wave(source, 1, silent=True)
-    result = analyze_file(source)
-    assert result["synthetic_score"] is None
-    assert result["intervals"] == []
-    assert any("too quiet" in item for item in result["limitations"])
+    with pytest.raises(PrimaryDetectorError, match="quiet"):
+        analyze_file(source)
 
 
-def test_full_recording_coverage(tmp_path: Path) -> None:
+def test_primary_scores_whole_recording_once(tmp_path: Path) -> None:
     source = tmp_path / "long.wav"
     make_wave(source, 8.7)
     result = analyze_file(source)
     intervals = result["intervals"]
-    assert len(intervals) == 3
+    assert len(intervals) == 1
     assert intervals[0]["start_s"] == 0
     assert intervals[-1]["end_s"] == pytest.approx(8.7, abs=.001)
-    assert all(a["end_s"] >= b["start_s"] for a, b in zip(intervals, intervals[1:]))
-    assert result["synthetic_score"] == pytest.approx(np.mean([x["score"] for x in intervals]), abs=.000002)
+    assert result["synthetic_score"] == intervals[0]["score"]
+
+
+def test_primary_rejects_short_and_over_30_seconds_without_padding_or_truncation(tmp_path: Path) -> None:
+    short = tmp_path / "short.wav"
+    make_wave(short, .01)
+    with pytest.raises(PrimaryDetectorError, match="400 samples"):
+        analyze_file(short)
+    long = tmp_path / "over-30.wav"
+    make_wave(long, 30.01)
+    with pytest.raises(PrimaryDetectorError, match="30-second"):
+        analyze_file(long)
+
+
+def test_primary_rejects_unavailable_weights_or_parity(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "voice.wav"
+    make_wave(source, 1)
+    monkeypatch.setattr("echotrace.pipeline.model_status", lambda: {
+        "available": False, "reason": "Pinned NII primary parity marker failed verification."})
+    with pytest.raises(PrimaryDetectorError, match="parity"):
+        analyze_file(source)
 
 
 def test_decode_rejects_invalid_and_over_limit(tmp_path: Path) -> None:

@@ -4,6 +4,21 @@ import json
 from echotrace.cli import main
 
 
+def test_setup_model_installs_pinned_nii_primary(tmp_path, monkeypatch, capsys):
+    from echotrace import primary_detector
+    weights = tmp_path / "model.safetensors"
+    weights.write_bytes(b"weights")
+    monkeypatch.setattr(primary_detector, "setup_primary_weights", lambda: weights)
+    monkeypatch.setattr(primary_detector, "model_status", lambda: {
+        "name": "NII wav2vec-small-anti-deepfake", "role": "primary",
+        "available": True, "weights_sha256": "b" * 64})
+    assert main(["setup-model"]) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["path"] == str(weights)
+    assert output["name"] == "NII wav2vec-small-anti-deepfake"
+    assert output["role"] == "primary"
+
+
 def test_batch_retains_failed_ids_and_returns_failure_for_invalid_scores(tmp_path, monkeypatch):
     from echotrace import pipeline
     (tmp_path / "a.wav").write_bytes(b"fixture a")
