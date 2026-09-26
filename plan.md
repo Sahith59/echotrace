@@ -1,6 +1,6 @@
 # ECHOTRACE: current implementation and delivery plan
 
-Updated 2026-09-26. This is the authoritative checklist. **Phase 3A is complete for the first public-data experiment. Phase 3B is running. Phase 2 core implementation is complete, but full verification and live Grok review are still open.**
+Updated 2026-09-26. This is the authoritative checklist. **The workbench and requested evidence extensions are implemented. Two independent public-data detector experiments completed and failed promotion goals. A final native adaptation experiment is preparing a new locked public-evaluation holdout. Release packaging and verification are underway; live Grok and official sponsor submission still require external inputs.**
 
 Previous decisions and dated milestones are preserved in [the historical plan](plan-history-2026-09-25.md). They do not override this checklist. Operational continuity is in [memory.md](memory.md), stable rules in [claude.md](claude.md).
 
@@ -20,11 +20,11 @@ The numerical score comes from the speech detector. Signal measurements describe
 | 1 — Baseline | Working pipeline and public diagnostic evaluation | Sponsor-specific baseline evaluation and schema validation remain open |
 | 2 — Workbench | Core implemented; acceptance checks in progress | Remaining browser/accessibility checks and live AI interpretation review |
 | 3A — Prepare | Complete for the bounded public-data run | 14,000 selected files audited; split separation and GPU execution verified |
-| 3B — Adapt | Running: Slurm 4503646 | A saved checkpoint and completed training/evaluation artifacts |
-| 3C — Evaluate | Waiting for the active job | Independent comparison, error review and serving checks before replacement |
+| 3B — Adapt | Run 01 completed; final native adaptation preparing | Finish the final bounded run and preserve checkpoint/metrics |
+| 3C — Evaluate | Two completed experiments; neither promoted | Review final independent experiment, then serving/rollback checks if eligible |
 | 4 — Demonstrate | Comparison feature built; rehearsal pending | A complete honest demo with measured successes and failures |
 | 5 — Submit | Pending sponsor materials and final evaluation | Frozen model, validated official CSV, runnable prototype and required artifacts |
-| Extensions — Speaker and claims | Planned, not implemented | Separate reference/source evidence and validation; cannot delay core submission |
+| Extensions — Speaker and claims | Implemented and tested | Live Grok remains unverified without a key; similarity is not identity proof |
 
 ## Phase 0 — Requirements
 
@@ -47,7 +47,7 @@ Sponsor-specific unknowns do not block independent engineering, but public-data 
 - [x] Keep 24 public reference clips with labels/provenance separate from predictions and independent evaluation.
 - [x] Document baseline diagnostic failures; compare full AASIST without promoting it.
 - [x] Implement grouped manifest preparation, independent checkpoint evaluation and strict configurable CSV export.
-- [ ] Establish candidate performance on the current independent public split (active Phase 3 experiment).
+- [x] Establish candidate performance on independent public splits and record failed promotion gates.
 - [ ] Repeat evaluation on sponsor data and validate the official CSV contract when available.
 
 Known diagnostic: the original detector caught 6/12 synthetic recordings and falsely flagged 3/12 genuine recordings at threshold 0.5 on the selected 24 clips. This small inspected set is a diagnostic, not a general accuracy estimate. The app still serves the original model.
@@ -78,9 +78,9 @@ Known diagnostic: the original detector caught 6/12 synthetic recordings and fal
 - [x] Real detector/FFmpeg integration verifies completed JSON/CSV persist byte-identically across application lifespan restart; interrupted work becomes failed and retries successfully.
 - [x] Repair the reproduced mobile keyboard focus escape and verify focus entry, Tab containment and Escape restoration in Chrome. Automated tests also cover desktop resize and cleanup.
 - [ ] Complete unfamiliar-file browser upload journey. Automated browser file selection is blocked by the Chrome extension's file-URL permission; backend format tests pass.
-- [ ] Complete visual/accessibility checks at desktop, narrow phone and landscape sizes. Current DOM measurements show no page overflow at 375/768 px; this is not a full accessibility or visual-regression pass.
+- [x] Inspect desktop, 375×812 phone and 812×375 landscape layouts; verify no page overflow and visible input focus. Mobile focus containment/reduced-motion implementation are tested. This is not a formal screen-reader/WCAG certification or pixel-regression suite.
 - [ ] Verify live Grok output, citations, persistence and unchanged score after the user saves `XAI_API_KEY` in root `.env`. Key is absent at last status check.
-- [ ] After Phase 3C, present the accepted model's validation summary linked to its actual version/configuration.
+- [x] Present measured validation summaries with checkpoint hashes and explicit failed/not-promoted status; never label an experimental model as serving.
 
 Evidence: [restart verification](docs/phase2-restart-verification.md), [phase verification](docs/phase-verification.md), [feature inventory](docs/product-capabilities.md). Analyst CSV is implemented; official sponsor-format export remains a Phase 5 gate.
 
@@ -103,28 +103,30 @@ Evidence: [restart verification](docs/phase2-restart-verification.md), [phase ve
 
 Training includes attacks A01–A08; selection/acceptance include A09–A16. Codec metadata is `-` throughout this subset, so it does not provide a meaningful cross-codec benchmark. The subset is not the full ASVspoof5 corpus.
 
-## Phase 3B — Bounded adaptation (running)
+## Phase 3B — Bounded adaptation
 
 - [x] Submit success-dependent main job **4503646**; it started **2026-09-26 01:00:42 America/New_York**.
 - [x] Confirm actual model fitting: `training/best.pt` exists, first observed at 05:11 UTC.
-- [ ] Complete the training run and save final metrics/configuration/checkpoint hash.
-- [ ] Complete four whole-file evaluations: baseline/candidate on selection/acceptance.
-- [ ] Produce the acceptance report, complete score ledgers and attack/codec slices.
+- [x] Complete run 01: Slurm 4503646, 6,000 steps, saved checkpoint/configuration and hashes, 55m49 GPU allocation elapsed.
+- [x] Complete run 01 four whole-file evaluations: baseline/candidate on selection/acceptance, zero file failures.
+- [x] Preserve run 01 acceptance report, full score ledgers and attack/codec slices.
+- [x] Evaluate a pinned frozen wav2vec2 candidate in run 02 on 457 new-speaker acceptance clips; no promotion.
+- [ ] Finish final predeclared native adaptation using 10,000 training files, the original 2,000 selection files, and a fresh locked ASVspoof 5 evaluation subset. CPU staging job 4503784 precedes any GPU submission.
 
-One A100-SXM4-40GB, one node, 4 CPUs, 32 GB host RAM. Main Slurm limit 4h55, plus the earlier smoke's five-minute reservation, totals five GPU-hours maximum. Training itself is capped at three hours / 6,000 steps / 10 epochs; each evaluation at 20 minutes. Automatic requeue is disabled. Do not duplicate or extend the run. CPU preparation and queue time are separate from GPU time.
+One A100-SXM4-40GB, one node, 4 CPUs, 32 GB host RAM. Aggregate actual GPU allocation use through run 02 is 1h03m57 (including the smoke and a seven-second failed pre-inference path check). Final allocation is capped at 3h30, making maximum aggregate use 4h33m57, below the original five-hour budget. Fit is capped at 2h30 / 2,000 optimizer steps / three epochs, whichever comes first. No automatic requeue or duplicate allocation. CPU preparation and queue time are separate.
 
 See [run ledger](docs/cluster-run-2026-09-25.md) for exact paths, job IDs and live-status commands. A running job or checkpoint file is not proof of improved accuracy.
 
 ## Phase 3C — Evaluate before replacing the web model
 
-- [ ] Verify complete outputs, expected IDs, finite values, recorded failures and checkpoint/config consistency.
-- [ ] Select thresholds using selection data only; keep acceptance labels out of training/tuning.
-- [ ] Review synthetic recall, genuine false-positive rate, AUROC, average precision, counts and confidence intervals.
-- [ ] Review attack slices, individual misses and regressions; disclose codec-coverage limitations.
+- [x] Verify completed run 01/02 outputs, IDs, finite values, failures and checkpoint/config consistency; repeat for final run.
+- [x] Select run 01/02 thresholds using selection data only; keep acceptance labels out of fitting. Final run uses a new holdout.
+- [x] Review run 01/02 recall, false-positive rate, AUROC, average precision, counts and confidence intervals.
+- [x] Review run 01/02 attack slices and misses; disclose codec limitations. Both runs fail the predeclared gates.
 - [ ] Evaluate provisional goals: at least 80% recall, at most 5% false-positive rate, at least 10 percentage-point recall gain, no AUROC regression. These are internal goals, not predicted results or sponsor criteria.
 - [ ] Verify checkpoint loading and API/CLI serving parity; measure local inference latency/memory.
 - [ ] Keep a rollback checkpoint and replace the web model only if evidence supports it.
-- [ ] If the candidate fails, report the failure and decide the next architecture/data experiment without automatically exceeding the compute budget.
+- [x] Report failed run 01/02 promotion gates and stop the invalid development-holdout reuse. A final experiment uses a new public evaluation partition within the existing budget.
 
 Calibration, fusion/ensembles, alternate speech encoders and EER reporting are conditional follow-ups, not completed features or mandatory additions. Only retain changes with measured benefit. Never inflate scores to make a demo look successful.
 
@@ -151,16 +153,16 @@ Demo sequence: suspicious recording → actual assessment → listen to a scored
 - [ ] Package runnable prototype, final CSV, evaluation report and only the required event artifacts.
 - [ ] Rehearse and submit through the authorized destination once supplied.
 
-## Requested later extensions (not implemented)
+## Requested evidence extensions
 
-- [ ] **Speaker-reference comparison:** accept a consented trusted reference, compare speaker embeddings, quality-gate inputs, test genuine/impostor/cloned/replayed pairs and report similarity or inconclusive status. It cannot identify an unknown person or prove identity from voice alone. Define reference retention/deletion before release.
-- [ ] **Source-backed claim review:** obtain a correctable timestamped transcript, select factual claims, retrieve independent dated sources with citations and show supported/contradicted/insufficient evidence. Validate citation support; private facts, intent and subjective claims remain unresolved. This is not lie detection.
-- [ ] **Integrated case report:** show synthesis, speaker comparison and claim review separately, each with its own evidence and status. Do not combine them into an overall authenticity probability.
+- [x] **Speaker-reference comparison:** consented local reference, pinned WavLM embeddings, quality gates, cosine similarity, temporary reference deletion and separately removable metadata. Real model/self-match and automated failure checks pass. No calibrated genuine/impostor/clone/replay population benchmark or identity claim is made.
+- [x] **Transcript and claim workflow:** local timestamped transcription, immutable corrections, passage-to-claim time links, analyst-supplied evidence and optional consented Grok web search. Sources must occur in provider citations; failed/unsupported responses remain unresolved. Live provider validation requires the missing key. This is not lie detection.
+- [x] **Integrated case report:** JSON and printable HTML show synthesis, speaker reference, transcript versions and claim reviews separately; escaped untrusted text and no overall authenticity probability.
 
 ## Immediate work order
 
-1. Let the existing cluster job continue; inspect its actual outputs without submitting duplicates.
-2. Finish Phase 2's independently actionable verification and reproduced defects while it runs.
-3. Review live Grok only after the key is configured locally.
-4. Review completed training/evaluation, then consider a tested model promotion.
-5. Complete demo and sponsor submission gates. No prize or detector-performance result is guaranteed.
+1. Complete CPU staging and the final bounded native adaptation/evaluation. Never reuse an inspected acceptance set as a new independent holdout.
+2. Finish release checks, keep all measured failures visible, and update the serving model only if the final evidence justifies it.
+3. Record live-provider and sponsor-input gates honestly; these cannot be replaced with fabricated outputs.
+4. Create the authorized new **private** GitHub repository in Sahith59's account and push verified source, locks, tests, documentation and non-audio evidence. Exclude keys, recordings, datasets, weights, caches and unrelated challenge folders.
+5. Stop this iteration after verifying the remote push. Deployment is the user's next separately directed task.

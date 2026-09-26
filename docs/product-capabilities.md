@@ -1,43 +1,53 @@
-# ECHOTRACE: what the prototype does
+# What ECHOTRACE does
 
-ECHOTRACE is a recorded-audio investigation workbench for an analyst reviewing a suspicious voice recording. The user uploads a file, listens to the passages flagged by the model, inspects the measured evidence, compares altered copies, and exports a record of the investigation. The NSA HEARSAY task is the core: analyze audio and produce reproducible synthesis scores and test-set predictions.
+ECHOTRACE is a local workbench for someone investigating a suspicious recorded message. Its primary user is an audio analyst; a non-specialist can also upload and listen to a recording, but the model's number is not a guarantee of authenticity.
 
-## Available features
+## The actual user journey
 
-| Feature | What a user can do | Current boundary |
+1. **Add a recording.** Choose your own permitted file or one of the optional 24 labeled diagnostic examples. WAV, MP3, M4A, FLAC, Ogg/Opus and other FFmpeg-decodable inputs are supported, with 50 MiB/120-second limits. Uploading does not train the model.
+2. **Inspect synthesized-speech evidence.** The learned AASIST-L model evaluates complete overlapping coverage of the audio. The file score averages its window scores. FFmpeg/signal processing separately measure amplitude, clipping, quiet frames and spectral energy. Those measurements are not fake model explanations and do not determine the neural score.
+3. **Listen to passages.** Playback and waveform/interval seeking help you inspect the actual recording. Highlighted windows are review regions, not proven splice boundaries.
+4. **Compare changed conditions.** Produce a separately saved MP3 or noisy copy and rerun inference. See whether the score changes. The original remains intact; score stability does not establish correctness.
+5. **Compare a trusted voice.** With explicit permission, upload a reference sample. A pinned Microsoft WavLM model computes two speaker embeddings and their cosine similarity. It cannot identify an unknown person or distinguish identity from a convincing clone/replay. Reference audio is temporary; comparison metadata is separately removable.
+6. **Read and correct the words.** Faster-whisper runs locally, returns timestamped text, and retains immutable analyst corrections. A failed retry does not erase a successful transcript. Speech recognition may be wrong and should be reviewed.
+7. **Review a claim against sources.** Select one factual statement. Optional Grok web search requires explicit consent to send that claim text; it returns citation-checked source evidence or an inconclusive/error state. Alternatively, record your own assessment and source URLs, clearly labeled analyst-written. Correcting a transcript marks earlier linked claims stale. This is not lie detection.
+8. **Explain the measurements.** Separate optional Grok interpretation summarizes supplied measurement evidence. It receives no recording, filename or transcript and cannot change the synthesis score. No API key means no generated AI explanation.
+9. **Export a case.** The printable report and JSON include synthesis, speaker evidence, transcript versions and claim reviews separately. The app never combines these into an authenticity probability. Batch view exports completed scored analyses as an analyst CSV.
+10. **Check the detector's measured limits.** The validation panel shows actual public-data experiments and explicit promotion decisions, including failed goals.
+
+## What is implemented versus validated
+
+| Capability | Implementation | Evidence / practical limit |
 | --- | --- | --- |
-| Audio intake | Upload WAV, MP3, M4A and other FFmpeg-supported recordings, singly or in a batch | 50 MiB / 120 seconds per file; unsupported input fails explicitly |
-| Real learned inference | Run the pinned AASIST-L detector on the uploaded audio | Current model misses known synthetic recordings; scores are uncalibrated |
-| Playable evidence timeline | Play the original audio, seek with the waveform or a scored interval, and compare passages | Windows are model assessments, not verified splice boundaries |
-| Signal measurements | Inspect clipping, quietness, duration and spectral/temporal measurements | These are measured observations, not independent proof of synthesis |
-| Known-recording examples | Preview and analyze 24 local reference clips with known labels | Reference labels stay separate from predictions; not an independent benchmark |
-| Compression/noise comparison | Generate an MP3 or seeded noisy derivative, listen to both and compare scores | The rerun is real; stable scores do not prove accuracy |
-| Saved investigations | Reopen prior analyses, inspect job status and retry failed processing | Local SQLite and file storage; no multi-user access system |
-| Evidence export | Download analysis JSON with hashes, configuration, evidence and results | Analyst report; does not certify authenticity |
-| Batch CSV export | Select scored recordings and export IDs/scores | Official sponsor columns/scale/order are not yet provided |
-| AI interpretation | Request a Grok brief linked to recorded measurements and save it with the result | Integration tested; key absent at last status check, so live output not yet reviewed |
-| Independent model evaluation | Compare baseline and candidate on separate selection/acceptance data | Command-line reports, not a web dashboard; real cluster training is running; independent results pending |
-| Error breakdowns | Compare missed synthetic and falsely flagged genuine recordings by attack and codec | Descriptive acceptance report; small or single-class slices have limited meaning |
+| Upload, queue, retry, history | Implemented | Automated format/error/size tests and real local inference; browser file-chooser automation requires the extension file permission |
+| Detector and signal measurements | Implemented | Real pinned baseline; independent experiments recorded; validated stronger promotion remains a separate gate |
+| Playback, seeking, derivatives | Implemented | Exercised in the browser and integration tests |
+| Speaker reference | Implemented | Real pinned-model smoke and live API comparison; no calibrated identity decision or population-level verification accuracy |
+| Local transcript/corrections | Implemented | Real CPU model and browser transcript/correction journey; no claimed speech-recognition accuracy benchmark |
+| Analyst claim review | Implemented | Browser save, stale-version warning, persistence and case export verified |
+| Grok interpretation/web search | Implemented and transport-tested | Live provider verification awaits a configured xAI key; no live generated output has been claimed |
+| Case JSON / printable HTML | Implemented | Escaping, boundaries, browser report contents and download event verified |
+| Batch / official CSV adapter | Implemented | Exact-ID/finite-score/schema checks; official held-out data and schema not supplied |
+| Model training and evaluation | Implemented and executed | GPU run ledgers and independent public-corpus metrics; public metrics are not sponsor accuracy |
 
-The speech detector makes the numerical assessment. Grok explains the supplied measurements; it cannot change the score or verify a speaker's identity or the truth of a statement.
+## Training versus using the application
 
-## Demonstration sequence
+The web app runs **inference**: it uses saved model weights to analyze one recording. It does not learn from uploads. Offline cluster training is separate: labeled training files update weights, selection files choose settings, and a locked independent set checks the frozen result. A candidate is not installed just because a job completed or a checkpoint exists.
 
-1. Choose a known recording or upload an unfamiliar permitted recording. Show actual processing and the result's model/provenance.
-2. Compare the reference label with the prediction where a label is available. Explain any miss directly.
-3. Play a high-scoring interval and inspect the evidence. Do not call it an exact edit location.
-4. Make a compressed or noisy copy. Listen to both and show how the measured assessment changes.
-5. When Grok is configured and reviewed, generate the evidence brief and check its references.
-6. Export the investigation. Present the separate baseline/candidate acceptance report once real evaluation is complete.
+## What the product does not establish
 
-The distinctive combination is inspectable audio evidence, an actual robustness comparison and a reproducible report tied to a measured detector. The next useful improvement is a demonstrably better detector, not more decorative controls.
+It cannot prove who spoke, whether a person intended to deceive, recording origin, or general factual truth. Voice similarity requires a reference and remains vulnerable to cloning and replay. Claim review depends on sources, their dates and correct transcription. Noise or a failed/unsupported input must not be treated as proof of authenticity. Manipulation subtype is currently undetermined.
 
-## Ordered remaining work
+## Phase terms
 
-- **Phase 3A — complete for the public run:** official train/dev `aa` archives staged and 14,000 selected files audited, with separate training/selection/acceptance manifests. Actual subset coverage and limitations are recorded in the run ledger.
-- **Phase 3B — running:** adapt AASIST-L within the one-node/one-GPU five-hour allocation; job 4503646 has started and saved a checkpoint. No training from scratch or multi-node sweep.
-- **Phase 3C:** compare frozen models at selection-chosen thresholds; review aggregate and attack/codec errors, confidence intervals and serving performance. Only then consider a web-model replacement with rollback.
-- **Phase 2 follow-through:** show the accepted model's measured validation summary and verify live Grok wording. Keep unsupported cases and low-score limitations visible.
-- **Phases 4/5:** finish responsive/restart/export QA, rehearse, freeze the pipeline and adapt CSV to official sponsor requirements.
+- **Phase 0:** define the challenge and official input/output rules.
+- **Phase 1:** create the real detector and evaluation/export foundation.
+- **Phase 2:** make the investigation workbench and verify normal/failure journeys.
+- **Phase 3A:** prepare independent labeled data.
+- **Phase 3B:** train or run a bounded candidate experiment.
+- **Phase 3C:** review independent results and promote only if justified.
+- **Phase 4:** rehearse a truthful demo with successes, errors and known misses.
+- **Phase 5:** package the runnable source and, once supplied, produce the exact official sponsor submission.
+- **Extensions:** speaker comparison, transcription/source review and unified reporting, now implemented alongside the core workbench.
 
-Speaker-reference comparison and external-source factual-claim review remain later extensions. They need their own inputs, models/evidence and validation. Neither is currently implemented or part of the synthesis score. Manipulation subtype remains undetermined until appropriate labeled evaluation supports it.
+The authoritative live checklist is [plan.md](../plan.md). Deployment is outside this source-release iteration.
